@@ -1,7 +1,27 @@
 pilotsite.ru {
-    reverse_proxy localhost:18789
+    reverse_proxy localhost:18789 {
+        header_up Host {host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+        header_up X-Forwarded-For {remote_host}
+    }
 }
 
 chat.pilotsite.ru {
+    @api {
+        path /api/*
+    }
+    reverse_proxy @api 127.0.0.1:3001
+
+    @gateway {
+        path /v1/*
+    }
+    reverse_proxy @gateway 127.0.0.1:18789 {
+        header_up Host {host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+        header_up X-Forwarded-For {remote_host}
+    }
+
     reverse_proxy localhost:3000
 }

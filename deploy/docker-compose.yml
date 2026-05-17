@@ -12,7 +12,7 @@ services:
 
   web-chat:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     container_name: ai-pilot-chat
     restart: unless-stopped
@@ -21,5 +21,22 @@ services:
     environment:
       - TZ=Europe/Kaliningrad
 
+  auth-api:
+    build:
+      context: ../auth-api
+      dockerfile: Dockerfile
+    container_name: ai-pilot-auth-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - auth_data:/app/data
+    environment:
+      - TZ=Europe/Kaliningrad
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
+      - APP_URL=https://pilotsite.ru
+
 volumes:
   openclaw_data:
+  auth_data:

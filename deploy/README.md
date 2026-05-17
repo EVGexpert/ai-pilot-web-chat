@@ -1,40 +1,44 @@
 # AI Pilot — деплой на VPS
-# =========================
 
 ## Структура на сервере
 
 ```
-~/ai-pilot-web-chat/       ← клон GitHub репозитория
+~/chat/               ← клон ai-pilot-web-chat
+├── auth-api/         ← бэкенд аутентификации
 ├── deploy/
-│   ├── Caddyfile          → копируется в /etc/caddy/Caddyfile
-│   └── docker-compose.yml → запускает OpenClaw + web-chat
+│   ├── Caddyfile     → /etc/caddy/Caddyfile
+│   └── docker-compose.yml
 ├── Dockerfile
-├── nginx.conf
-└── src/                   ← код чата
+└── src/              ← код чата
 ```
 
-## Шаг 1 — Скопировать Caddyfile
+## Шаг 1 — Обновить Caddy
 
 ```bash
-sudo cp ~/ai-pilot-web-chat/deploy/Caddyfile /etc/caddy/Caddyfile
+# Скопировать Caddyfile (или вклеить блоки вручную)
+sudo cp ~/chat/deploy/Caddyfile /etc/caddy/Caddyfile
 sudo systemctl restart caddy
 ```
 
-**Важно:** если в твоём `/etc/caddy/Caddyfile` уже есть другие сайты — не затирай их. Вклей блоки `pilotsite.ru` и `chat.pilotsite.ru` в нужное место.
-
-## Шаг 2 — Запустить контейнеры
+## Шаг 2 — Запустить все сервисы
 
 ```bash
-cd ~/ai-pilot-web-chat
-docker compose -f deploy/docker-compose.yml up -d
+cd ~/chat/deploy
+docker compose up -d --build
 ```
 
-## Шаг 3 — Проверить
+## Проверка
 
 ```bash
-# Gateway API
-curl -I https://pilotsite.ru
-
-# WebSocket чата (если порт открыт)
+# Чат
 curl -I https://chat.pilotsite.ru
+
+# Auth API
+curl https://chat.pilotsite.ru/api/health
+
+# OpenAI API (через Gateway)
+curl -X POST https://chat.pilotsite.ru/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ***" \
+  -d '{"model":"openclaw","messages":[{"role":"user","content":"Привет"}]}'
 ```
