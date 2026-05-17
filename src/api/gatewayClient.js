@@ -80,13 +80,18 @@ export function createGatewayClient(options) {
       return
     }
 
-    // Ошибка
+    // Ошибка (но если уже connected — не разрываем, просто логируем)
     if (frame.type === 'res' && !frame.ok) {
-      isAuthenticating = false
-      isConnected = false
-      const errMsg = frame.error?.message || 'Ошибка подключения'
+      const errMsg = frame.error?.message || 'Ошибка'
       logFrame('ERROR', frame)
       console.error('[WS] Error:', errMsg)
+      if (isConnected) {
+        // Уже подключены — это просто дополнительная проверка скопов, не фатал
+        console.warn('[WS] Non-fatal error (already connected):', errMsg)
+        return
+      }
+      isAuthenticating = false
+      isConnected = false
       onError?.(new Error(errMsg))
       return
     }
