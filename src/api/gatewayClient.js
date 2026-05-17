@@ -58,10 +58,14 @@ export function createGatewayClient(options) {
     }
   }
 
+  function logFrame(label, frame) {
+    console.log('[WS]', label, 'type:', frame.type, 'event:', frame.event || '-', 'method:', frame.method || '-', 'ok:', frame.ok)
+  }
+
   function handleFrame(frame) {
     // Challenge от Gateway (первый приходит до connect)
     if (frame.type === 'event' && frame.event === 'connect.challenge') {
-      console.log('[WS] Challenge received, sending connect...')
+      logFrame('CHALLENGE', frame)
       sendConnect(frame.payload?.nonce)
       return
     }
@@ -71,24 +75,30 @@ export function createGatewayClient(options) {
       isAuthenticating = false
       isConnected = true
       sessionKey = frame.payload.snapshot?.sessionDefaults?.mainSessionKey || null
-      console.log('[WS] Connected! Session key:', sessionKey)
+      logFrame('CONNECTED', frame)
       onConnected?.()
       return
     }
 
-    // Ошибка connect
+    // Ошибка
     if (frame.type === 'res' && !frame.ok) {
       isAuthenticating = false
       isConnected = false
       const errMsg = frame.error?.message || 'Ошибка подключения'
-      console.error('[WS] Connection rejected:', errMsg)
+      logFrame('ERROR', frame)
+      console.error('[WS] Error:', errMsg)
       onError?.(new Error(errMsg))
       return
     }
 
     // События
     if (frame.type === 'event') {
+      logFrame('EVENT', frame)
       handleEvent(frame)
+    } else if (frame.type === 'req') {
+      logFrame('REQ', frame)
+    } else if (frame.type === 'res') {
+      logFrame('RES', frame)
     }
   }
 
