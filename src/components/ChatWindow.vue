@@ -19,8 +19,10 @@ const isLoading = ref(false)
 const streamingContent = ref('')
 const error = ref(null)
 
-const gatewayWs = import.meta.env.VITE_GATEWAY_WS || 'wss://pilotsite.ru'
-const httpBase = import.meta.env.VITE_GATEWAY_HTTP || 'https://pilotsite.ru'
+// Определяем базовый URL из текущего location (работает на любом домене)
+const baseUrl = `${window.location.protocol}//${window.location.host}`
+const gatewayWs = import.meta.env.VITE_GATEWAY_WS || baseUrl.replace('http', 'ws')
+const httpBase = import.meta.env.VITE_GATEWAY_HTTP || baseUrl
 
 let client = null
 
