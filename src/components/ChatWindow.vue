@@ -19,10 +19,11 @@ const isLoading = ref(false)
 const streamingContent = ref('')
 const error = ref(null)
 
-// Определяем базовый URL из текущего location (работает на любом домене)
-const baseUrl = `${window.location.protocol}//${window.location.host}`
-const gatewayWs = import.meta.env.VITE_GATEWAY_WS || baseUrl.replace('http', 'ws')
-const httpBase = import.meta.env.VITE_GATEWAY_HTTP || baseUrl
+// WebSocket всегда на pilotsite.ru (там Caddy проксирует на Gateway)
+const gatewayWs = import.meta.env.VITE_GATEWAY_WS || 'wss://pilotsite.ru'
+// HTTP API — на текущем домене (чат.домен), Caddy прокинет /v1/* на Gateway
+const chatBase = `${window.location.protocol}//${window.location.host}`
+const httpBase = import.meta.env.VITE_GATEWAY_HTTP || chatBase
 
 let client = null
 
