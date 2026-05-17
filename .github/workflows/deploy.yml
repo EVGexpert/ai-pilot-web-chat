@@ -1,0 +1,28 @@
+name: Auto Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/ai-pilot-web-chat
+            git pull origin main
+            docker build -t ai-pilot-chat .
+            docker rm -f ai-pilot-chat 2>/dev/null || true
+            docker run -d \
+              --name ai-pilot-chat \
+              --restart unless-stopped \
+              -p 127.0.0.1:3000:80 \
+              ai-pilot-chat
+            echo "✅ Deploy complete: $(date)"
