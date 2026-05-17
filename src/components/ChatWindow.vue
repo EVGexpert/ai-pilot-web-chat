@@ -88,6 +88,11 @@ function handleLogout() {
   authStore.logout()
 }
 
+function handleReconnect() {
+  error.value = null
+  connect()
+}
+
 // Подключаемся при монтировании
 connect()
 
@@ -132,6 +137,7 @@ watch([messages, streamingContent], async () => {
         </div>
         <div v-if="error" class="error-banner">
           ⚠️ {{ error.message }}
+          <Button label="Повторить" icon="pi pi-refresh" severity="warning" size="small" @click="handleReconnect" class="retry-btn" />
         </div>
         <MessageBubble
           v-for="msg in messages"

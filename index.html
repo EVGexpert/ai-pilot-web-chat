@@ -9,5 +9,23 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
+    <!-- Remote error logging -->
+    <script>
+      window.onerror = function(msg, url, line, col, err) {
+        console.error('[AI Pilot] Global error:', msg);
+        // Показываем ошибку на странице, если приложение не загрузилось
+        var el = document.getElementById('app');
+        if (el && el.children.length === 0) {
+          el.innerHTML = '<div style="padding:2rem;text-align:center;color:#d32f2f;background:#ffebee;border-radius:8px;margin:2rem;font-family:sans-serif">' +
+            '<h3>⚠️ Ошибка загрузки</h3>' +
+            '<p style="font-size:0.9rem;margin-top:0.5rem">' + msg + '</p>' +
+            '<p style="font-size:0.8rem;color:#999;margin-top:0.5rem">' + url + ':' + line + '</p>' +
+            '</div>';
+        }
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        console.error('[AI Pilot] Unhandled promise rejection:', e.reason);
+      });
+    </script>
   </body>
 </html>

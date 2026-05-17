@@ -1,5 +1,5 @@
 // Прямой WebSocket клиент к OpenClaw Gateway
-// Использует Gateway Protocol (challenge → connect → chat.send)
+// Использует Gateway Protocol (challenge -> connect -> chat.send)
 
 const PROTOCOL_MIN = 3
 const PROTOCOL_MAX = 4
@@ -30,7 +30,7 @@ export function createGatewayClient(options) {
     isAuthenticating = true
 
     ws.onopen = () => {
-      // Ждём challenge
+      console.log('[WS] Connection opened, waiting for challenge...')
     }
 
     ws.onmessage = (event) => {
@@ -38,16 +38,22 @@ export function createGatewayClient(options) {
         const frame = JSON.parse(event.data)
         handleFrame(frame)
       } catch (e) {
-        console.error('Failed to parse frame:', e)
+        console.error('[WS] Failed to parse frame:', e)
       }
     }
 
     ws.onerror = (err) => {
-      onError?.(new Error('WebSocket error'))
+      console.error('[WS] Error:', err)
+      onError?.(new Error('WebSocket ошибка — не удалось соединиться'))
     }
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       isConnected = false
+      isAuthenticating = false
+      if (event.code !== 1000) {
+        console.error('[WS] Closed:', event.code, event.reason)
+        onError?.(new Error('Соединение разорвано: ' + (event.reason || 'код ' + event.code)))
+      }
       onDisconnected?.()
     }
   }
@@ -55,25 +61,28 @@ export function createGatewayClient(options) {
   function handleFrame(frame) {
     // Challenge от Gateway (первый приходит до connect)
     if (frame.type === 'event' && frame.event === 'connect.challenge') {
+      console.log('[WS] Challenge received, sending connect...')
       sendConnect(frame.payload?.nonce)
       return
     }
 
-    // Ответ на connect
+    // Успешный connect
     if (frame.type === 'res' && frame.ok && frame.payload?.type === 'hello-ok') {
       isAuthenticating = false
       isConnected = true
       sessionKey = frame.payload.snapshot?.sessionDefaults?.mainSessionKey || null
+      console.log('[WS] Connected! Session key:', sessionKey)
       onConnected?.()
       return
     }
 
-    // Ответ на запросы
-    if (frame.type === 'res') {
-      if (frame.payload?.type === 'events' || frame.event === 'agent') {
-        // Игнорируем служебные события
-        return
-      }
+    // Ошибка connect
+    if (frame.type === 'res' && !frame.ok) {
+      isAuthenticating = false
+      isConnected = false
+      const errMsg = frame.error?.message || 'Ошибка подключения'
+      console.error('[WS] Connection rejected:', errMsg)
+      onError?.(new Error(errMsg))
       return
     }
 
@@ -98,15 +107,13 @@ export function createGatewayClient(options) {
         }
         break
       case 'chat':
-        break
       case 'agent':
-        break
       case 'tick':
       case 'heartbeat':
       case 'health':
         break
       default:
-        console.debug('Unknown event:', frame.event)
+        console.debug('[WS] Unknown event:', frame.event)
     }
   }
 
@@ -141,67 +148,17 @@ export function createGatewayClient(options) {
       throw new Error('Not connected')
     }
 
-    return new Promise((resolve, reject) => {
-      const msgId = nextId()
-      let fullContent = ''
-      let timeout = setTimeout(() => reject(new Error('Response timeout')), 30000)
+    const msgId = nextId()
 
-      const cleanup = () => {
-        clearTimeout(timeout)
-        if (ws) {
-          // Не удаляем обработчики, они глобальные
-        }
+    sendFrame({
+      type: 'req',
+      id: msgId,
+      method: 'chat.send',
+      params: {
+        sessionKey,
+        message: content,
+        idempotencyKey: `${Date.now()}-${Math.random().toString(36).slice(2)}`
       }
-
-      // Временный обработчик для этого сообщения
-      const origOnMessage = onMessage
-      const origOnStreamChunk = onStreamChunk
-
-      const tempHandler = (event) => {
-        try {
-          const frame = JSON.parse(event.data)
-
-          // Ответ на наше сообщение
-          if (frame.type === 'res' && frame.id === msgId) {
-            cleanup()
-            resolve(frame.payload)
-            return
-          }
-
-          // Стриминг
-          if (frame.type === 'event') {
-            if (frame.event === 'stream.chunk' && frame.payload?.chunk) {
-              fullContent += frame.payload.chunk
-              onStreamChunk?.(frame.payload.chunk, 'chunk')
-              if (frame.payload?.done) {
-                onMessage?.({ role: 'assistant', content: fullContent })
-                onStreamChunk?.('', 'done')
-              }
-            }
-            if (frame.event === 'message' && frame.payload?.message) {
-              const msg = frame.payload.message
-              if (msg.role === 'assistant') {
-                origOnMessage?.(msg)
-              }
-            }
-          }
-        } catch (e) {
-          console.error('Parse error:', e)
-        }
-      }
-
-      ws.addEventListener('message', tempHandler)
-
-      sendFrame({
-        type: 'req',
-        id: msgId,
-        method: 'chat.send',
-        params: {
-          sessionKey,
-          message: content,
-          idempotencyKey: `${Date.now()}-${Math.random().toString(36).slice(2)}`
-        }
-      })
     })
   }
 
