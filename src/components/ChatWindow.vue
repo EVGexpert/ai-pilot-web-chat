@@ -1,41 +1,49 @@
 <script setup>
-import { onMounted, ref, nextTick, watch } from 'vue'
-import { useChatStore } from '../stores/chatStore'
-import { useSitesStore } from '../stores/sitesStore'
+import { ref, watch, nextTick } from 'vue'
+import { useOpenClawChat } from 'openclaw-webchat-vue'
 import { useAuthStore } from '../stores/authStore'
+import { useSitesStore } from '../stores/sitesStore'
 import MessageBubble from './MessageBubble.vue'
 import SiteSelector from './SiteSelector.vue'
 import TypingIndicator from './TypingIndicator.vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 
-const chatStore = useChatStore()
-const sitesStore = useSitesStore()
 const authStore = useAuthStore()
+const sitesStore = useSitesStore()
 const messageInput = ref('')
 const messagesContainer = ref(null)
 
-onMounted(() => {
-  chatStore.connect()
-  sitesStore.fetchSites()
+// useOpenClawChat — должен работать ВНУТРИ компонента (жизненный цикл Vue)
+const {
+  messages,
+  isConnected,
+  isLoading,
+  streamingContent,
+  error,
+  send: chatSend
+} = useOpenClawChat({
+  gateway: import.meta.env.VITE_GATEWAY_WS || 'wss://pilotsite.ru',
+  token: authStore.token,
+  autoConnect: true
 })
 
-watch(() => chatStore.messages.length, async () => {
+// Автоскролл вниз
+watch(messages, async () => {
   await nextTick()
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
   }
-})
+}, { deep: true })
 
 function handleSend() {
   const text = messageInput.value.trim()
-  if (!text) return
-  chatStore.send(text)
+  if (!text || !isConnected.value) return
+  chatSend(text)
   messageInput.value = ''
 }
 
 function handleLogout() {
-  chatStore.disconnect()
   authStore.logout()
 }
 </script>
@@ -47,6 +55,8 @@ function handleLogout() {
         <div class="chat-title-group">
           <span class="chat-icon">🎯</span>
           <span>AI Pilot</span>
+          <span v-if="isConnected" class="status-badge connected">🟢</span>
+          <span v-else class="status-badge disconnected">🔴</span>
         </div>
         <div class="chat-header-actions">
           <SiteSelector />
@@ -62,18 +72,18 @@ function handleLogout() {
     </template>
     <template #content>
       <div class="messages-area" ref="messagesContainer">
-        <div v-if="!chatStore.isConnected" class="connecting">
-          Подключение к серверу...
+        <div v-if="!isConnected" class="connecting">
+          Подключаюсь к серверу...
+        </div>
+        <div v-if="error" class="error-banner">
+          ⚠️ {{ error.message }}
         </div>
         <MessageBubble
-          v-for="(msg, i) in chatStore.messages"
-          :key="i"
+          v-for="msg in messages"
+          :key="msg.id"
           :message="msg"
         />
-        <div v-if="chatStore.streamingContent" class="streaming">
-          {{ chatStore.streamingContent }}
-        </div>
-        <TypingIndicator v-if="chatStore.isLoading && !chatStore.streamingContent" />
+        <TypingIndicator v-if="isLoading && !streamingContent" />
       </div>
     </template>
     <template #footer>
@@ -83,12 +93,12 @@ function handleLogout() {
           placeholder="Напишите сообщение..."
           class="chat-input"
           @keyup.enter="handleSend"
-          :disabled="!chatStore.isConnected"
+          :disabled="!isConnected"
         />
         <Button
           icon="pi pi-send"
           @click="handleSend"
-          :disabled="!chatStore.isConnected || !messageInput.trim()"
+          :disabled="!isConnected || !messageInput.trim()"
         />
       </div>
     </template>
@@ -121,6 +131,9 @@ function handleLogout() {
 .chat-icon {
   font-size: 1.3rem;
 }
+.status-badge {
+  font-size: 0.8rem;
+}
 .messages-area {
   flex: 1;
   overflow-y: auto;
@@ -134,13 +147,13 @@ function handleLogout() {
   color: #999;
   padding: 2rem;
 }
-.streaming {
-  padding: 0.5rem 1rem;
-  background: #f0f0f0;
-  border-radius: 12px;
-  align-self: flex-start;
-  max-width: 80%;
-  word-wrap: break-word;
+.error-banner {
+  text-align: center;
+  color: #d32f2f;
+  padding: 0.5rem;
+  background: #ffebee;
+  border-radius: 8px;
+  font-size: 0.85rem;
 }
 .input-area {
   display: flex;

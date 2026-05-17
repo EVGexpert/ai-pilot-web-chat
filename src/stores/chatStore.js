@@ -1,53 +1,29 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { useAuthStore } from './authStore'
 
 export const useChatStore = defineStore('chat', () => {
   const messages = ref([])
   const isConnected = ref(false)
   const isLoading = ref(false)
   const streamingContent = ref('')
+  const error = ref(null)
 
-  let chatClient = null
-
-  async function connect() {
-    const auth = useAuthStore()
-    if (!auth.token) return
-
-    try {
-      const { useOpenClawChat } = await import('openclaw-webchat-vue')
-      chatClient = useOpenClawChat({
-        gateway: import.meta.env.VITE_GATEWAY_WS || 'wss://pilotsite.ru',
-        token: auth.token
-      })
-
-      isConnected.value = true
-    } catch (err) {
-      console.error('Chat connection failed:', err)
-    }
+  // Эти методы будут вызываться из компонента ChatWindow
+  function bindToComposable(composable) {
+    messages.value = composable.messages.value
+    isConnected.value = composable.isConnected.value
+    isLoading.value = composable.isLoading.value
+    streamingContent.value = composable.streamingContent.value
+    error.value = composable.error ? composable.error.value : null
   }
 
-  async function send(content) {
-    if (!chatClient) return
-    isLoading.value = true
-
-    try {
-      messages.value.push({ role: 'user', content })
-      streamingContent.value = ''
-
-      const response = await chatClient.send(content)
-      messages.value.push({ role: 'assistant', content: response })
-    } finally {
-      isLoading.value = false
-      streamingContent.value = ''
-    }
+  function updateFromComposable(composable) {
+    messages.value = composable.messages
+    isConnected.value = composable.isConnected
+    isLoading.value = composable.isLoading
+    streamingContent.value = composable.streamingContent
+    error.value = composable.error || null
   }
 
-  function disconnect() {
-    chatClient = null
-    isConnected.value = false
-    messages.value = []
-  }
-
-  return { messages, isConnected, isLoading, streamingContent, connect, send, disconnect }
+  return { messages, isConnected, isLoading, streamingContent, error, bindToComposable, updateFromComposable }
 })
