@@ -1,17 +1,25 @@
 // Прямой WebSocket клиент к OpenClaw Gateway
 // Использует Gateway Protocol (challenge -> connect -> chat.send)
+// WebSocket — только для поддержания соединения
+// Отправка сообщений — через OpenAI HTTP API (полные scopes)
 
 const PROTOCOL_MIN = 3
 const PROTOCOL_MAX = 4
 
 export function createGatewayClient(options) {
-  const { gateway, token, onMessage, onStreamChunk, onError, onConnected, onDisconnected } = options
+  const { gateway, httpBase, token, onMessage, onStreamChunk, onError, onConnected, onDisconnected } = options
 
   let ws = null
   let messageId = 0
   let sessionKey = null
-  let isAuthenticating = false
   let isConnected = false
+
+  // HTTP base — тот же хост, что и WebSocket, но для REST
+  const httpUrl = httpBase || gateway.replace('wss://', 'https://').replace('ws://', 'http://')
+
+  function logFrame(label, frame) {
+    console.log('[WS]', label, 'type:', frame.type, 'event:', frame.event || '-', 'method:', frame.method || '-', 'ok:', frame.ok)
+  }
 
   function nextId() {
     return String(++messageId)
@@ -27,7 +35,6 @@ export function createGatewayClient(options) {
     if (ws) disconnect()
 
     ws = new WebSocket(gateway)
-    isAuthenticating = true
 
     ws.onopen = () => {
       console.log('[WS] Connection opened, waiting for challenge...')
@@ -42,68 +49,46 @@ export function createGatewayClient(options) {
       }
     }
 
-    ws.onerror = (err) => {
-      console.error('[WS] Error:', err)
+    ws.onerror = () => {
       onError?.(new Error('WebSocket ошибка — не удалось соединиться'))
     }
 
     ws.onclose = (event) => {
       isConnected = false
-      isAuthenticating = false
       if (event.code !== 1000) {
         console.error('[WS] Closed:', event.code, event.reason)
-        onError?.(new Error('Соединение разорвано: ' + (event.reason || 'код ' + event.code)))
       }
       onDisconnected?.()
     }
   }
 
-  function logFrame(label, frame) {
-    console.log('[WS]', label, 'type:', frame.type, 'event:', frame.event || '-', 'method:', frame.method || '-', 'ok:', frame.ok)
-  }
-
   function handleFrame(frame) {
-    // Challenge от Gateway (первый приходит до connect)
     if (frame.type === 'event' && frame.event === 'connect.challenge') {
       logFrame('CHALLENGE', frame)
       sendConnect(frame.payload?.nonce)
       return
     }
 
-    // Успешный connect
     if (frame.type === 'res' && frame.ok && frame.payload?.type === 'hello-ok') {
-      isAuthenticating = false
       isConnected = true
       sessionKey = frame.payload.snapshot?.sessionDefaults?.mainSessionKey || null
       logFrame('CONNECTED', frame)
+      console.log('[WS] Session key:', sessionKey)
       onConnected?.()
       return
     }
 
-    // Ошибка (но если уже connected — не разрываем, просто логируем)
+    // Нефатальные ошибки (например, scope check после connect)
     if (frame.type === 'res' && !frame.ok) {
       const errMsg = frame.error?.message || 'Ошибка'
-      logFrame('ERROR', frame)
-      console.error('[WS] Error:', errMsg)
-      if (isConnected) {
-        // Уже подключены — это просто дополнительная проверка скопов, не фатал
-        console.warn('[WS] Non-fatal error (already connected):', errMsg)
-        return
-      }
-      isAuthenticating = false
-      isConnected = false
-      onError?.(new Error(errMsg))
+      logFrame('WARN', frame)
+      console.warn('[WS] Non-fatal:', errMsg)
       return
     }
 
-    // События
     if (frame.type === 'event') {
       logFrame('EVENT', frame)
       handleEvent(frame)
-    } else if (frame.type === 'req') {
-      logFrame('REQ', frame)
-    } else if (frame.type === 'res') {
-      logFrame('RES', frame)
     }
   }
 
@@ -117,9 +102,7 @@ export function createGatewayClient(options) {
         break
       case 'stream.chunk':
         onStreamChunk?.(frame.payload?.chunk, 'chunk')
-        if (frame.payload?.done) {
-          onStreamChunk?.('', 'done')
-        }
+        if (frame.payload?.done) onStreamChunk?.('', 'done')
         break
       case 'chat':
       case 'agent':
@@ -127,59 +110,80 @@ export function createGatewayClient(options) {
       case 'heartbeat':
       case 'health':
         break
-      default:
-        console.debug('[WS] Unknown event:', frame.event)
     }
   }
 
   function sendConnect(nonce) {
     sendFrame({
-      type: 'req',
-      id: nextId(),
-      method: 'connect',
+      type: 'req', id: nextId(), method: 'connect',
       params: {
-        minProtocol: PROTOCOL_MIN,
-        maxProtocol: PROTOCOL_MAX,
-        client: {
-          id: 'cli',
-          version: '0.1.0',
-          platform: 'browser',
-          mode: 'cli'
-        },
-        role: 'operator',
-        scopes: ['operator.read'],
-        caps: [],
-        commands: [],
-        permissions: {},
-        auth: { token },
-        locale: 'ru-RU',
-        userAgent: 'ai-pilot-webchat/0.1.0'
+        minProtocol: PROTOCOL_MIN, maxProtocol: PROTOCOL_MAX,
+        client: { id: 'cli', version: '0.1.0', platform: 'browser', mode: 'cli' },
+        role: 'operator', scopes: ['operator.read'],
+        caps: [], commands: [], permissions: {},
+        auth: { token }, locale: 'ru-RU', userAgent: 'ai-pilot-webchat/0.1.0'
       }
     })
   }
 
+  // === Отправка через HTTP OpenAI API (даёт полные scopes) ===
   async function sendMessage(content) {
-    if (!isConnected || !sessionKey) {
-      throw new Error('Not connected')
+    console.log('[HTTP] Sending message via OpenAI API...')
+
+    const resp = await fetch(`${httpUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek/deepseek-v4-flash',
+        messages: [{ role: 'user', content }],
+        stream: true,
+        max_tokens: 4096
+      })
+    })
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => 'Unknown error')
+      throw new Error(`HTTP ${resp.status}: ${errText}`)
     }
 
-    const msgId = nextId()
+    // Читаем стрим
+    const reader = resp.body.getReader()
+    const decoder = new TextDecoder()
+    let fullContent = ''
 
-    sendFrame({
-      type: 'req',
-      id: msgId,
-      method: 'chat.send',
-      params: {
-        sessionKey,
-        message: content,
-        idempotencyKey: `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    onStreamChunk?.('', 'start')
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const chunk = decoder.decode(value, { stream: true })
+      const lines = chunk.split('\n').filter(l => l.startsWith('data: ') && l !== 'data: [DONE]')
+
+      for (const line of lines) {
+        try {
+          const json = JSON.parse(line.slice(6))
+          const delta = json.choices?.[0]?.delta?.content
+          if (delta) {
+            fullContent += delta
+            onStreamChunk?.(delta, 'chunk')
+          }
+        } catch (e) {
+          // parse error, skip
+        }
       }
-    })
+    }
+
+    onStreamChunk?.('', 'done')
+    onMessage?.({ role: 'assistant', content: fullContent })
+    return fullContent
   }
 
   function disconnect() {
     isConnected = false
-    isAuthenticating = false
     sessionKey = null
     ws?.close()
     ws = null

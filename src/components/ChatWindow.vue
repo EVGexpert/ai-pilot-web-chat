@@ -20,12 +20,14 @@ const streamingContent = ref('')
 const error = ref(null)
 
 const gatewayWs = import.meta.env.VITE_GATEWAY_WS || 'wss://pilotsite.ru'
+const httpBase = import.meta.env.VITE_GATEWAY_HTTP || 'https://pilotsite.ru'
 
 let client = null
 
 function connect() {
   client = createGatewayClient({
     gateway: gatewayWs,
+    httpBase: httpBase,
     token: authStore.token,
     onConnected: () => {
       isConnected.value = true
