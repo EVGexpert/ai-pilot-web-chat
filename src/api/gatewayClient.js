@@ -126,7 +126,7 @@ export function createGatewayClient(options) {
         minProtocol: PROTOCOL_MIN,
         maxProtocol: PROTOCOL_MAX,
         client: {
-          id: 'ai-pilot-webchat',
+          id: 'cli',
           version: '0.1.0',
           platform: 'browser',
           mode: 'cli'
