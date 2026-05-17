@@ -119,10 +119,10 @@ export function createGatewayClient(options) {
         minProtocol: PROTOCOL_MIN,
         maxProtocol: PROTOCOL_MAX,
         client: {
-          id: 'webchat',
+          id: 'ai-pilot-webchat',
           version: '0.1.0',
           platform: 'browser',
-          mode: 'operator'
+          mode: 'cli'
         },
         role: 'operator',
         scopes: ['operator.read', 'operator.write'],
@@ -131,11 +131,7 @@ export function createGatewayClient(options) {
         permissions: {},
         auth: { token },
         locale: 'ru-RU',
-        userAgent: 'ai-pilot-webchat/0.1.0',
-        device: {
-          id: `web_${Date.now()}`,
-          nonce
-        }
+        userAgent: 'ai-pilot-webchat/0.1.0'
       }
     })
   }
