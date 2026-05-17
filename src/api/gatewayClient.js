@@ -137,7 +137,7 @@ export function createGatewayClient(options) {
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-v4-flash',
+        model: 'openclaw',
         messages: [{ role: 'user', content }],
         stream: true,
         max_tokens: 4096
