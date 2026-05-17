@@ -132,7 +132,7 @@ export function createGatewayClient(options) {
           mode: 'cli'
         },
         role: 'operator',
-        scopes: ['operator.read', 'operator.write'],
+        scopes: ['operator.read'],
         caps: [],
         commands: [],
         permissions: {},
