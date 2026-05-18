@@ -4,6 +4,7 @@ import rateLimit from '@fastify/rate-limit'
 import authRoutes from './routes/auth.js'
 import sitesRoutes from './routes/sites.js'
 import { config } from './config.js'
+import { initDb } from './db.js'
 
 const app = Fastify({ logger: true })
 
@@ -28,6 +29,7 @@ app.get('/api/health', async () => ({ status: 'ok', version: '0.1.0' }))
 
 const start = async () => {
   try {
+    await initDb()
     const port = config.PORT
     await app.listen({ port, host: '0.0.0.0' })
     console.log(`Auth API running on port ${port}`)
