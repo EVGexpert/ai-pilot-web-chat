@@ -16,8 +16,10 @@ export default async function authRoutes(app) {
 
     if (findUserByEmail(email)) return reply.status(409).send({ error: 'Email уже зарегистрирован' })
 
+    // admin@pilot.ru и admin-email → роль admin
+    const role = email.includes('admin') ? 'admin' : 'client'
     const passwordHash = await hashPassword(password)
-    const user = createUser({ email, passwordHash, name })
+    const user = createUser({ email, passwordHash, name, role })
 
     const code = Math.random().toString(36).slice(2, 8).toUpperCase()
     createVerification(user.id, code)
