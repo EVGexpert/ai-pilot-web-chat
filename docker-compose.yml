@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  web-chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-pilot-chat
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:80"
+    depends_on:
+      - auth-api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - TZ=Europe/Kaliningrad
+
+  auth-api:
+    build:
+      context: ./auth-api
+      dockerfile: Dockerfile
+    container_name: ai-pilot-auth
+    restart: unless-stopped
+    expose:
+      - "3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - TZ=Europe/Kaliningrad
+      - PORT=3001
+      - JWT_SECRET=${AIPILOT_JWT_SECRET}
+      - GATEWAY_TOKEN=${AIPILOT_GATEWAY_TOKEN}
+      - GATEWAY_WS=ws://host.docker.internal:18789
+      - APP_URL=https://pilotsite.ru
+      - DATABASE_PATH=./data/aipilot.db
+    volumes:
+      - auth_data:/app/data
+
+volumes:
+  auth_data:

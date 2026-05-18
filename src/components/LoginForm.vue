@@ -1,8 +1,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useAuthStore } from '../stores/authStore'
+import { useSitesStore } from '../stores/sitesStore'
 
 const emit = defineEmits(['login'])
+const sitesStore = useSitesStore()
 const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
@@ -51,6 +53,10 @@ async function handleLogin() {
         email: email.value,
         role: data.role || 'client'
       })
+      // Передаём сайты из ответа API
+      if (data.sites && data.sites.length > 0) {
+        sitesStore.sites.value = data.sites
+      }
       emit('login', data)
       return
     }

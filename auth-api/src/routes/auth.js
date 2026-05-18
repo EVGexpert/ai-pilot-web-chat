@@ -83,6 +83,7 @@ export default async function authRoutes(app) {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role || 'client',
         emailVerified: !!user.email_verified
       },
       sites

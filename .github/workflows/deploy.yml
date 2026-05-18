@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Deploy via Docker Compose
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -18,11 +18,20 @@ jobs:
             set -e
             cd ~/ai-pilot-web-chat
             git pull origin main
-            docker build -t ai-pilot-chat .
-            docker rm -f ai-pilot-chat 2>/dev/null || true
-            docker run -d \
-              --name ai-pilot-chat \
-              --restart unless-stopped \
-              -p 127.0.0.1:3000:80 \
-              ai-pilot-chat
+
+            # Создаём .env если нет
+            if [ ! -f .env ]; then
+              cat > .env << 'ENVEOF'
+            AIPILOT_JWT_SECRET=${{ secrets.AIPILOT_JWT_SECRET }}
+            AIPILOT_GATEWAY_TOKEN=${{ secrets.AIPILOT_GATEWAY_TOKEN }}
+            ENVEOF
+            fi
+
+            # Собираем и запускаем
+            docker compose build --pull
+            docker compose up -d --remove-orphans
+
+            # Чистим старые образы
+            docker image prune -f
+
             echo "✅ Deploy complete: $(date)"
