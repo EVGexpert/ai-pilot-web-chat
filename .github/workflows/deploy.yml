@@ -18,25 +18,6 @@ jobs:
             set -e
             cd ~/ai-pilot-web-chat
             git pull origin main
-
-            # === Auth API ===
-            mkdir -p auth-data
-            docker build -t ai-pilot-auth auth-api/
-            docker rm -f ai-pilot-auth 2>/dev/null || true
-            docker run -d \
-              --name ai-pilot-auth \
-              --restart unless-stopped \
-              --add-host host.docker.internal:host-gateway \
-              -p 127.0.0.1:3001:3001 \
-              -v "$(pwd)/auth-data:/app/data" \
-              -e PORT=3001 \
-              -e JWT_SECRET=dev-jwt-secret-change-in-production \
-              -e GATEWAY_TOKEN=dev-gateway-token \
-              -e GATEWAY_WS=ws://host.docker.internal:18789 \
-              -e APP_URL=https://pilotsite.ru \
-              ai-pilot-auth
-
-            # === Веб-чат ===
             docker build -t ai-pilot-chat .
             docker rm -f ai-pilot-chat 2>/dev/null || true
             docker run -d \
@@ -45,7 +26,5 @@ jobs:
               --add-host host.docker.internal:host-gateway \
               -p 127.0.0.1:3000:80 \
               ai-pilot-chat
-
             docker image prune -f
-
             echo "✅ Deploy complete: $(date)"
