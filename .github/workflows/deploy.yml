@@ -19,11 +19,11 @@ jobs:
             cd ~/ai-pilot-web-chat
             git pull origin main
 
-            # === Auth API ===
+            # === Auth API — напрямую через Node (без Docker build) ===
             echo "🏗 Building auth-api..."
             docker build -t ai-pilot-auth auth-api/
             docker rm -f ai-pilot-auth 2>/dev/null || true
-            echo "🚀 Starting auth-api..."
+            echo "🚀 Starting auth-api (debug)..."
             docker run -d \
               --name ai-pilot-auth \
               --restart unless-stopped \
@@ -36,9 +36,13 @@ jobs:
               -e GATEWAY_WS=ws://host.docker.internal:18789 \
               -e APP_URL=https://pilotsite.ru \
               ai-pilot-auth
-            sleep 3
-            docker ps --filter name=ai-pilot-auth --format "{{.Status}}"
-            docker logs ai-pilot-auth --tail 5 2>&1 || true
+            sleep 2
+            echo "=== AUTH STATUS ==="
+            docker ps --filter name=ai-pilot-auth --format "{{.ID}} {{.Status}}"
+            echo "=== AUTH LOGS ==="
+            docker logs ai-pilot-auth --tail 20 2>&1 || echo "(no logs)"
+            echo "=== AUTH CHECK ==="
+            curl -s http://localhost:3001/api/health || echo "(curl failed)"
 
             # === Веб-чат ===
             echo "🏗 Building web-chat..."
