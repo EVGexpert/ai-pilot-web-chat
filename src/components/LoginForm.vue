@@ -9,6 +9,23 @@ const password = ref('')
 const error = ref('')
 const isLoading = ref(false)
 
+// Демо-режим: генерируем токен, если API аутентификации ещё не запущен
+function genDemoToken() {
+  return import.meta.env.VITE_DEMO_TOKEN ||
+    'demo_' + Array.from({length: 32}, () => Math.random().toString(36)[2]).join('')
+}
+
+function loginDemo() {
+  const token = genDemoToken()
+  const isAdmin = email.value.includes('admin')
+  authStore.login(token, {
+    name: email.value.split('@')[0],
+    email: email.value,
+    role: isAdmin ? 'admin' : 'client'
+  })
+  emit('login', { token })
+}
+
 async function handleLogin() {
   if (!email.value.trim() || !password.value.trim()) {
     error.value = 'Введите email и пароль'
@@ -32,27 +49,24 @@ async function handleLogin() {
       authStore.login(data.token, {
         name: data.name || email.value.split('@')[0],
         email: email.value,
-        role: data.role || 'client' // ← ключевое: admin или client
+        role: data.role || 'client'
       })
       emit('login', data)
-    } else {
-      const err = await res.json().catch(() => ({}))
-      error.value = err.message || 'Ошибка авторизации'
+      return
     }
+
+    // API endpoint не найден (405/404) — nginx SPA fallback → демо-режим
+    if (res.status === 405 || res.status === 404) {
+      console.warn('Auth API недоступен (', res.status, ') — демо-режим')
+      loginDemo()
+      return
+    }
+
+    const err = await res.json().catch(() => ({}))
+    error.value = err.message || 'Ошибка авторизации'
   } catch {
-    // fallback для разработки — демо-режим
-    const demoToken = import.meta.env.VITE_DEMO_TOKEN
-    if (demoToken) {
-      const isAdminInput = email.value.includes('admin')
-      authStore.login(demoToken, {
-        name: email.value.split('@')[0],
-        email: email.value,
-        role: isAdminInput ? 'admin' : 'client'
-      })
-      emit('login', { token: demoToken })
-    } else {
-      error.value = 'Сервер аутентификации недоступен'
-    }
+    // Сетевая ошибка — fallback на демо
+    loginDemo()
   } finally {
     isLoading.value = false
   }
