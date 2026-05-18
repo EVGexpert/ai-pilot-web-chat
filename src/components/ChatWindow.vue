@@ -13,6 +13,9 @@ const props = defineProps({
   }
 })
 
+const showClientHistory = ref(false)
+const currentSiteConversations = computed(() => sitesStore.currentSiteConversations)
+
 const authStore = useAuthStore()
 const sitesStore = useSitesStore()
 const messageInput = ref('')
@@ -153,6 +156,9 @@ watch([messages, streamingContent], async () => {
     <template v-else>
       <div class="chat-header client-header">
         <div class="chat-header-left">
+          <button class="icon-btn" @click="showClientHistory = !showClientHistory" :title="showClientHistory ? 'Скрыть историю' : 'История'">
+            {{ showClientHistory ? '✕' : '☰' }}
+          </button>
           <span class="chat-logo">🎯</span>
           <h2 class="chat-title">AI Pilot</h2>
           <div class="connection-status">
@@ -166,13 +172,33 @@ watch([messages, streamingContent], async () => {
           <button v-if="error" class="reconnect-btn" @click="handleReconnect">
             🔄 Переподключиться
           </button>
+          <button class="icon-btn" @click="authStore.setTheme(authStore.theme === 'dark' ? 'light' : 'dark')" :title="authStore.theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'">
+            {{ authStore.theme === 'dark' ? '☀️' : '🌙' }}
+          </button>
           <button class="logout-btn" @click="handleLogout" title="Выйти">← Выйти</button>
         </div>
       </div>
     </template>
 
+    <!-- История чата (клиент) -->
+    <div v-if="clientMode && showClientHistory" class="client-history">
+      <div class="ch-header">
+        <span class="ch-title">История</span>
+        <span v-if="currentSiteConversations.length" class="ch-count">{{ currentSiteConversations.length }}</span>
+      </div>
+      <div v-if="currentSiteConversations.length === 0" class="ch-empty">
+        Пока нет обращений
+      </div>
+      <div v-else class="ch-list">
+        <div v-for="conv in currentSiteConversations" :key="conv.id" class="ch-item">
+          <div class="ch-item-title">{{ conv.title }}</div>
+          <div class="ch-item-preview">{{ conv.preview }}</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Сообщения -->
-    <div class="messages-area" ref="messagesContainer">
+    <div class="messages-area" :class="{ 'messages-area--with-history': clientMode && showClientHistory }" ref="messagesContainer">
       <div v-if="error && !isConnected" class="error-banner">
         ⚠️ {{ error.message || error }}
       </div>
@@ -321,6 +347,24 @@ watch([messages, streamingContent], async () => {
   white-space: nowrap;
 }
 
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  color: var(--text-secondary);
+}
+.icon-btn:hover {
+  background: var(--bg-hover);
+}
+
 .logout-btn {
   border: none;
   background: transparent;
@@ -335,6 +379,74 @@ watch([messages, streamingContent], async () => {
 .logout-btn:hover {
   background: var(--bg-hover);
   color: var(--color-error);
+}
+
+/* Client history panel */
+.client-history {
+  flex-shrink: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  padding: 12px 20px;
+}
+.ch-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ch-title {
+  font-size: var(--typography-caps-size);
+  font-weight: var(--typography-caps-weight);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-quaternary);
+}
+.ch-count {
+  background: var(--color-primary);
+  color: var(--text-inverse);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0 6px;
+  border-radius: 8px;
+  line-height: 1.6;
+}
+.ch-empty {
+  font-size: var(--typography-body-small);
+  color: var(--text-quaternary);
+  text-align: center;
+  padding: 8px 0;
+}
+.ch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ch-item {
+  padding: 8px 10px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.ch-item:hover {
+  background: var(--bg-hover);
+}
+.ch-item-title {
+  font-size: var(--typography-body-small);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.ch-item-preview {
+  font-size: 11px;
+  color: var(--text-quaternary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.messages-area--with-history {
+  /* reduce top padding since there's history above */
+  padding-top: 8px;
 }
 
 .chat-header-right {
