@@ -1,12 +1,9 @@
-import { nanoid } from 'nanoid'
-import db from '../db.js'
+import { findSitesByUser, findSiteByUserAndUrl, findSiteById, createSite, deleteSite } from '../db.js'
 import { verifyToken } from '../middleware/auth.js'
 
 function authGuard(request, reply) {
   const auth = request.headers.authorization
-  if (!auth?.startsWith('Bearer ')) {
-    return reply.status(401).send({ error: 'Missing token' })
-  }
+  if (!auth?.startsWith('Bearer ')) return reply.status(401).send({ error: 'Missing token' })
   const payload = verifyToken(auth.slice(7))
   if (!payload) return reply.status(401).send({ error: 'Invalid token' })
   request.user = payload
@@ -14,27 +11,19 @@ function authGuard(request, reply) {
 }
 
 export default async function sitesRoutes(app) {
-  // Подключить сайт (через API — из плагина или вручную)
+
+  // Подключить сайт
   app.post('/connect', async (request, reply) => {
     const err = authGuard(request, reply)
     if (err) return err
 
     const { url, apiToken, name } = request.body || {}
+    if (!url || !apiToken) return reply.status(400).send({ error: 'URL сайта и API токен обязательны' })
 
-    if (!url || !apiToken) {
-      return reply.status(400).send({ error: 'URL сайта и API токен обязательны' })
-    }
-
-    // Проверяем что сайт ещё не привязан
-    const existing = db.prepare(
-      'SELECT id FROM sites WHERE user_id = ? AND url = ?'
-    ).get(request.user.sub, url)
-
-    if (existing) {
+    if (findSiteByUserAndUrl(request.user.sub, url)) {
       return reply.status(409).send({ error: 'Сайт уже привязан к вашему аккаунту' })
     }
 
-    // Проверяем плагин через ping
     let siteName = name || url
     let wpVersion = null
     try {
@@ -48,49 +37,23 @@ export default async function sitesRoutes(app) {
       }
     } catch (err) {
       console.error('Site verification failed:', err.message)
-      // Не фатально — сохраняем как непроверенный
     }
 
-    const id = nanoid()
-    db.prepare(
-      'INSERT INTO sites (id, user_id, url, name, api_token, wp_version, verified) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, request.user.sub, url, siteName, apiToken, wpVersion, wpVersion ? 1 : 0)
-
-    return reply.status(201).send({
-      id,
-      url,
-      name: siteName,
-      wpVersion,
-      verified: !!wpVersion
+    const site = createSite({
+      userId: request.user.sub, url, name: siteName, apiToken,
+      wpVersion, verified: wpVersion ? 1 : 0
     })
+
+    return reply.status(201).send({ id: site.id, url, name: siteName, wpVersion, verified: !!wpVersion })
   })
 
-  // Подключить сайт через callback (из плагина — без JWT)
-  app.post('/connect/callback', async (request, reply) => {
-    const { siteUrl, apiToken, tempToken } = request.body || {}
-
-    // tempToken — временный токен, который плагин получает при редиректе
-    // В MVP используем gateway token для проверки
-    if (tempToken !== process.env.GATEWAY_TOKEN) {
-      return reply.status(403).send({ error: 'Invalid temp token' })
-    }
-
-    // Создаём временного пользователя, если ещё нет
-    // (в полноценной версии — редирект на страницу логина)
-    return reply.send({
-      redirect: `${process.env.APP_URL || 'https://pilotsite.ru'}/auth/connect?site=${encodeURIComponent(siteUrl)}&token=${apiToken}`
-    })
-  })
-
-  // Список сайтов пользователя
+  // Список сайтов
   app.get('/', async (request, reply) => {
     const err = authGuard(request, reply)
     if (err) return err
-
-    const sites = db.prepare(
-      'SELECT id, url, name, wp_version, verified, created_at FROM sites WHERE user_id = ? ORDER BY created_at DESC'
-    ).all(request.user.sub)
-
+    const sites = findSitesByUser(request.user.sub).map(s => ({
+      id: s.id, url: s.url, name: s.name, wp_version: s.wp_version, verified: s.verified, created_at: s.created_at
+    }))
     return reply.send({ sites })
   })
 
@@ -98,13 +61,8 @@ export default async function sitesRoutes(app) {
   app.get('/:id', async (request, reply) => {
     const err = authGuard(request, reply)
     if (err) return err
-
-    const site = db.prepare(
-      'SELECT id, url, name, wp_version, verified, created_at FROM sites WHERE id = ? AND user_id = ?'
-    ).get(request.params.id, request.user.sub)
-
-    if (!site) return reply.status(404).send({ error: 'Site not found' })
-
+    const site = findSiteById(request.params.id)
+    if (!site || site.user_id !== request.user.sub) return reply.status(404).send({ error: 'Site not found' })
     return reply.send({ site })
   })
 
@@ -112,15 +70,9 @@ export default async function sitesRoutes(app) {
   app.delete('/:id', async (request, reply) => {
     const err = authGuard(request, reply)
     if (err) return err
-
-    const result = db.prepare(
-      'DELETE FROM sites WHERE id = ? AND user_id = ?'
-    ).run(request.params.id, request.user.sub)
-
-    if (result.changes === 0) {
-      return reply.status(404).send({ error: 'Site not found' })
-    }
-
+    const site = findSiteById(request.params.id)
+    if (!site || site.user_id !== request.user.sub) return reply.status(404).send({ error: 'Site not found' })
+    deleteSite(request.params.id)
     return reply.send({ message: 'Сайт удалён' })
   })
 }
