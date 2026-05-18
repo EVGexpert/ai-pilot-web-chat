@@ -48,14 +48,20 @@ async function handleLogin() {
 
     if (res.ok) {
       const data = await res.json()
+      const userData = data.user || {}
       authStore.login(data.token, {
-        name: data.name || email.value.split('@')[0],
-        email: email.value,
-        role: data.role || 'client'
+        name: userData.name || email.value.split('@')[0],
+        email: userData.email || email.value,
+        role: userData.role || 'client'
       })
       // Передаём сайты из ответа API
       if (data.sites && data.sites.length > 0) {
-        sitesStore.sites.value = data.sites
+        sitesStore.sites.value = data.sites.map(s => ({
+          id: s.url || s.id,
+          name: s.name || s.url,
+          status: 'online',
+          url: s.url
+        }))
       }
       emit('login', data)
       return
