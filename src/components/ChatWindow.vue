@@ -96,6 +96,11 @@ function handleReconnect() {
   connect()
 }
 
+function handleLogout() {
+  disconnect()
+  authStore.logout()
+}
+
 const currentSiteLabel = computed(() =>
   sitesStore.currentSite?.name || 'Не выбран'
 )
@@ -152,12 +157,16 @@ watch([messages, streamingContent], async () => {
           <h2 class="chat-title">AI Pilot</h2>
           <div class="connection-status">
             <span class="status-dot" :class="{ 'status-dot--online': isConnected }"></span>
+            <span v-if="sitesStore.currentSite" class="client-site">
+              🟢 {{ sitesStore.currentSite.name }}
+            </span>
           </div>
         </div>
         <div class="chat-header-right">
           <button v-if="error" class="reconnect-btn" @click="handleReconnect">
             🔄 Переподключиться
           </button>
+          <button class="logout-btn" @click="handleLogout" title="Выйти">← Выйти</button>
         </div>
       </div>
     </template>
@@ -301,6 +310,31 @@ watch([messages, streamingContent], async () => {
 .status-text {
   font-size: var(--typography-body-small);
   color: var(--text-quaternary);
+}
+
+.client-site {
+  font-size: var(--typography-body-small);
+  color: var(--text-secondary);
+  padding: 2px 10px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.logout-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--typography-body-small);
+  padding: 6px 10px;
+  border-radius: var(--border-radius-sm);
+  transition: all 0.12s;
+}
+.logout-btn:hover {
+  background: var(--bg-hover);
+  color: var(--color-error);
 }
 
 .chat-header-right {
