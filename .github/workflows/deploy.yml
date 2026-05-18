@@ -19,12 +19,13 @@ jobs:
             cd ~/ai-pilot-web-chat
             git pull origin main
 
-            # Собираем и запускаем
-            docker compose build
-            docker compose down --remove-orphans
-            docker compose up -d
+            # Пробуем docker compose v2, если нет — docker-compose v1
+            DC=$(command -v docker-compose || echo "docker compose")
 
-            # Чистим старые образы
+            $DC build
+            $DC down --remove-orphans
+            $DC up -d
+
             docker image prune -f
 
             echo "✅ Deploy complete: $(date)"
