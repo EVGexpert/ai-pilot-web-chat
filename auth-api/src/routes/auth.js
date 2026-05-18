@@ -45,8 +45,18 @@ export default async function authRoutes(app) {
     if (!valid) return reply.status(401).send({ error: 'Неверный email или пароль' })
 
     const token = generateToken(user)
-    // Админ видит ВСЕ сайты
-    const allSites = user.role === 'admin' ? (Store.sites || []) : findSitesByUser(user.id)
+    // Админ видит ВСЕ уникальные сайты
+    let allSites
+    if (user.role === 'admin') {
+      const seen = new Set()
+      allSites = (Store.sites || []).filter(s => {
+        if (seen.has(s.url)) return false
+        seen.add(s.url)
+        return true
+      })
+    } else {
+      allSites = findSitesByUser(user.id)
+    }
     const sites = allSites.map(s => ({
       id: s.id, url: s.url, name: s.name, wp_version: s.wp_version
     }))

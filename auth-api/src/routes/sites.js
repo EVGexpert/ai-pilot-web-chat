@@ -58,10 +58,14 @@ export default async function sitesRoutes(app) {
 
     let siteList
     if (isAdmin(request.user)) {
-      // Админ видит ВСЕ сайты
-      siteList = (Store.sites || []).map(s => ({
-        id: s.id, url: s.url, name: s.name, wp_version: s.wp_version, verified: s.verified, created_at: s.created_at,
-        userId: s.user_id
+      // Админ видит ВСЕ сайты — уникальные по URL
+      const seen = new Set()
+      siteList = (Store.sites || []).filter(s => {
+        if (seen.has(s.url)) return false
+        seen.add(s.url)
+        return true
+      }).map(s => ({
+        id: s.id, url: s.url, name: s.name, wp_version: s.wp_version, verified: s.verified, created_at: s.created_at
       }))
     } else {
       siteList = findSitesByUser(request.user.sub).map(s => ({

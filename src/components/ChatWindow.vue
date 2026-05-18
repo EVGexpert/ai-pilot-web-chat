@@ -130,141 +130,109 @@ watch([messages, streamingContent], async () => {
 </script>
 
 <template>
-  <div class="chat-window">
-    <!-- Шапка чата (админ) -->
-    <template v-if="!clientMode">
-      <div class="chat-header">
-        <div class="chat-header-left">
-          <h2 class="chat-title">Мой чат</h2>
-          <div class="connection-status">
-            <span class="status-dot" :class="{ 'status-dot--online': isConnected }"></span>
-            <span class="status-text">{{ isConnected ? 'Подключено' : 'Нет соединения' }}</span>
-          </div>
-        </div>
-        <div class="chat-header-right">
-          <div class="current-site-badge" v-if="sitesStore.currentSite">
-            🟢 <span>{{ sitesStore.currentSite.name }}</span>
-          </div>
-          <button v-if="error" class="reconnect-btn" @click="handleReconnect">
-            🔄 Переподключиться
-          </button>
+  <!-- АДМИН: шапка + сообщения + ввод -->
+  <div v-if="!clientMode" class="chat-window">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <h2 class="chat-title">Мой чат</h2>
+        <div class="connection-status">
+          <span class="status-dot" :class="{ 'status-dot--online': isConnected }"></span>
+          <span class="status-text">{{ isConnected ? 'Подключено' : 'Нет соединения' }}</span>
         </div>
       </div>
-    </template>
-
-    <!-- Шапка чата (клиент) -->
-    <template v-else>
-      <div class="chat-header client-header">
-        <div class="chat-header-left">
-          <button class="icon-btn" @click="showClientHistory = !showClientHistory" :title="showClientHistory ? 'Скрыть историю' : 'История'">
-            {{ showClientHistory ? '✕' : '☰' }}
-          </button>
-          <span class="chat-logo">🎯</span>
-          <h2 class="chat-title">AI Pilot</h2>
-          <div class="connection-status">
-            <span class="status-dot" :class="{ 'status-dot--online': isConnected }"></span>
-            <span v-if="sitesStore.currentSite" class="client-site">
-              🟢 {{ sitesStore.currentSite.name }}
-            </span>
-          </div>
+      <div class="chat-header-right">
+        <div class="current-site-badge" v-if="sitesStore.currentSite">
+          🟢 <span>{{ sitesStore.currentSite.name }}</span>
         </div>
-        <div class="chat-header-right">
-          <button v-if="error" class="reconnect-btn" @click="handleReconnect">
-            🔄 Переподключиться
-          </button>
-          <button class="icon-btn" @click="authStore.setTheme(authStore.theme === 'dark' ? 'light' : 'dark')" :title="authStore.theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'">
-            {{ authStore.theme === 'dark' ? '☀️' : '🌙' }}
-          </button>
-          <button class="logout-btn" @click="handleLogout" title="Выйти">← Выйти</button>
-        </div>
-      </div>
-    </template>
-
-    <!-- История чата (клиент) -->
-    <div v-if="clientMode && showClientHistory" class="client-history">
-      <div class="ch-header">
-        <span class="ch-title">История</span>
-        <span v-if="currentSiteConversations.length" class="ch-count">{{ currentSiteConversations.length }}</span>
-      </div>
-      <div v-if="currentSiteConversations.length === 0" class="ch-empty">
-        Пока нет обращений
-      </div>
-      <div v-else class="ch-list">
-        <div v-for="conv in currentSiteConversations" :key="conv.id" class="ch-item">
-          <div class="ch-item-title">{{ conv.title }}</div>
-          <div class="ch-item-preview">{{ conv.preview }}</div>
-        </div>
+        <button v-if="error" class="reconnect-btn" @click="handleReconnect">🔁</button>
       </div>
     </div>
-
-    <!-- Сообщения -->
-    <div class="messages-area" :class="{ 'messages-area--with-history': clientMode && showClientHistory }" ref="messagesContainer">
-      <div v-if="error && !isConnected" class="error-banner">
-        ⚠️ {{ error.message || error }}
-      </div>
-
+    <div class="messages-area" ref="messagesContainer">
+      <div v-if="error && !isConnected" class="error-banner">⚠️ {{ error.message || error }}</div>
       <div v-if="!isConnected && !error" class="connecting">
-        <div class="connecting-spinner"></div>
-        <p>Подключаюсь к серверу...</p>
+        <div class="connecting-spinner"></div><p>Подключаюсь к серверу...</p>
       </div>
-
-      <!-- Приветствие для незалогиненного (обычно не покажется, но на всякий) -->
-      <div v-if="messages.length === 0 && isConnected && clientMode" class="chat-start">
-        <div class="start-logo">🎯</div>
-        <p class="start-title">Чем могу помочь?</p>
-        <p class="start-hint">
-          Я AI-ассистент вашего сайта.<br/>
-          <span class="start-examples">Могу обновить контент, добавить страницы, настроить плагины и многое другое.</span>
-        </p>
-      </div>
-
-      <div v-if="messages.length === 0 && isConnected && !clientMode" class="chat-start">
+      <div v-if="messages.length === 0 && isConnected" class="chat-start">
         <div class="start-logo">🎯</div>
         <p class="start-title">Добро пожаловать в AI Pilot</p>
-        <p class="start-hint">
-          Напишите, что нужно сделать с сайтом<br/>
-          <span class="start-examples">Например: «обнови заголовок на главной» или «добавь страницу контактов»</span>
-        </p>
+        <p class="start-hint">Напишите, что нужно сделать с сайтом</p>
       </div>
-
-      <MessageBubble
-        v-for="msg in messages"
-        :key="msg.id"
-        :message="msg"
-      />
-
+      <MessageBubble v-for="msg in messages" :key="msg.id" :message="msg" />
       <div v-if="streamingContent" class="streaming-bubble">
         <div class="bubble-avatar">🤖</div>
         <div class="streaming-text">{{ streamingContent }}</div>
       </div>
-
       <TypingIndicator v-if="isLoading && !streamingContent" />
     </div>
-
-    <!-- Поле ввода -->
     <div class="chat-footer">
       <div class="input-wrapper">
-        <textarea
-          v-model="messageInput"
-          class="chat-input"
-          :placeholder="isConnected ? 'Напишите сообщение...' : 'Нет соединения с сервером...'"
-          @keydown.enter.prevent="handleSend"
-          :disabled="!isConnected"
-          rows="1"
-          ref="textareaRef"
-          @input="autoResize"
-        ></textarea>
-        <button
-          class="send-btn"
-          :class="{ 'send-btn--active': messageInput.trim() && isConnected }"
-          :disabled="!isConnected || !messageInput.trim()"
-          @click="handleSend"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
+        <textarea v-model="messageInput" class="chat-input" placeholder="Напишите сообщение..." @keydown.enter.prevent="handleSend" :disabled="!isConnected" rows="1" ref="textareaRef" @input="autoResize"></textarea>
+        <button class="send-btn" :class="{ 'send-btn--active': messageInput.trim() && isConnected }" :disabled="!isConnected || !messageInput.trim()" @click="handleSend">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- КЛИЕНТ: сайдбар слева + чат справа -->
+  <div v-else class="client-layout">
+    <aside class="client-sidebar">
+      <div class="cs-brand">
+        <span class="cs-logo">🎯</span>
+        <span class="cs-title">AI Pilot</span>
+      </div>
+      <div class="cs-site" v-if="sitesStore.currentSite">
+        <span class="cs-site-dot">🟢</span>
+        <span class="cs-site-name">{{ sitesStore.currentSite.name }}</span>
+      </div>
+      <div class="cs-divider"></div>
+      <div class="cs-section-title">История</div>
+      <div class="cs-history">
+        <div v-if="currentSiteConversations.length === 0" class="cs-empty">Нет обращений</div>
+        <div v-for="conv in currentSiteConversations" :key="conv.id" class="cs-conv">
+          <div class="cs-conv-title">{{ conv.title }}</div>
+          <div class="cs-conv-preview">{{ conv.preview }}</div>
+        </div>
+      </div>
+      <div class="cs-footer">
+        <button class="cs-theme-btn" @click="authStore.setTheme(authStore.theme === 'dark' ? 'light' : 'dark')">
+          {{ authStore.theme === 'dark' ? '☀️' : '🌙' }}
+        </button>
+        <button class="cs-logout-btn" @click="handleLogout">← Выйти</button>
+      </div>
+    </aside>
+    <div class="client-main">
+      <div class="chat-header">
+        <div class="connection-status">
+          <span class="status-dot" :class="{ 'status-dot--online': isConnected }"></span>
+          <span class="status-text">{{ isConnected ? 'Подключено' : 'Нет соединения' }}</span>
+        </div>
+        <button v-if="error" class="reconnect-btn" @click="handleReconnect">🔁</button>
+      </div>
+      <div class="messages-area" ref="messagesContainer">
+        <div v-if="error && !isConnected" class="error-banner">⚠️ {{ error.message || error }}</div>
+        <div v-if="!isConnected && !error" class="connecting">
+          <div class="connecting-spinner"></div><p>Подключаюсь к серверу...</p>
+        </div>
+        <div v-if="messages.length === 0 && isConnected" class="chat-start">
+          <div class="start-logo">🎯</div>
+          <p class="start-title">Чем могу помочь?</p>
+          <p class="start-hint">Я AI-ассистент вашего сайта.</p>
+        </div>
+        <MessageBubble v-for="msg in messages" :key="msg.id" :message="msg" />
+        <div v-if="streamingContent" class="streaming-bubble">
+          <div class="bubble-avatar">🤖</div>
+          <div class="streaming-text">{{ streamingContent }}</div>
+        </div>
+        <TypingIndicator v-if="isLoading && !streamingContent" />
+      </div>
+      <div class="chat-footer">
+        <div class="input-wrapper">
+          <textarea v-model="messageInput" class="chat-input" placeholder="Напишите сообщение..." @keydown.enter.prevent="handleSend" :disabled="!isConnected" rows="1" ref="textareaRef" @input="autoResize"></textarea>
+          <button class="send-btn" :class="{ 'send-btn--active': messageInput.trim() && isConnected }" :disabled="!isConnected || !messageInput.trim()" @click="handleSend">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -347,22 +315,124 @@ watch([messages, streamingContent], async () => {
   white-space: nowrap;
 }
 
-.icon-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: 16px;
+/* Client layout (sidebar + chat) */
+.client-layout {
+  height: 100%;
+  display: flex;
+  width: 100%;
+}
+.client-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.cs-brand {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 20px 16px 12px;
+}
+.cs-logo { font-size: 22px; line-height: 1; }
+.cs-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.cs-site {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: var(--typography-body-small);
+  color: var(--text-secondary);
+}
+.cs-site-dot { font-size: 10px; }
+.cs-site-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-divider { height: 1px; background: var(--border-color); margin: 8px 12px; }
+.cs-section-title {
+  font-size: var(--typography-caps-size);
+  font-weight: var(--typography-caps-weight);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-quaternary);
+  padding: 4px 16px 8px;
+}
+.cs-history {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px;
+}
+.cs-empty {
+  font-size: var(--typography-body-small);
+  color: var(--text-quaternary);
+  text-align: center;
+  padding: 20px 8px;
+}
+.cs-conv {
+  padding: 10px 8px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.cs-conv:hover { background: var(--bg-hover); }
+.cs-conv-title {
+  font-size: var(--typography-body-small);
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-conv-preview {
+  font-size: 11px;
+  color: var(--text-quaternary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+.cs-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cs-theme-btn {
+  width: 32px; height: 32px;
+  border: none; background: transparent;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
   transition: background 0.12s;
   color: var(--text-secondary);
 }
-.icon-btn:hover {
-  background: var(--bg-hover);
+.cs-theme-btn:hover { background: var(--bg-hover); }
+.cs-logout-btn {
+  border: none; background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer; font-family: var(--font-family);
+  font-size: var(--typography-body-small);
+  padding: 6px 10px; border-radius: var(--border-radius-sm);
+  transition: all 0.12s;
+}
+.cs-logout-btn:hover { background: var(--bg-hover); color: var(--color-error); }
+
+.client-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.chat-header:has(.connection-status) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  background: var(--bg-primary);
 }
 
 .logout-btn {
@@ -379,74 +449,6 @@ watch([messages, streamingContent], async () => {
 .logout-btn:hover {
   background: var(--bg-hover);
   color: var(--color-error);
-}
-
-/* Client history panel */
-.client-history {
-  flex-shrink: 0;
-  max-height: 200px;
-  overflow-y: auto;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  padding: 12px 20px;
-}
-.ch-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.ch-title {
-  font-size: var(--typography-caps-size);
-  font-weight: var(--typography-caps-weight);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-quaternary);
-}
-.ch-count {
-  background: var(--color-primary);
-  color: var(--text-inverse);
-  font-size: 10px;
-  font-weight: 600;
-  padding: 0 6px;
-  border-radius: 8px;
-  line-height: 1.6;
-}
-.ch-empty {
-  font-size: var(--typography-body-small);
-  color: var(--text-quaternary);
-  text-align: center;
-  padding: 8px 0;
-}
-.ch-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.ch-item {
-  padding: 8px 10px;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.ch-item:hover {
-  background: var(--bg-hover);
-}
-.ch-item-title {
-  font-size: var(--typography-body-small);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.ch-item-preview {
-  font-size: 11px;
-  color: var(--text-quaternary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.messages-area--with-history {
-  /* reduce top padding since there's history above */
-  padding-top: 8px;
 }
 
 .chat-header-right {
