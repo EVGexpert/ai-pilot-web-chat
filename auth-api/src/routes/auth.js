@@ -1,5 +1,5 @@
-import bcrypt from 'bcrypt'
 import { nanoid } from 'nanoid'
+import { hashPassword, verifyPassword } from '../password.js'
 import db from '../db.js'
 import { generateToken } from '../middleware/auth.js'
 import { sendVerificationEmail } from '../email.js'
@@ -24,7 +24,7 @@ export default async function authRoutes(app) {
     }
 
     const id = nanoid()
-    const passwordHash = await bcrypt.hash(password, 12)
+    const passwordHash = await hashPassword(password)
 
     db.prepare(
       'INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)'
@@ -67,7 +67,7 @@ export default async function authRoutes(app) {
       return reply.status(401).send({ error: 'Неверный email или пароль' })
     }
 
-    const valid = await bcrypt.compare(password, user.password_hash)
+    const valid = await verifyPassword(password, user.password_hash)
     if (!valid) {
       return reply.status(401).send({ error: 'Неверный email или пароль' })
     }
