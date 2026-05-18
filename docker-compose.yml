@@ -29,8 +29,8 @@ services:
     environment:
       - TZ=Europe/Kaliningrad
       - PORT=3001
-      - JWT_SECRET=${AIPILOT_JWT_SECRET}
-      - GATEWAY_TOKEN=${AIPILOT_GATEWAY_TOKEN}
+      - JWT_SECRET=${AIPILOT_JWT_SECRET:-dev-jwt-secret-not-for-production}
+      - GATEWAY_TOKEN=${AIPILOT_GATEWAY_TOKEN:-dev-gateway-token}
       - GATEWAY_WS=ws://host.docker.internal:18789
       - APP_URL=https://pilotsite.ru
       - DATABASE_PATH=./data/aipilot.db

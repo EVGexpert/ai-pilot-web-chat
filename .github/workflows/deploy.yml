@@ -19,17 +19,10 @@ jobs:
             cd ~/ai-pilot-web-chat
             git pull origin main
 
-            # Создаём .env если нет
-            if [ ! -f .env ]; then
-              cat > .env << 'ENVEOF'
-            AIPILOT_JWT_SECRET=${{ secrets.AIPILOT_JWT_SECRET }}
-            AIPILOT_GATEWAY_TOKEN=${{ secrets.AIPILOT_GATEWAY_TOKEN }}
-            ENVEOF
-            fi
-
             # Собираем и запускаем
-            docker compose build --pull
-            docker compose up -d --remove-orphans
+            docker compose build
+            docker compose down --remove-orphans
+            docker compose up -d
 
             # Чистим старые образы
             docker image prune -f
