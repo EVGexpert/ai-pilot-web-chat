@@ -1,16 +1,48 @@
 <script setup>
-import { ref } from 'vue'
-import LoginForm from './components/LoginForm.vue'
-import ChatWindow from './components/ChatWindow.vue'
+import { onMounted } from 'vue'
 import { useAuthStore } from './stores/authStore'
+import { useSitesStore } from './stores/sitesStore'
+import LoginForm from './components/LoginForm.vue'
+import AppSidebar from './components/AppSidebar.vue'
+import ChatWindow from './components/ChatWindow.vue'
+import HistoryPanel from './components/HistoryPanel.vue'
 
 const authStore = useAuthStore()
+const sitesStore = useSitesStore()
+
+onMounted(() => {
+  authStore.initTheme()
+  if (authStore.isAuthenticated) {
+    sitesStore.fetchSites()
+  }
+})
+
+function handleLogin() {
+  sitesStore.fetchSites()
+}
 </script>
 
 <template>
   <div class="app-container">
-    <LoginForm v-if="!authStore.isAuthenticated" />
-    <ChatWindow v-else />
+    <LoginForm v-if="!authStore.isAuthenticated" @login="handleLogin" />
+
+    <!-- 👑 Суперадмин: сайдбар + чат/история -->
+    <template v-else-if="authStore.isAdmin">
+      <AppSidebar />
+      <main class="main-area">
+        <Transition name="slide-fade" mode="out-in">
+          <ChatWindow v-if="sitesStore.activeView === 'chat'" key="chat" />
+          <HistoryPanel v-else key="history" />
+        </Transition>
+      </main>
+    </template>
+
+    <!-- 👤 Клиент: только чат, без сайдбара -->
+    <template v-else>
+      <main class="main-area client-main">
+        <ChatWindow :clientMode="true" />
+      </main>
+    </template>
   </div>
 </template>
 
@@ -18,7 +50,18 @@ const authStore = useAuthStore()
 .app-container {
   height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.main-area {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.client-main {
+  /* Клиентский чат на всю ширину — сайдбар скрыт */
 }
 </style>
