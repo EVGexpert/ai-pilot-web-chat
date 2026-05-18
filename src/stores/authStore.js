@@ -6,6 +6,9 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(JSON.parse(localStorage.getItem('aipilot_user') || 'null'))
   const theme = ref(localStorage.getItem('aipilot_theme') || 'light')
 
+  // Gateway токен — из env (встраивается при сборке)
+  const gatewayToken = ref(import.meta.env.VITE_GATEWAY_TOKEN || '')
+
   const isAuthenticated = computed(() => !!token.value)
   const userName = computed(() => user.value?.name || '')
   const isAdmin = computed(() => user.value?.role === 'admin')
@@ -36,5 +39,5 @@ export const useAuthStore = defineStore('auth', () => {
     document.documentElement.setAttribute('data-theme', theme.value)
   }
 
-  return { token, user, theme, isAuthenticated, userName, isAdmin, login, logout, setTheme, initTheme }
+  return { token, user, theme, gatewayToken, isAuthenticated, userName, isAdmin, login, logout, setTheme, initTheme }
 })

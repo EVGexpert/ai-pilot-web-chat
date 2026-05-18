@@ -34,7 +34,7 @@ function connect() {
   client = createGatewayClient({
     gateway: gatewayWs,
     httpBase,
-    token: authStore.token,
+    token: authStore.gatewayToken,
     onConnected: () => {
       isConnected.value = true
       error.value = null
