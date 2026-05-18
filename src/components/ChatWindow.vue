@@ -5,6 +5,7 @@ import { useSitesStore } from '../stores/sitesStore'
 import { createGatewayClient } from '../api/gatewayClient'
 import MessageArea from './MessageArea.vue'
 import ChatInput from './ChatInput.vue'
+import ThemeToggle from './ThemeToggle.vue'
 
 const props = defineProps({ clientMode: { type: Boolean, default: false } })
 
@@ -104,6 +105,7 @@ watch([messages, streamingContent], async () => {
         </div>
       </div>
       <div class="cs-footer">
+        <ThemeToggle />
         <button class="cs-logout-btn" @click="handleLogout">← Выйти</button>
       </div>
     </aside>

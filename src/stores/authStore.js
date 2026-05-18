@@ -32,11 +32,24 @@ export const useAuthStore = defineStore('auth', () => {
   function setTheme(newTheme) {
     theme.value = newTheme
     localStorage.setItem('aipilot_theme', newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme)
+    applyTheme(newTheme)
+  }
+
+  function applyTheme(mode) {
+    if (mode === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
+      document.documentElement.setAttribute('data-theme', prefersDark.matches ? 'dark' : 'light')
+      // Слушаем изменения системной темы
+      prefersDark.addEventListener('change', (e) => {
+        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light')
+      }, { once: true })
+    } else {
+      document.documentElement.setAttribute('data-theme', mode)
+    }
   }
 
   function initTheme() {
-    document.documentElement.setAttribute('data-theme', theme.value)
+    applyTheme(theme.value)
   }
 
   return { token, user, theme, gatewayToken, isAuthenticated, userName, isAdmin, login, logout, setTheme, initTheme }

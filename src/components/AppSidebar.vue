@@ -1,6 +1,7 @@
 <script setup>
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
+import ThemeToggle from './ThemeToggle.vue'
 
 const authStore = useAuthStore()
 const sitesStore = useSitesStore()
@@ -12,10 +13,6 @@ const siteStatusIcon = (status) => {
     case 'pending': return '⏳'
     default: return '⚪'
   }
-}
-
-function toggleTheme() {
-  authStore.setTheme(authStore.theme === 'dark' ? 'light' : 'dark')
 }
 
 function handleLogout() {
@@ -32,10 +29,7 @@ function handleLogout() {
         <span class="sidebar-logo">🎯</span>
         <span class="sidebar-title">AI Pilot</span>
       </div>
-      <button class="theme-btn" @click="toggleTheme" :title="authStore.theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'">
-        <svg v-if="authStore.theme === 'dark'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
+      <ThemeToggle />
     </div>
 
     <!-- Список сайтов -->
@@ -147,15 +141,7 @@ function handleLogout() {
 }
 .sidebar-icon-btn:hover { background: var(--bg-hover); }
 
-.theme-btn {
-  width: 36px; height: 36px;
-  border: none; background: transparent;
-  border-radius: var(--border-radius-sm); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--color-primary); transition: all 0.15s;
-}
-.theme-btn:hover { background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
-.theme-btn svg { display: block; }
+
 
 /* Секции */
 .sidebar-section {
