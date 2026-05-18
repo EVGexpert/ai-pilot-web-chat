@@ -1,4 +1,4 @@
-import { findSitesByUser, findSiteByUserAndUrl, findSiteById, createSite, deleteSite } from '../db.js'
+import { findSitesByUser, findSiteByUserAndUrl, findSiteById, findUserById, createSite, deleteSite, Store } from '../db.js'
 import { verifyToken } from '../middleware/auth.js'
 
 function authGuard(request, reply) {
@@ -8,6 +8,10 @@ function authGuard(request, reply) {
   if (!payload) return reply.status(401).send({ error: 'Invalid token' })
   request.user = payload
   return null
+}
+
+function isAdmin(payload) {
+  return payload?.role === 'admin'
 }
 
 export default async function sitesRoutes(app) {
@@ -51,10 +55,20 @@ export default async function sitesRoutes(app) {
   app.get('/', async (request, reply) => {
     const err = authGuard(request, reply)
     if (err) return err
-    const sites = findSitesByUser(request.user.sub).map(s => ({
-      id: s.id, url: s.url, name: s.name, wp_version: s.wp_version, verified: s.verified, created_at: s.created_at
-    }))
-    return reply.send({ sites })
+
+    let siteList
+    if (isAdmin(request.user)) {
+      // Админ видит ВСЕ сайты
+      siteList = (Store.sites || []).map(s => ({
+        id: s.id, url: s.url, name: s.name, wp_version: s.wp_version, verified: s.verified, created_at: s.created_at,
+        userId: s.user_id
+      }))
+    } else {
+      siteList = findSitesByUser(request.user.sub).map(s => ({
+        id: s.id, url: s.url, name: s.name, wp_version: s.wp_version, verified: s.verified, created_at: s.created_at
+      }))
+    }
+    return reply.send({ sites: siteList })
   })
 
   // Информация о сайте

@@ -6,7 +6,7 @@ export function generateToken(user) {
     {
       sub: user.id,
       email: user.email,
-      role: 'client'
+      role: user.role || 'client'
     },
     config.JWT_SECRET,
     { expiresIn: config.JWT_EXPIRES_IN }

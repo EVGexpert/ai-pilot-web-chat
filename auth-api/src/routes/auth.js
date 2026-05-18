@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid'
 import { hashPassword, verifyPassword } from '../password.js'
 import { findUserByEmail, findUserById, createUser, updateUser,
          createVerification, findVerification, deleteVerificationsByUser,
-         findSitesByUser, findSiteByUserAndUrl, findSiteById, createSite, deleteSite } from '../db.js'
+         findSitesByUser, findSiteByUserAndUrl, findSiteById, createSite, deleteSite, Store } from '../db.js'
 import { generateToken } from '../middleware/auth.js'
 import { sendVerificationEmail } from '../email.js'
 
@@ -45,7 +45,9 @@ export default async function authRoutes(app) {
     if (!valid) return reply.status(401).send({ error: 'Неверный email или пароль' })
 
     const token = generateToken(user)
-    const sites = findSitesByUser(user.id).map(s => ({
+    // Админ видит ВСЕ сайты
+    const allSites = user.role === 'admin' ? (Store.sites || []) : findSitesByUser(user.id)
+    const sites = allSites.map(s => ({
       id: s.id, url: s.url, name: s.name, wp_version: s.wp_version
     }))
 

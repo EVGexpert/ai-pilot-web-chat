@@ -99,3 +99,5 @@ export function createChatSession({ userId, siteId, title }) {
   save()
   return s
 }
+
+export { Store }
