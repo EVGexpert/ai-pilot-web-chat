@@ -19,45 +19,19 @@ jobs:
             cd ~/ai-pilot-web-chat
             git pull origin main
 
-            # === Auth API — через Docker, с проверкой ошибок ===
-            echo "🏗 Building auth-api..."
-            docker build -t ai-pilot-auth auth-api/ 2>&1
-            echo "🧹 Cleaning old auth container..."
-            docker rm -f ai-pilot-auth 2>/dev/null || true
-            echo "🚀 Starting auth-api..."
-            # Пробуем запустить и сразу проверяем, жив ли
-            docker run -d --name ai-pilot-auth \
-              --restart unless-stopped \
-              --add-host host.docker.internal:host-gateway \
-              -p 127.0.0.1:3001:3001 \
-              -v "$(pwd)/auth-data:/app/data" \
-              -e PORT=3001 \
-              -e JWT_SECRET=dev-jwt-secret-change-in-production \
-              -e GATEWAY_TOKEN=dev-gateway-token \
-              -e GATEWAY_WS=ws://host.docker.internal:18789 \
-              -e APP_URL=https://pilotsite.ru \
-              ai-pilot-auth
-            sleep 2
-            echo "=== CHECK ==="
-            if docker ps --filter name=ai-pilot-auth --format "{{.Status}}" | grep -q Up; then
-              echo "✅ Auth API is UP"
-              curl -s http://localhost:3001/api/health || echo "curl failed"
-            else
-              echo "❌ Auth API is DOWN — showing logs:"
-              docker logs ai-pilot-auth --tail 30 2>&1 || true
-              docker ps -a --filter name=ai-pilot-auth --format "{{.Status}} {{.ID}}" || true
-            fi
-
-            # === Веб-чат ===
-            echo "🏗 Building web-chat..."
             docker build -t ai-pilot-chat .
             docker rm -f ai-pilot-chat 2>/dev/null || true
-            echo "🚀 Starting web-chat..."
             docker run -d \
               --name ai-pilot-chat \
               --restart unless-stopped \
               --add-host host.docker.internal:host-gateway \
               -p 127.0.0.1:3000:80 \
+              -v "$(pwd)/auth-data:/app/auth/data" \
+              -e PORT=3001 \
+              -e JWT_SECRET=dev-jwt-secret-change-in-production \
+              -e GATEWAY_TOKEN=dev-gateway-token \
+              -e GATEWAY_WS=ws://host.docker.internal:18789 \
+              -e APP_URL=https://pilotsite.ru \
               ai-pilot-chat
 
             docker image prune -f
