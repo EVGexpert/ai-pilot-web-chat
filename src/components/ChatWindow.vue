@@ -86,7 +86,13 @@ watch([messages, streamingContent], async () => {
   <!-- КЛИЕНТ: сайдбар + хедер + сообщения + ввод -->
   <div v-else class="client-layout">
     <aside class="client-sidebar">
-      <div class="cs-brand"><span class="cs-logo">🎯</span><span class="cs-title">AI Pilot</span></div>
+      <div class="cs-header">
+        <div class="cs-brand"><span class="cs-logo">🎯</span><span class="cs-title">AI Pilot</span></div>
+        <button class="cs-theme-btn" @click="authStore.setTheme(authStore.theme === 'dark' ? 'light' : 'dark')" :title="authStore.theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'">
+          <svg v-if="authStore.theme === 'dark'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
       <div v-if="sitesStore.currentSite" class="cs-site">🟢 {{ sitesStore.currentSite.name }}</div>
       <div class="cs-divider"></div>
       <div class="cs-section-title">История</div>
@@ -98,7 +104,6 @@ watch([messages, streamingContent], async () => {
         </div>
       </div>
       <div class="cs-footer">
-        <button class="cs-theme-btn" @click="authStore.setTheme(authStore.theme === 'dark' ? 'light' : 'dark')">{{ authStore.theme === 'dark' ? '☀️' : '🌙' }}</button>
         <button class="cs-logout-btn" @click="handleLogout">← Выйти</button>
       </div>
     </aside>
@@ -155,9 +160,18 @@ watch([messages, streamingContent], async () => {
   width: 220px; flex-shrink: 0; background: var(--bg-sidebar);
   border-right: 1px solid var(--border-color); display: flex; flex-direction: column;
 }
-.cs-brand { display: flex; align-items: center; gap: 8px; padding: 20px 16px 12px; }
+.cs-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 12px 12px 16px; }
+.cs-brand { display: flex; align-items: center; gap: 8px; }
 .cs-logo { font-size: 22px; }
 .cs-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.cs-theme-btn {
+  width: 32px; height: 32px; border: none; background: transparent;
+  border-radius: var(--border-radius-sm); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-primary); transition: all 0.15s;
+}
+.cs-theme-btn:hover { background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
+.cs-theme-btn svg { display: block; }
 .cs-site { padding: 8px 16px; font-size: var(--typography-body-small); color: var(--text-secondary); }
 .cs-divider { height: 1px; background: var(--border-color); margin: 8px 12px; }
 .cs-section-title {
