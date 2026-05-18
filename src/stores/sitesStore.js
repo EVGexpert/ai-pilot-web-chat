@@ -17,6 +17,12 @@ export const useSitesStore = defineStore('sites', () => {
       : []
   )
 
+  const DEMO_SITES = [
+    { id: 'pilotsite.ru', name: 'pilotsite.ru', status: 'online', url: 'https://pilotsite.ru' },
+    { id: 'client1.ru', name: 'client1.ru', status: 'online', url: 'https://client1.ru' },
+    { id: 'client2.ru', name: 'client2.ru', status: 'pending', url: 'https://client2.ru' },
+  ]
+
   async function fetchSites() {
     try {
       const token = localStorage.getItem('aipilot_token')
@@ -24,14 +30,16 @@ export const useSitesStore = defineStore('sites', () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
-        sites.value = await res.json()
+        const data = await res.json()
+        sites.value = data.length > 0 ? data : DEMO_SITES
+      } else {
+        // API пока не настроен — показываем демо-данные
+        console.warn('API /api/sites вернул', res.status, '— показываю демо')
+        sites.value = DEMO_SITES
       }
     } catch (e) {
       console.warn('Не удалось загрузить сайты:', e)
-      // Пока заглушка
-      sites.value = [
-        { id: 'pilotsite.ru', name: 'pilotsite.ru', status: 'online', url: 'https://pilotsite.ru' }
-      ]
+      sites.value = DEMO_SITES
     }
   }
 
@@ -41,6 +49,33 @@ export const useSitesStore = defineStore('sites', () => {
     fetchClientHistory(id)
   }
 
+  const DEMO_CONVERSATIONS = [
+    {
+      id: 'conv-1',
+      siteId: 'pilotsite.ru',
+      title: 'Дизайн главной страницы',
+      preview: 'Нужно обновить шапку сайта и добавить новый блок с преимуществами...',
+      lastMessage: '2026-05-18T05:30:00Z',
+      unread: 2
+    },
+    {
+      id: 'conv-2',
+      siteId: 'pilotsite.ru',
+      title: 'Проблема с плагином',
+      preview: 'После обновления перестал работать контактный формуляр...',
+      lastMessage: '2026-05-17T14:20:00Z',
+      unread: 0
+    },
+    {
+      id: 'conv-3',
+      siteId: 'client1.ru',
+      title: 'Добавить страницу услуг',
+      preview: 'Нужно создать новую страницу с перечнем услуг и ценами...',
+      lastMessage: '2026-05-16T09:15:00Z',
+      unread: 1
+    },
+  ]
+
   async function fetchClientHistory(siteId) {
     try {
       const token = localStorage.getItem('aipilot_token')
@@ -48,29 +83,14 @@ export const useSitesStore = defineStore('sites', () => {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
-        clientConversations.value = await res.json()
+        const data = await res.json()
+        clientConversations.value = data.length > 0 ? data : DEMO_CONVERSATIONS.filter(c => c.siteId === siteId)
+      } else {
+        clientConversations.value = DEMO_CONVERSATIONS.filter(c => c.siteId === siteId)
       }
     } catch (e) {
       console.warn('Не удалось загрузить историю:', e)
-      // Заглушка для демо
-      clientConversations.value = [
-        {
-          id: 'conv-1',
-          siteId: 'pilotsite.ru',
-          title: 'Дизайн главной страницы',
-          preview: 'Нужно обновить шапку сайта...',
-          lastMessage: '2026-05-18T05:30:00Z',
-          unread: 2
-        },
-        {
-          id: 'conv-2',
-          siteId: 'pilotsite.ru',
-          title: 'Проблема с плагином',
-          preview: 'После обновления перестал...',
-          lastMessage: '2026-05-17T14:20:00Z',
-          unread: 0
-        }
-      ]
+      clientConversations.value = DEMO_CONVERSATIONS.filter(c => c.siteId === siteId)
     }
   }
 
