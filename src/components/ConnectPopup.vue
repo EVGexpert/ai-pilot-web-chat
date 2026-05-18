@@ -63,7 +63,7 @@ async function connectToGateway(redirectUrl, gatewayUrl) {
       type: 'req', id: '1', method: 'connect',
       params: {
         minProtocol: 3, maxProtocol: 4,
-        client: { id: 'web', version: '0.1.0', platform: 'browser', mode: 'cli' },
+        client: { id: 'cli', version: '0.1.0', platform: 'browser', mode: 'cli' },
         role: 'operator', scopes: ['operator.read'],
         caps: [], commands: [], permissions: {},
         auth: { token: GATEWAY_TOKEN },
