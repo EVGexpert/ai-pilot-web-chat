@@ -10,6 +10,7 @@ const isRegister = ref(false)
 const errorMsg = ref('')
 const isLoading = ref(false)
 const siteName = ref('')
+const siteUrl = ref('')
 const redirectUrl = ref('')
 
 const GATEWAY_TOKEN = import.meta.env.VITE_GATEWAY_TOKEN
@@ -23,10 +24,11 @@ const pageTitle = computed(() => {
 
 onMounted(() => {
   const params = new URLSearchParams(window.location.search)
-  const siteUrl = params.get('site') || ''
+  const rawSite = params.get('site') || ''
+  siteUrl.value = rawSite ? decodeURIComponent(rawSite) : ''
   redirectUrl.value = params.get('redirect') || ''
-  siteName.value = siteUrl
-    ? decodeURIComponent(siteUrl).replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+  siteName.value = siteUrl.value
+    ? siteUrl.value.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
     : ''
 })
 
@@ -57,11 +59,30 @@ async function handleSubmit() {
 
     // Сохраняем JWT для API-запросов
     const data = await res.json()
-    localStorage.setItem('aipilot_token', data.token)
+    const token = data.token
+    localStorage.setItem('aipilot_token', token)
     localStorage.setItem('aipilot_user', JSON.stringify(data.user))
 
     // Переходим к подключению
     step.value = 'connecting'
+
+    // Регистрируем сайт в auth-api
+    if (siteUrl.value) {
+      try {
+        await fetch('/api/sites/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({
+            url: siteUrl.value,
+            apiToken: 'pending',
+            name: siteName.value
+          })
+        })
+      } catch (e) {
+        console.warn('Site registration failed:', e)
+      }
+    }
+
     await connectToGateway()
   } catch (e) {
     errorMsg.value = e.message

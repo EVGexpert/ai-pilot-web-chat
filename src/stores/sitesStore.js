@@ -26,15 +26,28 @@ export const useSitesStore = defineStore('sites', () => {
   async function fetchSites() {
     try {
       const token = localStorage.getItem('aipilot_token')
+      if (!token) {
+        sites.value = DEMO_SITES
+        return
+      }
       const res = await fetch('/api/sites', {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
-        const data = await res.json()
-        sites.value = data.length > 0 ? data : DEMO_SITES
+        const json = await res.json()
+        // auth-api возвращает {sites: [...]} или {sites: [...]}
+        const list = json.sites || json
+        if (Array.isArray(list) && list.length > 0) {
+          sites.value = list.map(s => ({
+            id: s.url || s.id,
+            name: s.name || s.url,
+            status: 'online',
+            url: s.url
+          }))
+        } else {
+          sites.value = DEMO_SITES
+        }
       } else {
-        // API пока не настроен — показываем демо-данные
-        console.warn('API /api/sites вернул', res.status, '— показываю демо')
         sites.value = DEMO_SITES
       }
     } catch (e) {
