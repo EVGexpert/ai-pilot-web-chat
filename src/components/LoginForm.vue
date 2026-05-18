@@ -9,21 +9,21 @@ const password = ref('')
 const error = ref('')
 const isLoading = ref(false)
 
-// Демо-режим: генерируем токен, если API аутентификации ещё не запущен
-function genDemoToken() {
-  return import.meta.env.VITE_DEMO_TOKEN ||
-    'demo_' + Array.from({length: 32}, () => Math.random().toString(36)[2]).join('')
-}
+// Демо-режим: используем Gateway токен для WebSocket/HTTP соединения
+const GATEWAY_TOKEN = import.meta.env.VITE_GATEWAY_TOKEN
 
 function loginDemo() {
-  const token = genDemoToken()
+  if (!GATEWAY_TOKEN) {
+    error.value = 'Gateway токен не настроен (VITE_GATEWAY_TOKEN)'
+    return
+  }
   const isAdmin = email.value.includes('admin')
-  authStore.login(token, {
+  authStore.login(GATEWAY_TOKEN, {
     name: email.value.split('@')[0],
     email: email.value,
     role: isAdmin ? 'admin' : 'client'
   })
-  emit('login', { token })
+  emit('login', { token: GATEWAY_TOKEN })
 }
 
 async function handleLogin() {
