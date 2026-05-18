@@ -19,12 +19,16 @@ jobs:
             cd ~/ai-pilot-web-chat
             git pull origin main
 
-            # === Auth API (если образ не собран — соберём) ===
-            docker inspect ai-pilot-auth >/dev/null 2>&1 || docker build -t ai-pilot-auth auth-api/
+            # === Общая Docker сеть ===
+            docker network create aipilot 2>/dev/null || true
+
+            # === Auth API ===
+            docker build -t ai-pilot-auth auth-api/ || true
             docker rm -f ai-pilot-auth 2>/dev/null || true
             docker run -d \
               --name ai-pilot-auth \
               --restart unless-stopped \
+              --network aipilot \
               --add-host host.docker.internal:host-gateway \
               -p 127.0.0.1:3001:3001 \
               -v "$(pwd)/auth-data:/app/data" \
@@ -41,6 +45,7 @@ jobs:
             docker run -d \
               --name ai-pilot-chat \
               --restart unless-stopped \
+              --network aipilot \
               --add-host host.docker.internal:host-gateway \
               -p 127.0.0.1:3000:80 \
               ai-pilot-chat
