@@ -76,6 +76,15 @@ export function deleteSite(id) {
   return true
 }
 
+export function updateSiteCache(id, fields) {
+  const site = Store.sites.find(s => s.id === id)
+  if (!site) return false
+  Object.assign(site, fields)
+  site.updated_at = now()
+  save()
+  return true
+}
+
 // === Verification helpers ===
 export function createVerification(userId, code) {
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19)

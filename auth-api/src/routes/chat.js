@@ -1,4 +1,4 @@
-import { findSitesByUser, findSiteByUserAndUrl } from '../db.js'
+import { findSitesByUser, findSiteByUserAndUrl, updateSiteCache } from '../db.js'
 import { verifyToken } from '../middleware/auth.js'
 
 function authGuard(request, reply) {
@@ -52,27 +52,50 @@ export default async function chatRoutes(app) {
 
     try {
       // Пробуем отправить к Gateway агенту сайта (если зарегистрирован)
-            // Определяем промпт для приветствия
+      
+      // Загружаем или достаём из кэша контекст сайта
+      let contextSummary = ''
+      const cacheAge = site.cached_at ? (Date.now() - new Date(site.cached_at).getTime()) / 1000 : Infinity
+      
+      // Кэш живёт 1 час, потом обновляем
+      if (site.cached_structure && cacheAge < 3600) {
+        try {
+          const struct = typeof site.cached_structure === 'string' ? JSON.parse(site.cached_structure) : site.cached_structure
+          if (struct?.site) {
+            contextSummary = `\nКонтекст сайта (из кэша):\n- Название: ${struct.site.name || site.name}\n- Описание: ${struct.site.description || ''}\n- WP: ${struct.site.wp_version || ''}\n- Плагины: ${struct.plugins?.active || 0} активных\n- Посты: ${struct.content?.posts?.length || 0}\n- Страницы: ${struct.content?.pages?.length || 0}`
+          }
+        } catch (e) { /* кэш битый, проигнорируем */ }
+      }
+      
+      // Если кэша нет или он старый — обновляем
+      if (!contextSummary && site.api_token && site.api_token !== 'pending') {
+        try {
+          const ctxRes = await fetch(
+            `${siteUrl.replace(/\/+$/, '')}/wp-json/aipilot/v1/agent/context`,
+            { headers: { 'X-AI-Pilot-Token': site.api_token } }
+          )
+          if (ctxRes.ok) {
+            const ctx = await ctxRes.json()
+            updateSiteCache(site.id, {
+              cached_structure: JSON.stringify(ctx.structure || ctx),
+              cached_soul: JSON.stringify(ctx.soul || {}),
+              cached_at: new Date().toISOString()
+            })
+            if (ctx.structure?.site) {
+              const s = ctx.structure
+              contextSummary = `\nКонтекст сайта:\n- Название: ${s.site.name || site.name}\n- Описание: ${s.site.description || ''}\n- WP: ${s.site.wp_version || ''}\n- Плагины: ${s.plugins?.active || 0} активных\n- Посты: ${s.content?.posts?.length || 0}\n- Страницы: ${s.content?.pages?.length || 0}`
+            }
+          }
+        } catch (e) { /* context fetch failed, продолжим без него */ }
+      }
+
       // Определяем промпт для приветствия
       const isGreeting = message.trim() === '/start'
       let greetingExtra = ''
       if (isGreeting) {
-        greetingExtra = `
-
-ВАЖНО: Клиент только что открыл чат. Представься коротко:
-- Ты AI-помощник сайта ${site.name || siteUrl}
-- Расскажи чем можешь помочь (контент, посты, страницы)
-- Попроси клиента представиться
-- Будь дружелюбным, без лишних эмодзи`
+        greetingExtra = `\n\nВАЖНО: Клиент только что открыл чат. Представься коротко:\n- Ты AI-помощник сайта ${site.name || siteUrl}\n- Расскажи чем можешь помочь (контент, посты, страницы)\n- Попроси клиента представиться\n- Будь дружелюбным, без лишних эмодзи`
       }
-      const systemPrompt = `Ты AI-помощник для сайта ${site.name || siteUrl}.
-Твой API доступ: ${siteUrl}/wp-json/aipilot/v1
-API токен: ${site.api_token}
-
-При каждом обращении:
-1. Загрузи контекст сайта через GET /agent/context (если не загружал в этой сессии)
-2. После ответа клиенту запиши в историю через POST /agent/memory
-3. Отвечай ТОЛЬКО про этот сайт. Ничего не знай про инфраструктуру AI Pilot.${greetingExtra}`
+      const systemPrompt = `Ты AI-помощник для сайта ${site.name || siteUrl}.${contextSummary}\n\nAPI доступ: ${siteUrl}/wp-json/aipilot/v1\nAPI токен: ${site.api_token}\n\nПравила:\n1. Отвечай ТОЛЬКО про этот сайт. Ничего не знай про инфраструктуру AI Pilot.\n2. После ответа запиши в историю: POST /agent/memory\n3. Ничего не меняй без подтверждения${greetingExtra}`
 
       let model = `openclaw/${agentId}`
       let messages = [
