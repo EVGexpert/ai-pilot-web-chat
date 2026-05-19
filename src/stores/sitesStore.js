@@ -58,12 +58,36 @@ export const useSitesStore = defineStore('sites', () => {
   async function fetchClientHistory(siteId) {
     try {
       const token = localStorage.getItem('aipilot_token')
-      const res = await fetch(`/api/sites/${siteId}/conversations`, {
+      if (!token) { clientConversations.value = []; return }
+
+      // Ищем сайт по ID
+      const site = sites.value.find(s => s.id === siteId || s.url === siteId)
+      if (!site || !site.id) { clientConversations.value = []; return }
+
+      // Загружаем историю с сайта через auth-api прокси
+      const res = await fetch(`/api/sites/${site.id}/memory`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
         const data = await res.json()
-        clientConversations.value = data.length > 0 ? data : []
+        const memList = data.memory || []
+
+        // Группируем записи по дням как "обращения"
+        const grouped = {}
+        for (const entry of memList) {
+          const day = entry.timestamp ? entry.timestamp.slice(0, 10) : 'unknown'
+          if (!grouped[day]) {
+            grouped[day] = { id: `mem-${day}`, siteId, title: day, preview: '', messages: [], lastMessage: entry.timestamp, unread: 0 }
+          }
+          grouped[day].messages.push(entry)
+          // Первое сообщение дня = preview
+          if (!grouped[day].preview) {
+            grouped[day].preview = entry.summary || entry.action || ''
+          }
+        }
+
+        clientConversations.value = Object.values(grouped)
+          .sort((a, b) => b.lastMessage?.localeCompare(a.lastMessage) || 0)
       } else {
         clientConversations.value = []
       }

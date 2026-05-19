@@ -1,11 +1,11 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useSitesStore } from '../stores/sitesStore'
 import { useAuthStore } from '../stores/authStore'
 
 const props = defineProps({
   conversations: { type: Array, default: () => [] },
-  messages: { type: Object, default: () => ({}) } // { convId: [{ role, content, time }, ...] }
+  messages: { type: Object, default: () => ({}) }
 })
 
 const emit = defineEmits(['select'])
@@ -24,11 +24,49 @@ const selectedConversation = computed(() =>
 
 function openConversation(conv) {
   selectedConvId.value = conv.id
-  // Загружаем сообщения, если есть
-  if (!convMessages.value[conv.id] && props.messages[conv.id]) {
+  
+  // Загружаем реальную историю с сайта
+  if (!convMessages.value[conv.id] && conv.siteId) {
+    fetchSiteMemory(conv.siteId)
+  }
+  
+  // Если есть в пропсах — используем
+  if (props.messages[conv.id]) {
     convMessages.value[conv.id] = props.messages[conv.id]
   }
+  
   emit('select', conv)
+}
+
+async function fetchSiteMemory(siteUrl) {
+  const token = localStorage.getItem('aipilot_token')
+  if (!token) return
+  
+  // Ищем ID сайта по URL
+  const site = sitesStore.sites.find(s => s.url === siteUrl || s.id === siteUrl)
+  if (!site) return
+  
+  isLoadingMessages.value = true
+  try {
+    const res = await fetch(`/api/sites/${site.id}/memory`, {
+      headers: { Authorization: 'Bearer ' + token }
+    })
+    if (res.ok) {
+      const data = await res.json()
+      const memList = data.memory || []
+      convMessages.value[siteUrl] = memList.map(m => ({
+        role: m.agent === 'client' ? 'client' : 'assistant',
+        content: m.summary || m.action || '',
+        details: m.details || {},
+        timestamp: m.timestamp || '',
+        time: m.timestamp ? new Date(m.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''
+      }))
+    }
+  } catch (e) {
+    console.warn('Failed to load memory:', e)
+  } finally {
+    isLoadingMessages.value = false
+  }
 }
 
 function closeConversation() {
@@ -36,8 +74,7 @@ function closeConversation() {
 }
 
 function getConvMessages(convId) {
-  // Сначала из пропсов, потом из загруженных
-  return props.messages[convId] || convMessages.value[convId] || []
+  return convMessages.value[convId] || []
 }
 
 function formatTime(dateStr) {

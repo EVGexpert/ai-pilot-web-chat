@@ -176,6 +176,37 @@ export default async function sitesRoutes(app) {
     }
   })
 
+  // История обращений (GET /agent/memory с сайта)
+  app.get('/:id/memory', async (request, reply) => {
+    const err = authGuard(request, reply)
+    if (err) return err
+
+    const site = findSiteById(request.params.id)
+    if (!site) return reply.status(404).send({ error: 'Site not found' })
+
+    // Админ видит все сайты, клиент — только свои
+    if (!isAdmin(request.user) && site.user_id !== request.user.sub) {
+      return reply.status(403).send({ error: 'Access denied' })
+    }
+
+    if (!site.api_token || site.api_token === 'pending') {
+      return reply.send({ memory: [], total: 0, scanned_at: null })
+    }
+
+    try {
+      const url = site.url.replace(/\/+$/, '')
+      const resp = await fetch(`${url}/wp-json/aipilot/v1/agent/memory`, {
+        headers: { 'X-AI-Pilot-Token': site.api_token }
+      })
+      if (resp.ok) {
+        return reply.send(await resp.json())
+      }
+      return reply.send({ memory: [], total: 0 })
+    } catch (e) {
+      return reply.send({ memory: [], total: 0, error: e.message })
+    }
+  })
+
   // Удалить сайт
   app.delete('/:id', async (request, reply) => {
     const err = authGuard(request, reply)
