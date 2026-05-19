@@ -14,6 +14,41 @@ function isAdmin(payload) {
   return payload?.role === 'admin'
 }
 
+// Уведомить Gateway о новом сайте (чтобы Zero создал субагента)
+async function notifyGateway(url, apiToken, userId) {
+  const gatewayUrl = process.env.GATEWAY_URL || 'http://host.docker.internal:18789'
+  const gatewayToken = process.env.GATEWAY_TOKEN || process.env.VITE_GATEWAY_TOKEN || 'dev-gateway-token'
+
+  try {
+    const body = JSON.stringify({
+      model: 'openclaw',
+      messages: [{
+        role: 'user',
+        content: `[system:new-site] url=${url}, userId=${userId}`
+      }],
+      max_tokens: 100
+    })
+
+    const resp = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${gatewayToken}`
+      },
+      body
+    })
+
+    if (resp.ok) {
+      console.log('[Gateway] Site notification sent for:', url)
+    } else {
+      const text = await resp.text()
+      console.warn('[Gateway] Notification failed:', resp.status, text.slice(0, 200))
+    }
+  } catch (err) {
+    console.warn('[Gateway] Notification error:', err.message)
+  }
+}
+
 export default async function sitesRoutes(app) {
 
   // Подключить сайт
@@ -47,6 +82,11 @@ export default async function sitesRoutes(app) {
       userId: request.user.sub, url, name: siteName, apiToken,
       wpVersion, verified: wpVersion ? 1 : 0
     })
+
+    // Уведомляем Gateway о новом сайте (если есть реальный токен)
+    if (apiToken && apiToken !== 'pending') {
+      notifyGateway(url, apiToken, request.user.sub).catch(() => {})
+    }
 
     return reply.status(201).send({ id: site.id, url, name: siteName, wpVersion, verified: !!wpVersion })
   })
@@ -124,6 +164,8 @@ export default async function sitesRoutes(app) {
         const site = findSiteByUserAndUrl(request.user.sub, url)
         if (site && (!site.api_token || site.api_token === 'pending')) {
           site.api_token = apiToken
+          // Только что получили реальный токен → уведомляем Gateway
+          notifyGateway(url, apiToken, request.user.sub).catch(() => {})
         }
       }
 
