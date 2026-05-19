@@ -84,6 +84,55 @@ export default async function sitesRoutes(app) {
     return reply.send({ site })
   })
 
+  // Сканировать сайт (прокси на WP REST API)
+  app.post('/scan', async (request, reply) => {
+    const err = authGuard(request, reply)
+    if (err) return err
+
+    const { url, apiToken } = request.body || {}
+    if (!url) return reply.status(400).send({ error: 'URL сайта обязателен' })
+
+    // Если токен не передан, ищем сохранённый
+    let token = apiToken
+    if (!token || token === 'pending') {
+      const site = findSiteByUserAndUrl(request.user.sub, url)
+      if (site && site.api_token && site.api_token !== 'pending') {
+        token = site.api_token
+      }
+    }
+
+    if (!token || token === 'pending') {
+      return reply.status(400).send({ error: 'API токен не найден. Сгенерируйте токен в AI Pilot → Настройки' })
+    }
+
+    try {
+      const scanUrl = `${url.replace(/\/+$/, '')}/wp-json/aipilot/v1/agent/scan`
+      const resp = await fetch(scanUrl, {
+        method: 'GET',
+        headers: { 'X-AI-Pilot-Token': token }
+      })
+
+      if (!resp.ok) {
+        const text = await resp.text()
+        return reply.status(resp.status).send({ error: 'Scan failed', detail: text.slice(0, 500) })
+      }
+
+      const data = await resp.json()
+
+      // Обновляем apiToken если было 'pending'
+      if (apiToken && apiToken !== 'pending') {
+        const site = findSiteByUserAndUrl(request.user.sub, url)
+        if (site && (!site.api_token || site.api_token === 'pending')) {
+          site.api_token = apiToken
+        }
+      }
+
+      return reply.send({ scanned: true, scanned_at: data.scanned_at, structure: data.structure })
+    } catch (e) {
+      return reply.status(502).send({ error: `Scan request failed: ${e.message}` })
+    }
+  })
+
   // Удалить сайт
   app.delete('/:id', async (request, reply) => {
     const err = authGuard(request, reply)

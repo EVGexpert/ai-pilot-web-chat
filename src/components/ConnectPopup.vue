@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 
-// Состояния: login | connecting | success | error
+// Состояния: login | connecting | scanning | success | error
 const step = ref('login')
 const email = ref('')
 const password = ref('')
@@ -12,12 +12,14 @@ const isLoading = ref(false)
 const siteName = ref('')
 const siteUrl = ref('')
 const redirectUrl = ref('')
+const siteToken = ref('')
 
 const GATEWAY_TOKEN = import.meta.env.VITE_GATEWAY_TOKEN
 
 const pageTitle = computed(() => {
   if (step.value === 'login') return isRegister.value ? 'Регистрация' : 'Вход в AI Pilot'
   if (step.value === 'connecting') return siteName.value ? `Подключаю ${siteName.value}...` : 'Подключаюсь...'
+  if (step.value === 'scanning') return `Сканирую ${siteName.value}...`
   if (step.value === 'success') return 'Подключено!'
   return 'Ошибка подключения'
 })
@@ -27,6 +29,8 @@ onMounted(() => {
   const rawSite = params.get('site') || ''
   siteUrl.value = rawSite ? decodeURIComponent(rawSite) : ''
   redirectUrl.value = params.get('redirect') || ''
+  const rawToken = params.get('token') || ''
+  siteToken.value = rawToken ? decodeURIComponent(rawToken) : ''
   siteName.value = siteUrl.value
     ? siteUrl.value.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
     : ''
@@ -67,23 +71,50 @@ async function handleSubmit() {
     step.value = 'connecting'
 
     // Регистрируем сайт в auth-api
+    let apiToken = siteToken.value || 'pending'
     if (siteUrl.value) {
       try {
-        await fetch('/api/sites/connect', {
+        const regRes = await fetch('/api/sites/connect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
           body: JSON.stringify({
             url: siteUrl.value,
-            apiToken: 'pending',
+            apiToken: apiToken,
             name: siteName.value
           })
         })
+        if (regRes.ok) {
+          const regData = await regRes.json()
+          apiToken = regData.apiToken || apiToken
+        }
       } catch (e) {
         console.warn('Site registration failed:', e)
       }
     }
 
     await connectToGateway()
+
+    // Сканируем сайт через auth-api (прокси на WP REST API)
+    if (siteUrl.value && apiToken !== 'pending') {
+      step.value = 'scanning'
+      try {
+        const scanRes = await fetch('/api/sites/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({
+            url: siteUrl.value,
+            apiToken: apiToken
+          })
+        })
+        if (scanRes.ok) {
+          console.log('✅ Сайт отсканирован:', siteName.value)
+        } else {
+          console.warn('Scan returned non-ok:', scanRes.status)
+        }
+      } catch (e) {
+        console.warn('Scan request failed (CORS?), continuing:', e)
+      }
+    }
   } catch (e) {
     errorMsg.value = e.message
   } finally {
@@ -195,10 +226,23 @@ async function connectToGateway() {
         <div class="progress-bar"><div class="progress-fill"></div></div>
       </div>
 
+      <!-- Сканирование -->
+      <div v-if="step === 'scanning'" class="status-body">
+        <div class="spinner"></div>
+        <p class="status-desc">AI-помощник изучает структуру сайта, контент и настройки</p>
+        <div class="scan-steps">
+          <div class="scan-step"><span class="scan-dot"></span> Посты и страницы</div>
+          <div class="scan-step"><span class="scan-dot"></span> Плагины и тема</div>
+          <div class="scan-step"><span class="scan-dot"></span> Меню и навигация</div>
+          <div class="scan-step"><span class="scan-dot"></span> Tone of Voice</div>
+        </div>
+      </div>
+
       <!-- Успех -->
       <div v-if="step === 'success'" class="status-body">
         <div class="success-icon">✅</div>
         <p class="status-desc" v-if="siteName">Сайт {{ siteName }} подключён к AI Pilot</p>
+        <p class="status-desc" v-else>AI Pilot готов к работе</p>
         <p class="status-redirect">Перенаправляю обратно в WordPress...</p>
       </div>
 
@@ -376,6 +420,43 @@ async function connectToGateway() {
   0% { width: 10%; margin-left: 0; }
   50% { width: 50%; margin-left: 30%; }
   100% { width: 10%; margin-left: 90%; }
+}
+
+/* Scan steps */
+.scan-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 0;
+}
+.scan-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--typography-body-small);
+  color: var(--text-tertiary);
+  animation: fadeIn 0.3s ease forwards;
+  opacity: 0;
+}
+.scan-step:nth-child(1) { animation-delay: 0.1s; }
+.scan-step:nth-child(2) { animation-delay: 0.4s; }
+.scan-step:nth-child(3) { animation-delay: 0.7s; }
+.scan-step:nth-child(4) { animation-delay: 1.0s; }
+.scan-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 .success-icon, .error-icon {
   font-size: 40px;
