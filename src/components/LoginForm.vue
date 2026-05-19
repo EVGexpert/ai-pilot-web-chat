@@ -11,23 +11,6 @@ const password = ref('')
 const error = ref('')
 const isLoading = ref(false)
 
-// Демо-режим: используем Gateway токен для WebSocket/HTTP соединения
-const GATEWAY_TOKEN = import.meta.env.VITE_GATEWAY_TOKEN
-
-function loginDemo() {
-  if (!GATEWAY_TOKEN) {
-    error.value = 'Gateway токен не настроен (VITE_GATEWAY_TOKEN)'
-    return
-  }
-  const isAdmin = email.value.includes('admin')
-  authStore.login(GATEWAY_TOKEN, {
-    name: email.value.split('@')[0],
-    email: email.value,
-    role: isAdmin ? 'admin' : 'client'
-  })
-  emit('login', { token: GATEWAY_TOKEN })
-}
-
 async function handleLogin() {
   if (!email.value.trim() || !password.value.trim()) {
     error.value = 'Введите email и пароль'
