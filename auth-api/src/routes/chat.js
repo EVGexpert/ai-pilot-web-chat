@@ -51,7 +51,7 @@ export default async function chatRoutes(app) {
     const gatewayToken = envToken === 'dev-gateway-token' ? 'f8186e8d77460feeb735a8dbc48e659c9b05c7f10b114fd554d6fd7a8f8e76e3' : envToken
 
     try {
-      // Добавляем системный промпт с контекстом сайта
+      // Пробуем отправить к Gateway агенту сайта (если зарегистрирован)
       const systemPrompt = `Ты AI-помощник для сайта ${site.name || siteUrl}.
 Твой API доступ: ${siteUrl}/wp-json/aipilot/v1
 API токен: ${site.api_token}
@@ -61,25 +61,35 @@ API токен: ${site.api_token}
 2. После ответа клиенту запиши в историю через POST /agent/memory
 3. Отвечай ТОЛЬКО про этот сайт. Ничего не знай про инфраструктуру AI Pilot.`
 
-      const body = JSON.stringify({
-        model: `openclaw/${agentId}`,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-        user: siteUrl,
-        max_tokens: 4096,
-        stream: false
-      })
+      let model = `openclaw/${agentId}`
+      let messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message }
+      ]
 
-      const resp = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+      const body = JSON.stringify({ model, messages, user: siteUrl, max_tokens: 4096, stream: false })
+
+      let resp = await fetch(`${gatewayUrl}/v1/chat/completions`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${gatewayToken}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${gatewayToken}` },
         body
       })
+
+      // Если агента нет — фолбек к main с пометкой для Zero
+      if (!resp.ok) {
+        const txt = await resp.text()
+        if (resp.status === 404 || txt.includes('not found') || txt.includes('unknown model')) {
+          console.log(`[Chat] Agent ${agentId} not found, fallback to main with [client:${siteUrl}]`)
+          model = 'openclaw'
+          messages = [{ role: 'user', content: `[client:${siteUrl}] ${message}` }]
+          const fbBody = JSON.stringify({ model, messages, user: siteUrl, max_tokens: 4096, stream: false })
+          resp = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${gatewayToken}` },
+            body: fbBody
+          })
+        }
+      }
 
       if (!resp.ok) {
         const text = await resp.text()
