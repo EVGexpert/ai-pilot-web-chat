@@ -3,6 +3,7 @@ import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
 import authRoutes from './routes/auth.js'
 import sitesRoutes from './routes/sites.js'
+import chatRoutes from './routes/chat.js'
 import { config } from './config.js'
 
 
@@ -23,6 +24,7 @@ await app.register(rateLimit, {
 // Роуты
 await app.register(authRoutes, { prefix: '/api/auth' })
 await app.register(sitesRoutes, { prefix: '/api/sites' })
+await app.register(chatRoutes, { prefix: '/api/chat' })
 
 // Health check
 app.get('/api/health', async () => ({ status: 'ok', version: '0.1.0' }))

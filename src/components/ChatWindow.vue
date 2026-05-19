@@ -29,6 +29,12 @@ const httpBase = import.meta.env.VITE_GATEWAY_HTTP || chatBase
 let client = null
 
 function connect() {
+  // Клиенты подключаются через auth-api proxy, не через Gateway напрямую
+  if (props.clientMode) {
+    isConnected.value = true
+    return
+  }
+  
   client = createGatewayClient({
     gateway: gatewayWs, httpBase, token: authStore.gatewayToken,
     onConnected: () => { isConnected.value = true; error.value = null },
@@ -45,24 +51,59 @@ function connect() {
 }
 
 function disconnect() { client?.disconnect(); client = null }
-function handleSend(text) {
-  if (!client?.isConnected) return
-  
-  // Для клиентов добавляем метку сайта — Zero поймёт, к какому субагенту обратиться
-  let messageText = text
-  if (authStore.isClient && authStore.siteUrl) {
-    messageText = `[client:${authStore.siteUrl}] ${text}`
-  }
-  
+
+async function handleSend(text) {
   messages.value = [...messages.value, { id: `user-${Date.now()}`, role: 'user', content: text }]
   isLoading.value = true
-  client.sendMessage(messageText).catch(err => { error.value = err; isLoading.value = false })
+  error.value = null
+
+  if (props.clientMode && authStore.siteUrl) {
+    // Клиент: отправляем через auth-api proxy
+    try {
+      const res = await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + authStore.token
+        },
+        body: JSON.stringify({
+          message: text,
+          siteUrl: authStore.siteUrl
+        })
+      })
+      
+      if (res.ok) {
+        const data = await res.json()
+        messages.value = [...messages.value, { id: `msg-${Date.now()}`, role: 'assistant', content: data.message }]
+      } else {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+        error.value = err.error || 'Ошибка отправки'
+      }
+    } catch (e) {
+      error.value = 'Сетевая ошибка: ' + e.message
+    } finally {
+      isLoading.value = false
+      streamingContent.value = ''
+    }
+    return
+  }
+
+  // Админ: отправляем через Gateway как обычно
+  if (!client?.isConnected) return
+  client.sendMessage(text).catch(err => { error.value = err; isLoading.value = false })
 }
 function handleReconnect() { error.value = null; connect() }
 function handleLogout() { disconnect(); authStore.logout() }
 
 connect()
 onUnmounted(() => disconnect())
+
+// Если клиент — сразу готов к работе
+if (props.clientMode) {
+  nextTick(() => {
+    isConnected.value = true
+  })
+}
 
 watch([messages, streamingContent], async () => {
   await nextTick()
