@@ -12,7 +12,7 @@ const isLoading = ref(false)
 const siteName = ref('')
 const siteUrl = ref('')
 const redirectUrl = ref('')
-const siteToken = ref('')
+const siteCode = ref('')
 
 const GATEWAY_TOKEN = import.meta.env.VITE_GATEWAY_TOKEN
 
@@ -29,8 +29,7 @@ onMounted(() => {
   const rawSite = params.get('site') || ''
   siteUrl.value = rawSite ? decodeURIComponent(rawSite) : ''
   redirectUrl.value = params.get('redirect') || ''
-  const rawToken = params.get('token') || ''
-  siteToken.value = rawToken ? decodeURIComponent(rawToken) : ''
+  siteCode.value = params.get('code') || ''
   siteName.value = siteUrl.value
     ? siteUrl.value.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
     : ''
@@ -70,19 +69,30 @@ async function handleSubmit() {
     // Переходим к подключению
     step.value = 'connecting'
 
-    // Регистрируем сайт в auth-api
-    let apiToken = siteToken.value || 'pending'
+    // Регистрируем сайт через code (безопасно) или через токен (старый метод)
+    let apiToken = 'pending'
     if (siteUrl.value) {
       try {
-        const regRes = await fetch('/api/sites/connect', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-          body: JSON.stringify({
-            url: siteUrl.value,
-            apiToken: apiToken,
-            name: siteName.value
+        let regRes
+        if (siteCode.value) {
+          // Новый безопасный метод — connection code
+          regRes = await fetch('/api/sites/connect-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ code: siteCode.value, siteUrl: siteUrl.value })
           })
-        })
+        } else {
+          // Старый метод — прямой токен
+          regRes = await fetch('/api/sites/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({
+              url: siteUrl.value,
+              apiToken: apiToken,
+              name: siteName.value
+            })
+          })
+        }
         if (regRes.ok) {
           const regData = await regRes.json()
           apiToken = regData.apiToken || apiToken

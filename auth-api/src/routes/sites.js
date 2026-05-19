@@ -52,6 +52,44 @@ async function notifyGateway(url, apiToken, userId) {
 
 export default async function sitesRoutes(app) {
 
+  // Подключить сайт через одноразовый code
+  app.post('/connect-code', async (request, reply) => {
+    const err = authGuard(request, reply)
+    if (err) return err
+
+    const { code, siteUrl } = request.body || {}
+    if (!code || !siteUrl) return reply.status(400).send({ error: 'Code and siteUrl required' })
+
+    if (findSiteByUserAndUrl(request.user.sub, siteUrl)) {
+      return reply.status(409).send({ error: 'Сайт уже привязан к вашему аккаунту' })
+    }
+
+    try {
+      const cleanUrl = siteUrl.replace(/\/+$/, '')
+      const resp = await fetch(`${cleanUrl}/wp-json/aipilot/v1/agent/verify-code?code=${encodeURIComponent(code)}`)
+      if (!resp.ok) return reply.status(404).send({ error: 'Code invalid or expired' })
+
+      const data = await resp.json()
+      if (!data.verified) return reply.status(404).send({ error: 'Code verification failed' })
+
+      const siteName = data.site_name || siteUrl
+      const apiToken = data.token || ''
+
+      const site = createSite({
+        userId: request.user.sub, url: siteUrl, name: siteName, apiToken,
+        wpVersion: null, verified: apiToken ? 1 : 0
+      })
+
+      if (apiToken) {
+        notifyGateway(siteUrl, apiToken, request.user.sub).catch(() => {})
+      }
+
+      return reply.status(201).send({ id: site.id, url: siteUrl, name: siteName, verified: !!apiToken })
+    } catch (e) {
+      return reply.status(502).send({ error: `Verification failed: ${e.message}` })
+    }
+  })
+
   // Подключить сайт
   app.post('/connect', async (request, reply) => {
     const err = authGuard(request, reply)
