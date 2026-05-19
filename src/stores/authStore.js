@@ -60,5 +60,5 @@ export const useAuthStore = defineStore('auth', () => {
     applyTheme(theme.value)
   }
 
-  return { token, user, theme, gatewayToken, isAuthenticated, userName, isAdmin, login, logout, setTheme, initTheme }
+  return { token, user, theme, siteUrl, gatewayToken, isAuthenticated, userName, isAdmin, isClient, login, logout, setTheme, initTheme }
 })
