@@ -47,9 +47,16 @@ function connect() {
 function disconnect() { client?.disconnect(); client = null }
 function handleSend(text) {
   if (!client?.isConnected) return
+  
+  // Для клиентов добавляем метку сайта — Zero поймёт, к какому субагенту обратиться
+  let messageText = text
+  if (authStore.isClient && authStore.siteUrl) {
+    messageText = `[client:${authStore.siteUrl}] ${text}`
+  }
+  
   messages.value = [...messages.value, { id: `user-${Date.now()}`, role: 'user', content: text }]
   isLoading.value = true
-  client.sendMessage(text).catch(err => { error.value = err; isLoading.value = false })
+  client.sendMessage(messageText).catch(err => { error.value = err; isLoading.value = false })
 }
 function handleReconnect() { error.value = null; connect() }
 function handleLogout() { disconnect(); authStore.logout() }

@@ -49,13 +49,10 @@ async function handleLogin() {
     if (res.ok) {
       const data = await res.json()
       const userData = data.user || {}
-      authStore.login(data.token, {
-        name: userData.name || email.value.split('@')[0],
-        email: userData.email || email.value,
-        role: userData.role || 'client'
-      })
-      // Передаём сайты из ответа API
+      // Определяем URL сайта клиента
+      let siteUrl = ''
       if (data.sites && data.sites.length > 0) {
+        siteUrl = data.sites[0].url || ''
         sitesStore.sites.value = data.sites.map(s => ({
           id: s.url || s.id,
           name: s.name || s.url,
@@ -63,6 +60,11 @@ async function handleLogin() {
           url: s.url
         }))
       }
+      authStore.login(data.token, {
+        name: userData.name || email.value.split('@')[0],
+        email: userData.email || email.value,
+        role: userData.role || 'client'
+      }, siteUrl)
       emit('login', data)
       return
     }
