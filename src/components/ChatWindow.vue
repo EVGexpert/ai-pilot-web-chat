@@ -98,10 +98,33 @@ function handleLogout() { disconnect(); authStore.logout() }
 connect()
 onUnmounted(() => disconnect())
 
-// Если клиент — сразу готов к работе
+// Если клиент — сразу готов к работе, загружаем приветствие
 if (props.clientMode) {
-  nextTick(() => {
+  nextTick(async () => {
     isConnected.value = true
+    
+    // Загружаем приветствие от агента сайта
+    if (authStore.siteUrl) {
+      try {
+        const res = await fetch('/api/chat/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + authStore.token
+          },
+          body: JSON.stringify({
+            message: '/start',
+            siteUrl: authStore.siteUrl
+          })
+        })
+        if (res.ok) {
+          const data = await res.json()
+          messages.value = [{ id: 'greeting', role: 'assistant', content: data.message }]
+        }
+      } catch (e) {
+        console.warn('Greeting failed:', e)
+      }
+    }
   })
 }
 

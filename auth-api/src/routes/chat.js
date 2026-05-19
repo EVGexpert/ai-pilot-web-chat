@@ -52,6 +52,19 @@ export default async function chatRoutes(app) {
 
     try {
       // Пробуем отправить к Gateway агенту сайта (если зарегистрирован)
+            // Определяем промпт для приветствия
+      // Определяем промпт для приветствия
+      const isGreeting = message.trim() === '/start'
+      let greetingExtra = ''
+      if (isGreeting) {
+        greetingExtra = `
+
+ВАЖНО: Клиент только что открыл чат. Представься коротко:
+- Ты AI-помощник сайта ${site.name || siteUrl}
+- Расскажи чем можешь помочь (контент, посты, страницы)
+- Попроси клиента представиться
+- Будь дружелюбным, без лишних эмодзи`
+      }
       const systemPrompt = `Ты AI-помощник для сайта ${site.name || siteUrl}.
 Твой API доступ: ${siteUrl}/wp-json/aipilot/v1
 API токен: ${site.api_token}
@@ -59,7 +72,7 @@ API токен: ${site.api_token}
 При каждом обращении:
 1. Загрузи контекст сайта через GET /agent/context (если не загружал в этой сессии)
 2. После ответа клиенту запиши в историю через POST /agent/memory
-3. Отвечай ТОЛЬКО про этот сайт. Ничего не знай про инфраструктуру AI Pilot.`
+3. Отвечай ТОЛЬКО про этот сайт. Ничего не знай про инфраструктуру AI Pilot.${greetingExtra}`
 
       let model = `openclaw/${agentId}`
       let messages = [
@@ -102,25 +115,27 @@ API токен: ${site.api_token}
       const data = await resp.json()
       const content = data.choices?.[0]?.message?.content || ''
 
-      // Записываем в историю (POST /agent/memory)
-      try {
-        const memoryUrl = `${siteUrl.replace(/\/+$/, '')}/wp-json/aipilot/v1/agent/memory`
-        const memoryBody = {
-          action: 'client_message',
-          summary: message.slice(0, 200),
-          details: { response: content.slice(0, 500), agentId },
-          agent: 'client'
+      // Не пишем в память команду /start (приветствие)
+      if (message.trim() !== '/start') {
+        try {
+          const memoryUrl = `${siteUrl.replace(/\/+$/, '')}/wp-json/aipilot/v1/agent/memory`
+          const memoryBody = {
+            action: 'client_message',
+            summary: message.slice(0, 200),
+            details: { response: content.slice(0, 500), agentId },
+            agent: 'client'
+          }
+          fetch(memoryUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-AI-Pilot-Token': site.api_token
+            },
+            body: JSON.stringify(memoryBody)
+          }).catch(() => {})
+        } catch (e) {
+          console.warn('[Memory] Failed to save:', e.message)
         }
-        fetch(memoryUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-AI-Pilot-Token': site.api_token
-          },
-          body: JSON.stringify(memoryBody)
-        }).catch(() => {})
-      } catch (e) {
-        console.warn('[Memory] Failed to save:', e.message)
       }
 
       return reply.send({
