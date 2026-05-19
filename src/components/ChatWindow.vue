@@ -93,7 +93,12 @@ async function handleSend(text) {
   client.sendMessage(text).catch(err => { error.value = err; isLoading.value = false })
 }
 function handleReconnect() { error.value = null; connect() }
-function handleLogout() { disconnect(); authStore.logout() }
+function handleLogout() { 
+  // Очищаем флаги приветствия при выходе
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('aipilot_greeted_'))
+  keys.forEach(k => localStorage.removeItem(k))
+  disconnect(); authStore.logout() 
+}
 
 connect()
 onUnmounted(() => disconnect())
@@ -103,26 +108,30 @@ if (props.clientMode) {
   nextTick(async () => {
     isConnected.value = true
     
-    // Загружаем приветствие от агента сайта
+    // Приветствие — только первый раз
     if (authStore.siteUrl) {
-      try {
-        const res = await fetch('/api/chat/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + authStore.token
-          },
-          body: JSON.stringify({
-            message: '/start',
-            siteUrl: authStore.siteUrl
+      const greeted = localStorage.getItem('aipilot_greeted_' + authStore.siteUrl)
+      if (!greeted) {
+        try {
+          const res = await fetch('/api/chat/send', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + authStore.token
+            },
+            body: JSON.stringify({
+              message: '/start',
+              siteUrl: authStore.siteUrl
+            })
           })
-        })
-        if (res.ok) {
-          const data = await res.json()
-          messages.value = [{ id: 'greeting', role: 'assistant', content: data.message }]
+          if (res.ok) {
+            const data = await res.json()
+            messages.value = [{ id: 'greeting', role: 'assistant', content: data.message }]
+            localStorage.setItem('aipilot_greeted_' + authStore.siteUrl, '1')
+          }
+        } catch (e) {
+          console.warn('Greeting failed:', e)
         }
-      } catch (e) {
-        console.warn('Greeting failed:', e)
       }
     }
   })
