@@ -92,6 +92,27 @@ API токен: ${site.api_token}
       const data = await resp.json()
       const content = data.choices?.[0]?.message?.content || ''
 
+      // Записываем в историю (POST /agent/memory)
+      try {
+        const memoryUrl = `${siteUrl.replace(/\/+$/, '')}/wp-json/aipilot/v1/agent/memory`
+        const memoryBody = {
+          action: 'client_message',
+          summary: message.slice(0, 200),
+          details: { response: content.slice(0, 500), agentId },
+          agent: 'client'
+        }
+        fetch(memoryUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-AI-Pilot-Token': site.api_token
+          },
+          body: JSON.stringify(memoryBody)
+        }).catch(() => {})
+      } catch (e) {
+        console.warn('[Memory] Failed to save:', e.message)
+      }
+
       return reply.send({
         message: content,
         agentId,
