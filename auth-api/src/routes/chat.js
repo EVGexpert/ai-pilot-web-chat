@@ -46,7 +46,9 @@ export default async function chatRoutes(app) {
 
     // Gateway URL
     const gatewayUrl = process.env.GATEWAY_URL || 'http://host.docker.internal:18789'
-    const gatewayToken = process.env.GATEWAY_TOKEN || process.env.VITE_GATEWAY_TOKEN || ''
+    const envToken = process.env.GATEWAY_TOKEN || process.env.VITE_GATEWAY_TOKEN || ''
+    // Если токен из env — заглушка, используем настоящий
+    const gatewayToken = envToken === 'dev-gateway-token' ? 'f8186e8d77460feeb735a8dbc48e659c9b05c7f10b114fd554d6fd7a8f8e76e3' : envToken
 
     try {
       const body = JSON.stringify({
