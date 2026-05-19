@@ -1,46 +1,43 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useSitesStore } from '../stores/sitesStore'
+import { useAuthStore } from '../stores/authStore'
+
+const props = defineProps({
+  conversations: { type: Array, default: () => [] },
+  messages: { type: Object, default: () => ({}) } // { convId: [{ role, content, time }, ...] }
+})
+
+const emit = defineEmits(['select'])
 
 const sitesStore = useSitesStore()
+const authStore = useAuthStore()
 const selectedConvId = ref(null)
-
-const conversations = computed(() => sitesStore.currentSiteConversations)
+const convMessages = ref({})
+const isLoadingMessages = ref(false)
 
 const selectedConversation = computed(() =>
-  conversations.value.find(c => c.id === selectedConvId.value) || null
+  props.conversations.find(c => c.id === selectedConvId.value) || null
 )
 
-// Демо-сообщения для раскрытого чата
-const DEMO_MESSAGES = {
-  'conv-1': [
-    { role: 'client', content: 'Здравствуйте! Нужно обновить шапку сайта — поменять логотип и добавить новый пункт меню "Услуги".', time: '05:15' },
-    { role: 'assistant', content: 'Здравствуйте! Я могу помочь с этим. Какой у вас новый логотип? Загрузите файл или укажите URL.', time: '05:16' },
-    { role: 'client', content: 'Вот ссылка на лого: https://example.com/logo.svg. А в меню нужно добавить "Услуги" между "О нас" и "Контакты".', time: '05:18' },
-    { role: 'assistant', content: '✅ Логотип обновлён.\n✅ Пункт "Услуги" добавлен в меню.\n\nХотите ещё что-то изменить на главной?', time: '05:20' },
-    { role: 'client', content: 'Да, ещё хочу добавить блок с преимуществами под шапкой — 3 колонки: иконка, заголовок, описание.', time: '05:22' },
-    { role: 'assistant', content: 'Отличная идея! Набрасываю варианты... Сейчас покажу превью.', time: '05:23' },
-  ],
-  'conv-2': [
-    { role: 'client', content: 'После обновления перестал работать контактный формуляр на странице "Контакты".', time: '14:15' },
-    { role: 'assistant', content: 'Проверяю... Вижу ошибку в JavaScript — конфликт версий плагина CF7. Исправляю.', time: '14:16' },
-    { role: 'assistant', content: '✅ Контактная форма восстановлена. Причина: обновление темы перезаписало шаблон формы. Я восстановил из бекапа.', time: '14:20' },
-    { role: 'client', content: 'Спасибо, всё работает!', time: '14:25' },
-  ],
-  'conv-3': [
-    { role: 'client', content: 'Нужно создать новую страницу "Услуги" с перечнем и ценами.', time: '09:10' },
-    { role: 'assistant', content: 'Создаю страницу "Услуги". Какой формат предпочитаете: таблица с ценами или карточки услуг?', time: '09:11' },
-    { role: 'client', content: 'Карточки, как на вашем демо-сайте.', time: '09:13' },
-    { role: 'assistant', content: 'Отлично, делаю. Подготовлю структуру и покажу превью.', time: '09:14' },
-  ],
-}
+>
 
 function openConversation(conv) {
   selectedConvId.value = conv.id
+  // Загружаем сообщения, если есть
+  if (!convMessages.value[conv.id] && props.messages[conv.id]) {
+    convMessages.value[conv.id] = props.messages[conv.id]
+  }
+  emit('select', conv)
 }
 
 function closeConversation() {
   selectedConvId.value = null
+}
+
+function getConvMessages(convId) {
+  // Сначала из пропсов, потом из загруженных
+  return props.messages[convId] || convMessages.value[convId] || []
 }
 
 function formatTime(dateStr) {
@@ -112,18 +109,28 @@ const hasSiteSelected = computed(() => !!sitesStore.currentSiteId)
 
     <!-- Раскрытый диалог (сообщения) -->
     <div v-else class="conversation-detail">
-      <div class="messages-list">
+      <!-- Статус загрузки -->
+      <div v-if="isLoadingMessages" class="history-empty">
+        <div class="spinner"></div>
+        <p>Загрузка сообщений...</p>
+      </div>
+
+      <!-- Сообщения -->
+      <div v-else class="messages-list">
         <div
-          v-for="(msg, idx) in DEMO_MESSAGES[selectedConversation.id] || []"
+          v-for="(msg, idx) in getConvMessages(selectedConversation.id)"
           :key="idx"
           class="msg-item"
           :class="{ 'msg-client': msg.role === 'client', 'msg-assistant': msg.role === 'assistant' }"
         >
           <div class="msg-header">
             <span class="msg-role">{{ msg.role === 'client' ? '👤 Клиент' : '🤖 AI Pilot' }}</span>
-            <span class="msg-time">{{ msg.time }}</span>
+            <span class="msg-time">{{ msg.time || formatTime(msg.timestamp) }}</span>
           </div>
-          <div class="msg-text" v-html="msg.content.replace(/\n/g, '<br/>')"></div>
+          <div class="msg-text" v-html="(msg.content || msg.text || '').replace(/\n/g, '<br/>')"></div>
+        </div>
+        <div v-if="getConvMessages(selectedConversation.id).length === 0" class="history-empty">
+          <p>Нет сообщений в этом обращении</p>
         </div>
       </div>
     </div>

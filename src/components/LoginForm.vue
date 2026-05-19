@@ -69,18 +69,10 @@ async function handleLogin() {
       return
     }
 
-    // API endpoint не найден (405/404) — nginx SPA fallback → демо-режим
-    if (res.status === 405 || res.status === 404) {
-      console.warn('Auth API недоступен (', res.status, ') — демо-режим')
-      loginDemo()
-      return
-    }
-
-    const err = await res.json().catch(() => ({}))
-    error.value = err.message || 'Ошибка авторизации'
-  } catch {
-    // Сетевая ошибка — fallback на демо
-    loginDemo()
+    const err = await res.json().catch(() => ({ error: 'Сервер авторизации недоступен' }))
+    error.value = err.error || err.message || 'Ошибка авторизации'
+  } catch (e) {
+    error.value = 'Сетевая ошибка: сервер авторизации не отвечает'
   } finally {
     isLoading.value = false
   }
