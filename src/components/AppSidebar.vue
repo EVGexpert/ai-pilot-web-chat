@@ -5,6 +5,7 @@ import ThemeToggle from './ThemeToggle.vue'
 
 const authStore = useAuthStore()
 const sitesStore = useSitesStore()
+const emit = defineEmits(['close'])
 
 const siteStatusIcon = (status) => {
   switch (status) {
@@ -22,7 +23,8 @@ function handleLogout() {
 </script>
 
 <template>
-  <aside class="sidebar">
+  <aside class="sidebar"
+      @click="$emit('close')">
     <!-- Шапка сайдбара -->
     <div class="sidebar-header">
       <div class="sidebar-brand">
@@ -344,5 +346,23 @@ function handleLogout() {
 
 .logout-icon {
   font-size: 18px;
+}
+
+/* ============ Mobile Styles ============ */
+
+@media (max-width: 767px) {
+  .sidebar--mobile {
+    position: fixed;
+    left: -100%;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    transition: left 0.25s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+  }
+
+  .sidebar--mobile.sidebar--open {
+    left: 0;
+  }
 }
 </style>

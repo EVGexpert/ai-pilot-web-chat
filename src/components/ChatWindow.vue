@@ -273,4 +273,35 @@ watch([messages, streamingContent], async () => {
 .cs-logout-btn { border: none; background: transparent; color: var(--text-tertiary); cursor: pointer; font-size: var(--typography-body-small); padding: 6px 10px; border-radius: var(--border-radius-sm); transition: 0.12s; }
 .cs-logout-btn:hover { background: var(--bg-hover); color: var(--color-error); }
 .client-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+/* ============ Mobile ============ */
+@media (max-width: 767px) {
+  .chat-header {
+    padding: 12px 16px 12px 56px; /* room for burger */
+  }
+
+  .client-layout {
+    flex-direction: column;
+  }
+
+  .client-sidebar {
+    display: none;
+  }
+
+  .chat-messages {
+    padding: 12px;
+  }
+
+  .bubble {
+    max-width: 90%;
+  }
+
+  .chat-input-wrapper {
+    padding: 8px 12px;
+  }
+
+  .chat-input {
+    font-size: var(--typography-button-size);
+  }
+}
 </style>

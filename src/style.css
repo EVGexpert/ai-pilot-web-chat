@@ -196,3 +196,30 @@ body {
   transform: translateX(-10px);
   opacity: 0;
 }
+
+/* ============ Mobile + Safe Area ============ */
+
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (max-width: 767px) {
+  :root {
+    --sidebar-width: min(85vw, 320px);
+  }
+
+  body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+}
+
+/* Prevent body scroll when sidebar open */
+body.sidebar-open {
+  overflow: hidden;
+}
