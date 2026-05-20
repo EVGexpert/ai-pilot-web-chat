@@ -36,6 +36,8 @@ services:
       - PORT=3001
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
       - APP_URL=https://pilotsite.ru
+      - GATEWAY_TOKEN=${GATEWAY_TOKEN:-dev-gateway-token}
+      - GATEWAY_HTTP=${GATEWAY_HTTP:-https://pilotsite.ru}
 
 volumes:
   openclaw_data:
