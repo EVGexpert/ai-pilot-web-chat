@@ -102,13 +102,33 @@ function handleLogout() {
 connect()
 onUnmounted(() => disconnect())
 
-// Если клиент — сразу готов к работе, загружаем приветствие
+// Если клиент — сразу готов к работе
 if (props.clientMode) {
   nextTick(async () => {
     isConnected.value = true
     
-    // Приветствие — только первый раз
     if (authStore.siteUrl) {
+      // Загружаем историю
+      try {
+        const histRes = await fetch('/api/chat/history?siteUrl=' + encodeURIComponent(authStore.siteUrl), {
+          headers: { 'Authorization': 'Bearer ' + authStore.token }
+        })
+        if (histRes.ok) {
+          const hist = await histRes.json()
+          if (hist.messages && hist.messages.length > 0) {
+            messages.value = hist.messages.map(m => ({
+              id: 'msg-' + m.id,
+              role: m.role,
+              content: m.content
+            }))
+            localStorage.setItem('aipilot_greeted_' + authStore.siteUrl, '1')
+          }
+        }
+      } catch (e) {
+        console.warn('History load failed:', e)
+      }
+      
+      // Приветствие — только если нет истории
       const greeted = localStorage.getItem('aipilot_greeted_' + authStore.siteUrl)
       if (!greeted) {
         try {
