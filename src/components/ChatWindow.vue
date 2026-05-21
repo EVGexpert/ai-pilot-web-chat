@@ -179,6 +179,25 @@ if (props.clientMode) {
   nextTick(async () => {
     isConnected.value = true
     
+    // Если нет siteUrl — загружаем из БД
+    if (!authStore.siteUrl && authStore.token) {
+      try {
+        const meRes = await fetch('/api/auth/me', {
+          headers: { 'Authorization': '***' + authStore.token }
+        })
+        if (meRes.ok) {
+          const meData = await meRes.json()
+          const siteUrls = (meData.sites || []).map(s => s.url)
+          if (siteUrls.length > 0) {
+            authStore.siteUrl = siteUrls[0]
+            localStorage.setItem('aipilot_site_url', siteUrls[0])
+          }
+        }
+      } catch (e) {
+        console.warn('Site load failed:', e)
+      }
+    }
+    
     if (authStore.siteUrl) {
       // Загружаем сессии
       await loadSessions()
