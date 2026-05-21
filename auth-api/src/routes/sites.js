@@ -1,4 +1,4 @@
-import { findSitesByUser, findSiteByUserAndUrl, findSiteById, findUserById, createSite, deleteSite, Store } from '../db.js'
+import { findSitesByUser, findSiteByUserAndUrl, findSiteById, createSite, deleteSite, allSites, updateSiteToken } from '../db.js'
 import { verifyToken } from '../middleware/auth.js'
 
 function authGuard(request, reply) {
@@ -139,7 +139,7 @@ export default async function sitesRoutes(app) {
     if (isAdmin(request.user)) {
       // Админ видит ВСЕ сайты — уникальные по URL
       const seen = new Set()
-      siteList = (Store.sites || []).filter(s => {
+      siteList = allSites().filter(s => {
         if (seen.has(s.url)) return false
         seen.add(s.url)
         return true
@@ -200,9 +200,9 @@ export default async function sitesRoutes(app) {
 
       // Обновляем apiToken если было 'pending'
       if (apiToken && apiToken !== 'pending') {
-        const site = findSiteByUserAndUrl(request.user.sub, url)
-        if (site && (!site.api_token || site.api_token === 'pending')) {
-          site.api_token = apiToken
+        const found = findSiteByUserAndUrl(request.user.sub, url)
+        if (found && (!found.api_token || found.api_token === 'pending')) {
+          updateSiteToken(found.id, apiToken)
           // Только что получили реальный токен → уведомляем Gateway
           notifyGateway(url, apiToken, request.user.sub).catch(() => {})
         }

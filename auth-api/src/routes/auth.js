@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid'
 import { hashPassword, verifyPassword } from '../password.js'
 import { findUserByEmail, findUserById, createUser, updateUser,
          createVerification, findVerification, deleteVerificationsByUser,
-         findSitesByUser, findSiteByUserAndUrl, findSiteById, createSite, deleteSite, Store } from '../db.js'
+         findSitesByUser, allSites } from '../db.js'
 import { generateToken } from '../middleware/auth.js'
 import { sendVerificationEmail } from '../email.js'
 
@@ -49,7 +49,7 @@ export default async function authRoutes(app) {
     let allSites
     if (user.role === 'admin') {
       const seen = new Set()
-      allSites = (Store.sites || []).filter(s => {
+      allSites = allSites().filter(s => {
         if (seen.has(s.url)) return false
         seen.add(s.url)
         return true
