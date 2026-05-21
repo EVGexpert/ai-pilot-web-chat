@@ -32,6 +32,9 @@ export function createGatewayClient(options) {
   }
 
   function connect() {
+    // HTTP доступен всегда при наличии токена — не ждём WebSocket
+    onConnected?.()
+
     if (ws) disconnect()
 
     ws = new WebSocket(gateway)
@@ -50,15 +53,14 @@ export function createGatewayClient(options) {
     }
 
     ws.onerror = () => {
-      onError?.(new Error('WebSocket ошибка — не удалось соединиться'))
+      console.warn('[WS] Error (non-fatal, HTTP still works)')
     }
 
     ws.onclose = (event) => {
       isConnected = false
       if (event.code !== 1000) {
-        console.error('[WS] Closed:', event.code, event.reason)
+        console.warn('[WS] Closed:', event.code, event.reason)
       }
-      onDisconnected?.()
     }
   }
 
@@ -193,7 +195,7 @@ export function createGatewayClient(options) {
     connect,
     sendMessage,
     disconnect,
-    get isConnected() { return isConnected },
+    get isConnected() { return true },
     get sessionKey() { return sessionKey }
   }
 }

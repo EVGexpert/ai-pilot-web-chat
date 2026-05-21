@@ -88,9 +88,8 @@ async function handleSend(text) {
     return
   }
 
-  // Админ: отправляем через Gateway как обычно
-  if (!client?.isConnected) return
-  client.sendMessage(text).catch(err => { error.value = err; isLoading.value = false })
+  // Админ: отправляем через Gateway HTTP API
+  client?.sendMessage(text).catch(err => { error.value = err; isLoading.value = false })
 }
 function handleReconnect() { error.value = null; connect() }
 function handleLogout() { 
