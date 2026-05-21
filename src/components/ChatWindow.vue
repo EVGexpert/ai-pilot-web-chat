@@ -78,6 +78,7 @@ async function handleSend(text) {
       if (res.ok) {
         const data = await res.json()
         messages.value = [...messages.value, { id: `msg-${Date.now()}`, role: 'assistant', content: data.message }]
+        await loadSessions()
       } else {
         const err = await res.json().catch(() => ({ error: 'Unknown error' }))
         error.value = err.error || 'Ошибка отправки'
