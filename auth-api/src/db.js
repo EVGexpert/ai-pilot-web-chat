@@ -102,7 +102,70 @@ db.run(`
 db.run('CREATE INDEX IF NOT EXISTS idx_sites_user ON sites(user_id)')
 db.run('CREATE INDEX IF NOT EXISTS idx_sites_url ON sites(url)')
 db.run('CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id)')
-db.run('CREATE INDEX IF NOT EXISTS idx_chat_sessions_user ON chat_sessions(user_id)')
+db.run('CREATE INDEX IF NOT EXISTS idx_chat_sessions_user ON chat_sessions(user_id, site_id)')
+db.run('CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at)')
+db.run('CREATE INDEX IF NOT EXISTS idx_verifications_user ON email_verifications(user_id)')
+
+// ============================================================
+// SCHEMA VERSIONING & MIGRATIONS
+// ============================================================
+db.run('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT)')
+const currentVersion = db.exec('SELECT MAX(version) FROM schema_version')
+const ver = currentVersion.length > 0 && currentVersion[0].values[0][0] ? currentVersion[0].values[0][0] : 0
+
+// Migration 1: add status to messages
+if (ver < 1) {
+  try {
+    db.run("ALTER TABLE messages ADD COLUMN status TEXT DEFAULT 'sent'")
+    db.run("ALTER TABLE messages ADD COLUMN source TEXT DEFAULT 'gateway'")
+  } catch (e) { /* columns may already exist */ }
+  db.run('INSERT INTO schema_version (version, applied_at) VALUES (1, ?)', [now()])
+}
+
+// Migration 2: add jobs table
+if (ver < 2) {
+  db.run(\`CREATE TABLE IF NOT EXISTS jobs (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    site_id TEXT,
+    user_id TEXT,
+    session_id TEXT,
+    payload_json TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    max_attempts INTEGER NOT NULL DEFAULT 5,
+    run_after TEXT,
+    locked_at TEXT,
+    locked_by TEXT,
+    last_error TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )\`)
+  db.run('CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status, run_after)')
+  db.run('INSERT INTO schema_version (version, applied_at) VALUES (2, ?)', [now()])
+}
+
+// Migration 3: add audit_events table
+if (ver < 3) {
+  db.run(\`CREATE TABLE IF NOT EXISTS audit_events (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    site_id TEXT,
+    session_id TEXT,
+    event_type TEXT NOT NULL,
+    entity_type TEXT,
+    entity_id TEXT,
+    payload_json TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+    request_id TEXT,
+    status TEXT,
+    created_at TEXT NOT NULL
+  )\`)
+  db.run('CREATE INDEX IF NOT EXISTS idx_audit_site ON audit_events(site_id, created_at)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_events(user_id, created_at)')
+  db.run('INSERT INTO schema_version (version, applied_at) VALUES (3, ?)', [now()])
+}
 
 // ============================================================
 // AUTO-SAVE to disk
@@ -307,23 +370,119 @@ export function findOrCreateSession(userId, siteId) {
   return createChatSession({ userId, siteId, title: 'Чат' })
 }
 
-// --- Messages ---
-export function createMessage({ sessionId, role, content, metadata, source = 'gateway' }) {
+// --- Messages (with status) ---
+export function createMessage({ sessionId, role, content, metadata, source = 'gateway', status = 'sent' }) {
   const id = uid()
   const meta = metadata ? (typeof metadata === 'string' ? metadata : JSON.stringify(metadata)) : null
   const t = now()
-  run('INSERT INTO messages (id, session_id, role, content, metadata, source, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [id, sessionId, role, content, meta, source, t])
-  return { id, session_id: sessionId, role, content, created_at: t }
+  run('INSERT INTO messages (id, session_id, role, content, metadata, source, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    [id, sessionId, role, content, meta, source, status, t])
+  return { id, session_id: sessionId, role, content, status, created_at: t }
+}
+export function updateMessageStatus(id, status) {
+  run('UPDATE messages SET status = ? WHERE id = ?', [status, id])
 }
 export function getMessagesBySession(sessionId) {
   return queryAll('SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC', [sessionId])
 }
 
+// --- Jobs (queue) ---
+export function createJob({ type, siteId, userId, sessionId, payload, maxAttempts = 5 }) {
+  const id = uid()
+  const t = now()
+  const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload)
+  run('INSERT INTO jobs (id, type, site_id, user_id, session_id, payload_json, status, max_attempts, run_after, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [id, type, siteId || null, userId || null, sessionId || null, payloadStr, 'pending', maxAttempts, t, t, t])
+  return id
+}
+export function claimJob() {
+  const t = now()
+  // Найти самую старую pending задачу, которая готова к выполнению
+  const job = queryOne("SELECT * FROM jobs WHERE status = 'pending' AND (run_after IS NULL OR run_after <= ?) ORDER BY created_at ASC LIMIT 1", [t])
+  if (!job) return null
+  run("UPDATE jobs SET status = 'processing', locked_at = ?, locked_by = 'worker', attempts = attempts + 1, updated_at = ? WHERE id = ?",
+    [t, t, job.id])
+  return queryOne('SELECT * FROM jobs WHERE id = ?', [job.id])
+}
+export function completeJob(id, result) {
+  const resultStr = typeof result === 'string' ? result : JSON.stringify(result)
+  run("UPDATE jobs SET status = 'done', locked_at = NULL, locked_by = NULL, payload_json = ?, updated_at = ? WHERE id = ?",
+    [resultStr, now(), id])
+}
+export function failJob(id, error) {
+  const j = queryOne('SELECT * FROM jobs WHERE id = ?', [id])
+  if (!j) return
+  if (j.attempts >= j.max_attempts) {
+    run("UPDATE jobs SET status = 'failed', last_error = ?, locked_at = NULL, locked_by = NULL, updated_at = ? WHERE id = ?",
+      [String(error), now(), id])
+  } else {
+    run("UPDATE jobs SET status = 'pending', last_error = ?, locked_at = NULL, locked_by = NULL, updated_at = ?, run_after = ? WHERE id = ?",
+      [String(error), now(), new Date(Date.now() + 5000).toISOString().replace('T', ' ').slice(0, 19), id])
+  }
+}
+export function getPendingJobCount() {
+  return queryOne("SELECT COUNT(*) as c FROM jobs WHERE status = 'pending'")?.c || 0
+}
+
+// --- Audit events ---
+export function createAuditEvent({ userId, siteId, sessionId, eventType, entityType, entityId, payload, ipAddress, userAgent, requestId, status }) {
+  const id = uid()
+  const t = now()
+  const payloadStr = payload ? (typeof payload === 'string' ? payload : JSON.stringify(payload)) : null
+  run('INSERT INTO audit_events (id, user_id, site_id, session_id, event_type, entity_type, entity_id, payload_json, ip_address, user_agent, request_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [id, userId || null, siteId || null, sessionId || null, eventType, entityType || null, entityId || null, payloadStr, ipAddress || null, userAgent || null, requestId || null, status || null, t])
+  return id
+}
+
+// ============================================================
+// JOB WORKER
+// ============================================================
+const JOB_HANDLERS = {}
+
+export function registerJobHandler(type, handler) {
+  JOB_HANDLERS[type] = handler
+}
+
+async function processJob(job) {
+  const handler = JOB_HANDLERS[job.type]
+  if (!handler) {
+    failJob(job.id, 'No handler for type: ' + job.type)
+    return
+  }
+  try {
+    const result = await handler(job)
+    completeJob(job.id, result)
+  } catch (e) {
+    failJob(job.id, e.message)
+    console.warn('[Worker] Job', job.id, job.type, 'failed:', e.message)
+  }
+}
+
+// Worker loop — проверяет очередь каждые 2 секунды
+let workerRunning = false
+async function workerLoop() {
+  if (workerRunning) return
+  workerRunning = true
+  while (true) {
+    try {
+      const job = claimJob()
+      if (job) {
+        await processJob(job)
+      } else {
+        await new Promise(r => setTimeout(r, 2000))
+      }
+    } catch (e) {
+      console.error('[Worker] Loop error:', e.message)
+      await new Promise(r => setTimeout(r, 5000))
+    }
+  }
+}
+
+setTimeout(() => workerLoop().catch(() => {}), 1000)
+
 // ============================================================
 // PERIODIC SAVE & SHUTDOWN
 // ============================================================
-// Дополнительный автосейв каждые 10 секунд
 setInterval(() => {
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
   save()
@@ -337,10 +496,14 @@ export function getStats() {
   const sites = queryOne('SELECT COUNT(*) as c FROM sites')?.c || 0
   const sessions = queryOne('SELECT COUNT(*) as c FROM chat_sessions')?.c || 0
   const messages = queryOne('SELECT COUNT(*) as c FROM messages')?.c || 0
-  const recentMessages = queryAll('SELECT role, substr(content,1,80) as preview, created_at FROM messages ORDER BY created_at DESC LIMIT 5')
+  const messagesByStatus = queryAll('SELECT status, COUNT(*) as c FROM messages GROUP BY status')
+  const jobsPending = queryOne("SELECT COUNT(*) as c FROM jobs WHERE status = 'pending'")?.c || 0
+  const jobsFailed = queryOne("SELECT COUNT(*) as c FROM jobs WHERE status = 'failed'")?.c || 0
+  const schemaVer = queryOne('SELECT MAX(version) as v FROM schema_version')?.v || 0
+  const recentMessages = queryAll('SELECT role, status, substr(content,1,80) as preview, created_at FROM messages ORDER BY created_at DESC LIMIT 5')
   const recentSites = queryAll('SELECT url, api_token is not null and api_token != \'pending\' as has_token, verified FROM sites ORDER BY created_at DESC LIMIT 10')
   const recentUsers = queryAll('SELECT email, role FROM users ORDER BY created_at DESC')
-  return { users, sites, sessions, messages, recentMessages, recentSites, recentUsers }
+  return { users, sites, sessions, messages, messagesByStatus, schemaVersion: schemaVer, jobs: { pending: jobsPending, failed: jobsFailed }, recentMessages, recentSites, recentUsers }
 }
 
 export function close() {

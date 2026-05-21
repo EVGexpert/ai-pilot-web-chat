@@ -1,5 +1,44 @@
-import { findSitesByUser, findSiteByUserAndUrl, updateSiteCache, findOrCreateSession, findSessionsByUserAndSite, createMessage, getMessagesBySession } from '../db.js'
+import { findSitesByUser, findSiteByUserAndUrl, updateSiteCache, findOrCreateSession, findSessionsByUserAndSite, createMessage, updateMessageStatus, getMessagesBySession, createJob, createAuditEvent, registerJobHandler } from '../db.js'
 import { verifyToken } from '../middleware/auth.js'
+
+// Регистрируем обработчики для фоновых задач
+registerJobHandler('refresh_context', async (job) => {
+  const { siteUrl, apiToken } = JSON.parse(job.payload_json)
+  if (!apiToken || apiToken === 'pending') return
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 3000)
+  const ctxRes = await fetch(
+    siteUrl.replace(/\/+$/, '') + '/wp-json/aipilot/v1/agent/context',
+    { headers: { 'X-AI-Pilot-Token': apiToken }, signal: controller.signal }
+  )
+  clearTimeout(timeout)
+  if (ctxRes.ok) {
+    const ctx = await ctxRes.json()
+    const site = findSiteByUserAndUrl(job.user_id, siteUrl)
+    if (site) {
+      updateSiteCache(site.id, {
+        cached_structure: JSON.stringify(ctx.structure || ctx),
+        cached_soul: JSON.stringify(ctx.soul || {}),
+        cached_at: new Date().toISOString()
+      })
+    }
+  }
+})
+
+registerJobHandler('sync_wp_memory', async (job) => {
+  const { siteUrl, apiToken, message, response, agentId } = JSON.parse(job.payload_json)
+  if (!apiToken || apiToken === 'pending') return
+  const memoryUrl = siteUrl.replace(/\/+$/, '') + '/wp-json/aipilot/v1/agent/memory'
+  const resp = await fetch(memoryUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-AI-Pilot-Token': apiToken },
+    body: JSON.stringify({
+      action: 'client_message', summary: message.slice(0, 200),
+      details: { response: (response || '').slice(0, 500), agentId }, agent: 'client'
+    })
+  })
+  if (!resp.ok) throw new Error('WP memory sync: ' + resp.status)
+})
 
 function authGuard(request, reply) {
   const auth = request.headers.authorization
@@ -22,32 +61,6 @@ function buildSystemPrompt(site, siteUrl, message, contextSummary) {
     greetingExtra = `\n\nВАЖНО: Клиент только что открыл чат. Представься коротко:\n- Ты AI-помощник сайта ${site.name || siteUrl}\n- Расскажи чем можешь помочь (контент, посты, страницы)\n- Попроси клиента представиться\n- Будь дружелюбным, без лишних эмодзи`
   }
   return `Ты AI-помощник для сайта ${site.name || siteUrl}.${contextSummary}\n\nAPI доступ: ${siteUrl}/wp-json/aipilot/v1\nAPI токен: ${site.api_token}\n\nПравила:\n1. Отвечай ТОЛЬКО про этот сайт. Ничего не знай про инфраструктуру AI Pilot.\n2. После ответа запиши в историю: POST /agent/memory\n3. Ничего не меняй без подтверждения${greetingExtra}`
-}
-
-async function refreshContextCache(site, siteUrl) {
-  if (!site.api_token || site.api_token === 'pending') return
-  try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 3000)
-    const ctxRes = await fetch(
-      `${siteUrl.replace(/\/+$/, '')}/wp-json/aipilot/v1/agent/context`,
-      {
-        headers: { 'X-AI-Pilot-Token': site.api_token },
-        signal: controller.signal
-      }
-    )
-    clearTimeout(timeout)
-    if (ctxRes.ok) {
-      const ctx = await ctxRes.json()
-      updateSiteCache(site.id, {
-        cached_structure: JSON.stringify(ctx.structure || ctx),
-        cached_soul: JSON.stringify(ctx.soul || {}),
-        cached_at: new Date().toISOString()
-      })
-    }
-  } catch (e) {
-    console.warn('[Cache] Context refresh failed:', e.message)
-  }
 }
 
 export default async function chatRoutes(app) {
@@ -90,21 +103,28 @@ export default async function chatRoutes(app) {
       } catch (e) { /* кэш битый */ }
     }
 
-    // Фоновое обновление кэша (fire-and-forget, не блокирует ответ)
+    // Фоновое обновление кэша — через очередь
     if (!contextSummary) {
-      refreshContextCache(site, siteUrl).catch(() => {})
+      createJob({
+        type: 'refresh_context',
+        siteId: site.id,
+        userId: request.user.sub,
+        payload: { siteUrl, apiToken: site.api_token },
+        maxAttempts: 1
+      })
     }
 
     // Собираем промпт
     const systemPrompt = buildSystemPrompt(site, siteUrl, message, contextSummary)
 
-    // Сохраняем сообщение пользователя
-    createMessage({
+    // Сохраняем сообщение пользователя со статусом 'pending'
+    const userMsg = createMessage({
       sessionId: session.id,
       role: 'user',
       content: message,
       metadata: { siteUrl },
-      source: 'client'
+      source: 'client',
+      status: 'received'
     })
 
     const agentId = getAgentId(siteUrl)
@@ -135,6 +155,7 @@ export default async function chatRoutes(app) {
 
       if (!resp.ok) {
         const text = await resp.text()
+        updateMessageStatus(userMsg.id, 'failed')
         return reply.status(resp.status).send({
           error: 'Gateway request failed',
           detail: text.slice(0, 500)
@@ -144,42 +165,43 @@ export default async function chatRoutes(app) {
       const data = await resp.json()
       const content = data.choices?.[0]?.message?.content || ''
 
+      // Обновляем статус сообщения пользователя
+      updateMessageStatus(userMsg.id, 'sent')
+
       // Сохраняем ответ ассистента
-      createMessage({
+      const assistantMsg = createMessage({
         sessionId: session.id,
         role: 'assistant',
         content,
         metadata: { agentId, model },
-        source: 'gateway'
+        source: 'gateway',
+        status: 'sent'
       })
 
-      // Параллельно пишем в память на WordPress (без ожидания)
+      // Пишем в память WordPress через очередь
       if (message.trim() !== '/start') {
-        try {
-          const memoryUrl = `${siteUrl.replace(/\/+$/, '')}/wp-json/aipilot/v1/agent/memory`
-          const memoryBody = {
-            action: 'client_message',
-            summary: message.slice(0, 200),
-            details: { response: content.slice(0, 500), agentId },
-            agent: 'client'
-          }
-          fetch(memoryUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-AI-Pilot-Token': site.api_token },
-            body: JSON.stringify(memoryBody)
-          }).catch(() => {})
-        } catch (e) {
-          console.warn('[Memory] WP save failed:', e.message)
-        }
+        createJob({
+          type: 'sync_wp_memory',
+          siteId: site.id,
+          userId: request.user.sub,
+          sessionId: session.id,
+          payload: {
+            siteUrl, apiToken: site.api_token,
+            message, response: content, agentId
+          },
+          maxAttempts: 3
+        })
       }
 
       return reply.send({
         message: content,
         agentId,
         siteUrl,
-        sessionId: session.id
+        sessionId: session.id,
+        messageId: userMsg.id
       })
     } catch (e) {
+      if (userMsg) updateMessageStatus(userMsg.id, 'failed')
       return reply.status(502).send({ error: `Chat proxy failed: ${e.message}` })
     }
   })
