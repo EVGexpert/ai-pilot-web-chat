@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js'
 import sitesRoutes from './routes/sites.js'
 import chatRoutes from './routes/chat.js'
 import { config } from './config.js'
+import { getStats } from './db.js'
 
 
 const app = Fastify({ logger: true })
@@ -27,7 +28,17 @@ await app.register(sitesRoutes, { prefix: '/api/sites' })
 await app.register(chatRoutes, { prefix: '/api/chat' })
 
 // Health check
-app.get('/api/health', async () => ({ status: 'ok', version: '0.1.0' }))
+app.get('/api/health', async () => ({ status: 'ok', version: '0.2.0' }))
+
+// Статистика БД
+app.get('/api/stats', async (request, reply) => {
+  try {
+    const stats = getStats()
+    return reply.send({ status: 'ok', ...stats })
+  } catch (e) {
+    return reply.status(500).send({ error: e.message })
+  }
+})
 
 const start = async () => {
   try {
