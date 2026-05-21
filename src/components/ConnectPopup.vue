@@ -13,6 +13,7 @@ const siteName = ref('')
 const siteUrl = ref('')
 const redirectUrl = ref('')
 const siteCode = ref('')
+const directToken = ref('')
 
 const GATEWAY_TOKEN = import.meta.env.VITE_GATEWAY_TOKEN
 
@@ -30,6 +31,7 @@ onMounted(() => {
   siteUrl.value = rawSite ? decodeURIComponent(rawSite) : ''
   redirectUrl.value = params.get('redirect') || ''
   siteCode.value = params.get('code') || ''
+  directToken.value = params.get('token') || ''
   siteName.value = siteUrl.value
     ? siteUrl.value.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
     : ''
@@ -69,33 +71,64 @@ async function handleSubmit() {
     // Переходим к подключению
     step.value = 'connecting'
 
-    // Регистрируем сайт через code (безопасно) или через токен (старый метод)
+    // Регистрируем сайт
     let apiToken = 'pending'
     if (siteUrl.value) {
       try {
         let regRes
         if (siteCode.value) {
-          // Новый безопасный метод — connection code
+          // Безопасный метод — connection code
           regRes = await fetch('/api/sites/connect-code', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({ code: siteCode.value, siteUrl: siteUrl.value })
           })
-        } else {
-          // Старый метод — прямой токен
+        } else if (directToken.value) {
+          // Токен из URL — передаём напрямую
           regRes = await fetch('/api/sites/connect', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body: JSON.stringify({
               url: siteUrl.value,
-              apiToken: apiToken,
+              apiToken: directToken.value,
+              name: siteName.value
+            })
+          })
+          // Если сайт уже привязан (409) — обновляем токен
+          if (regRes.status === 409) {
+            // Нужно получить id сайта и обновить токен
+            const meRes = await fetch('/api/auth/me', {
+              headers: { 'Authorization': 'Bearer ' + token }
+            })
+            if (meRes.ok) {
+              const meData = await meRes.json()
+              const existingSite = (meData.sites || []).find(s =>
+                s.url.replace(/\/+$/, '') === siteUrl.value.replace(/\/+$/, '')
+              )
+              if (existingSite) {
+                regRes = await fetch('/api/sites/' + existingSite.id + '/token', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                  body: JSON.stringify({ apiToken: directToken.value })
+                })
+              }
+            }
+          }
+        } else {
+          // Без токена — создаём с 'pending' (будет обновлён позже)
+          regRes = await fetch('/api/sites/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({
+              url: siteUrl.value,
+              apiToken: 'pending',
               name: siteName.value
             })
           })
         }
         if (regRes.ok) {
           const regData = await regRes.json()
-          apiToken = regData.apiToken || apiToken
+          apiToken = directToken.value || regData.apiToken || apiToken
         }
       } catch (e) {
         console.warn('Site registration failed:', e)

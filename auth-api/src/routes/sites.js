@@ -245,6 +245,21 @@ export default async function sitesRoutes(app) {
     }
   })
 
+  // Обновить токен сайта
+  app.patch('/:id/token', async (request, reply) => {
+    const err = authGuard(request, reply)
+    if (err) return err
+    const { apiToken } = request.body || {}
+    if (!apiToken) return reply.status(400).send({ error: 'apiToken обязателен' })
+    const site = findSiteById(request.params.id)
+    if (!site) return reply.status(404).send({ error: 'Site not found' })
+    if (!isAdmin(request.user) && site.user_id !== request.user.sub) {
+      return reply.status(403).send({ error: 'Access denied' })
+    }
+    updateSiteToken(request.params.id, apiToken)
+    return reply.send({ message: 'Токен обновлён', apiToken })
+  })
+
   // Удалить сайт
   app.delete('/:id', async (request, reply) => {
     const err = authGuard(request, reply)
