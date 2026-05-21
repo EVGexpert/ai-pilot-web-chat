@@ -1,4 +1,4 @@
-import { findSitesByUser, findSiteByUserAndUrl, updateSiteCache, findOrCreateSession, findSessionsByUserAndSite, createMessage, updateMessageStatus, getMessagesBySession, createJob, createAuditEvent, registerJobHandler } from '../db.js'
+import { findSitesByUser, findSiteByUserAndUrl, updateSiteCache, findOrCreateSession, findSessionById, findSessionsByUserAndSite, createChatSession, createMessage, updateMessageStatus, getMessagesBySession, createJob, createAuditEvent, registerJobHandler } from '../db.js'
 import { verifyToken } from '../middleware/auth.js'
 
 // Регистрируем обработчики для фоновых задач
@@ -70,7 +70,7 @@ export default async function chatRoutes(app) {
     const err = authGuard(request, reply)
     if (err) return err
 
-    const { message, siteUrl } = request.body || {}
+    const { message, siteUrl, sessionId } = request.body || {}
     if (!message || !siteUrl) {
       return reply.status(400).send({ error: 'message и siteUrl обязательны' })
     }
@@ -88,8 +88,18 @@ export default async function chatRoutes(app) {
       })
     }
 
-    // Создаём или находим сессию чата
-    const session = findOrCreateSession(request.user.sub, site.id)
+    // Создаём или используем указанную сессию
+    let session
+    if (sessionId) {
+      const existingSession = findSessionById(sessionId)
+      if (existingSession && existingSession.user_id === request.user.sub && existingSession.site_id === site.id) {
+        session = existingSession
+      } else {
+        session = createChatSession({ userId: request.user.sub, siteId: site.id, title: 'Чат' })
+      }
+    } else {
+      session = findOrCreateSession(request.user.sub, site.id)
+    }
 
     // Контекст сайта — из кэша (без ожидания WP)
     let contextSummary = ''
@@ -204,6 +214,49 @@ export default async function chatRoutes(app) {
       if (userMsg) updateMessageStatus(userMsg.id, 'failed')
       return reply.status(502).send({ error: `Chat proxy failed: ${e.message}` })
     }
+  })
+
+  // Список сессий с превью
+  app.get('/sessions', async (request, reply) => {
+    const err = authGuard(request, reply)
+    if (err) return err
+
+    const { siteUrl } = request.query
+    if (!siteUrl) return reply.status(400).send({ error: 'siteUrl обязателен' })
+
+    const site = findSiteByUserAndUrl(request.user.sub, siteUrl)
+    if (!site) return reply.status(403).send({ error: 'Сайт не привязан' })
+
+    const sessions = findSessionsByUserAndSite(request.user.sub, site.id)
+    const result = sessions.map(s => {
+      const msgs = getMessagesBySession(s.id)
+      const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null
+      const userMsgs = msgs.filter(m => m.role === 'user')
+      return {
+        id: s.id,
+        title: s.title || 'Чат',
+        preview: lastMsg ? lastMsg.content.slice(0, 60) : '',
+        date: s.created_at.slice(0, 10),
+        messageCount: msgs.length,
+        lastMessage: lastMsg ? { role: lastMsg.role, created_at: lastMsg.created_at } : null
+      }
+    })
+    return reply.send({ sessions: result })
+  })
+
+  // Новая сессия
+  app.post('/new', async (request, reply) => {
+    const err = authGuard(request, reply)
+    if (err) return err
+
+    const { siteUrl } = request.body || {}
+    if (!siteUrl) return reply.status(400).send({ error: 'siteUrl обязателен' })
+
+    const site = findSiteByUserAndUrl(request.user.sub, siteUrl)
+    if (!site) return reply.status(403).send({ error: 'Сайт не привязан' })
+
+    const session = createChatSession({ userId: request.user.sub, siteId: site.id, title: 'Чат' })
+    return reply.send({ sessionId: session.id })
   })
 
   // История сообщений для сессии

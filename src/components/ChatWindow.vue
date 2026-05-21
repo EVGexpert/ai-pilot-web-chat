@@ -18,6 +18,8 @@ const isConnected = ref(false)
 const isLoading = ref(false)
 const streamingContent = ref('')
 const error = ref(null)
+const currentSessionId = ref(null)
+const sessionsList = ref([])
 
 const showClientHistory = ref(false)
 const currentSiteConversations = computed(() => sitesStore.currentSiteConversations)
@@ -68,7 +70,8 @@ async function handleSend(text) {
         },
         body: JSON.stringify({
           message: text,
-          siteUrl: authStore.siteUrl
+          siteUrl: authStore.siteUrl,
+          sessionId: currentSessionId.value
         })
       })
       
@@ -92,6 +95,75 @@ async function handleSend(text) {
   client?.sendMessage(text).catch(err => { error.value = err; isLoading.value = false })
 }
 function handleReconnect() { error.value = null; connect() }
+}
+
+// Загрузить список сессий
+async function loadSessions() {
+  try {
+    const res = await fetch('/api/chat/sessions?siteUrl=' + encodeURIComponent(authStore.siteUrl), {
+      headers: { 'Authorization': 'Bearer ' + authStore.token }
+    })
+    if (res.ok) {
+      const data = await res.json()
+      sessionsList.value = data.sessions || []
+    }
+  } catch (e) {
+    console.warn('Sessions load failed:', e)
+  }
+}
+
+// Загрузить историю конкретной сессии
+async function loadSessionHistory(sessionId) {
+  try {
+    const res = await fetch('/api/chat/history?sessionId=' + encodeURIComponent(sessionId), {
+      headers: { 'Authorization': 'Bearer ' + authStore.token }
+    })
+    if (res.ok) {
+      const hist = await res.json()
+      if (hist.messages && hist.messages.length > 0) {
+        messages.value = hist.messages.map(m => ({
+          id: 'msg-' + m.id,
+          role: m.role,
+          content: m.content
+        }))
+      }
+    }
+  } catch (e) {
+    console.warn('History load failed:', e)
+  }
+}
+
+// Новый чат — создаём сессию и очищаем
+async function startNewChat() {
+  try {
+    const res = await fetch('/api/chat/new', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + authStore.token
+      },
+      body: JSON.stringify({ siteUrl: authStore.siteUrl })
+    })
+    if (res.ok) {
+      const data = await res.json()
+      currentSessionId.value = data.sessionId
+      messages.value = []
+      streamingContent.value = ''
+      isLoading.value = false
+      error.value = null
+      await loadSessions()
+    }
+  } catch (e) {
+    console.warn('New chat failed:', e)
+  }
+}
+
+// Выбрать сессию из списка
+async function selectSession(sessionId) {
+  currentSessionId.value = sessionId
+  await loadSessionHistory(sessionId)
+}
+
 function handleLogout() { 
   // Очищаем флаги приветствия при выходе
   const keys = Object.keys(localStorage).filter(k => k.startsWith('aipilot_greeted_'))
@@ -108,25 +180,19 @@ if (props.clientMode) {
     isConnected.value = true
     
     if (authStore.siteUrl) {
-      // Загружаем историю
-      try {
-        const histRes = await fetch('/api/chat/history?siteUrl=' + encodeURIComponent(authStore.siteUrl), {
-          headers: { 'Authorization': 'Bearer ' + authStore.token }
-        })
-        if (histRes.ok) {
-          const hist = await histRes.json()
-          if (hist.messages && hist.messages.length > 0) {
-            messages.value = hist.messages.map(m => ({
-              id: 'msg-' + m.id,
-              role: m.role,
-              content: m.content
-            }))
-            localStorage.setItem('aipilot_greeted_' + authStore.siteUrl, '1')
-          }
-        }
-      } catch (e) {
-        console.warn('History load failed:', e)
+      // Загружаем сессии
+      await loadSessions()
+
+      // Загружаем последнюю сессию
+      if (sessionsList.value.length > 0) {
+        currentSessionId.value = sessionsList.value[0].id
+        await loadSessionHistory(sessionsList.value[0].id)
+        localStorage.setItem('aipilot_greeted_' + authStore.siteUrl, '1')
       }
+
+      // Приветствие — только если нет сессий
+      const greeted = localStorage.getItem('aipilot_greeted_' + authStore.siteUrl)
+      if (!greeted && sessionsList.value.length === 0) {
       
       // Приветствие — только если нет истории
       const greeted = localStorage.getItem('aipilot_greeted_' + authStore.siteUrl)
@@ -140,7 +206,8 @@ if (props.clientMode) {
             },
             body: JSON.stringify({
               message: '/start',
-              siteUrl: authStore.siteUrl
+              siteUrl: authStore.siteUrl,
+              sessionId: currentSessionId.value
             })
           })
           if (res.ok) {
@@ -195,12 +262,17 @@ watch([messages, streamingContent], async () => {
       </div>
       <div v-if="sitesStore.currentSite" class="cs-site">🟢 {{ sitesStore.currentSite.name }}</div>
       <div class="cs-divider"></div>
+      <button class="cs-new-btn" @click="startNewChat">✏️ Новый чат</button>
       <div class="cs-section-title">История</div>
       <div class="cs-history">
-        <div v-if="currentSiteConversations.length === 0" class="cs-empty">Нет обращений</div>
-        <div v-for="conv in currentSiteConversations" :key="conv.id" class="cs-conv">
-          <div class="cs-conv-title">{{ conv.title }}</div>
-          <div class="cs-conv-preview">{{ conv.preview }}</div>
+        <div v-if="sessionsList.length === 0" class="cs-empty">Нет обращений</div>
+        <div v-for="s in sessionsList" :key="s.id" 
+             class="cs-conv" 
+             :class="{ 'cs-conv--active': s.id === currentSessionId }"
+             @click="selectSession(s.id)">
+          <div class="cs-conv-title">{{ s.title || 'Чат' }}</div>
+          <div class="cs-conv-date">{{ s.date }}</div>
+          <div class="cs-conv-preview">{{ s.preview || s.messageCount + ' сообщений' }}</div>
         </div>
       </div>
       <div class="cs-footer">

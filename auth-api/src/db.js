@@ -364,6 +364,10 @@ export function createChatSession({ userId, siteId, title }) {
 export function findSessionsByUserAndSite(userId, siteId) {
   return queryAll('SELECT * FROM chat_sessions WHERE user_id = ? AND site_id = ? ORDER BY created_at DESC', [userId, siteId])
 }
+export function findSessionById(id) {
+  return queryOne('SELECT * FROM chat_sessions WHERE id = ?', [id]) || null
+}
+
 export function findOrCreateSession(userId, siteId) {
   const sessions = queryAll('SELECT * FROM chat_sessions WHERE user_id = ? AND site_id = ? ORDER BY created_at DESC', [userId, siteId])
   if (sessions.length > 0) return sessions[0]
