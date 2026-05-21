@@ -60,9 +60,7 @@ export default async function sitesRoutes(app) {
     const { code, siteUrl } = request.body || {}
     if (!code || !siteUrl) return reply.status(400).send({ error: 'Code and siteUrl required' })
 
-    if (findSiteByUserAndUrl(request.user.sub, siteUrl)) {
-      return reply.status(409).send({ error: 'Сайт уже привязан к вашему аккаунту' })
-    }
+    let existingSite = findSiteByUserAndUrl(request.user.sub, siteUrl)
 
     try {
       const cleanUrl = siteUrl.replace(/\/+$/, '')
@@ -74,6 +72,16 @@ export default async function sitesRoutes(app) {
 
       const siteName = data.site_name || siteUrl
       const apiToken = data.token || ''
+
+      if (existingSite) {
+        // Обновляем токен существующего сайта
+        updateSiteToken(existingSite.id, apiToken)
+        existingSite = findSiteById(existingSite.id)
+        if (apiToken) {
+          notifyGateway(siteUrl, apiToken, request.user.sub).catch(() => {})
+        }
+        return reply.send({ id: existingSite.id, url: siteUrl, name: siteName, verified: !!apiToken })
+      }
 
       const site = createSite({
         userId: request.user.sub, url: siteUrl, name: siteName, apiToken,
