@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3'
+import initSqlJs from 'sql.js'
 import { readFileSync, existsSync, mkdirSync, renameSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -11,15 +11,30 @@ const JSON_PATH = DB_PATH.replace(/\.db$/, '.json')
 const dir = path.dirname(DB_PATH)
 if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
 
-// Открываем SQLite
-const db = new Database(DB_PATH)
-db.pragma('journal_mode = WAL')  // быстрее, конкурентнее
-db.pragma('foreign_keys = ON')
+// ============================================================
+// INIT SQLite
+// ============================================================
+let db
+const SQL = await initSqlJs()
+
+function openDb() {
+  if (existsSync(DB_PATH)) {
+    const buffer = readFileSync(DB_PATH)
+    db = new SQL.Database(buffer)
+  } else {
+    db = new SQL.Database()
+  }
+  db.run('PRAGMA journal_mode = WAL')
+  db.run('PRAGMA foreign_keys = ON')
+  return db
+}
+
+openDb()
 
 // ============================================================
 // SCHEMA
 // ============================================================
-db.exec(`
+db.run(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
@@ -29,8 +44,9 @@ db.exec(`
     email_verified INTEGER DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
-  );
-
+  )
+`)
+db.run(`
   CREATE TABLE IF NOT EXISTS sites (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -45,8 +61,9 @@ db.exec(`
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
-  );
-
+  )
+`)
+db.run(`
   CREATE TABLE IF NOT EXISTS email_verifications (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -54,8 +71,9 @@ db.exec(`
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
-  );
-
+  )
+`)
+db.run(`
   CREATE TABLE IF NOT EXISTS chat_sessions (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -65,8 +83,9 @@ db.exec(`
     updated_at TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (site_id) REFERENCES sites(id)
-  );
-
+  )
+`)
+db.run(`
   CREATE TABLE IF NOT EXISTS messages (
     id TEXT PRIMARY KEY,
     session_id TEXT NOT NULL,
@@ -76,70 +95,80 @@ db.exec(`
     source TEXT DEFAULT 'gateway',
     created_at TEXT NOT NULL,
     FOREIGN KEY (session_id) REFERENCES chat_sessions(id)
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_sites_user ON sites(user_id);
-  CREATE INDEX IF NOT EXISTS idx_sites_url ON sites(url);
-  CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
-  CREATE INDEX IF NOT EXISTS idx_chat_sessions_user ON chat_sessions(user_id);
+  )
 `)
+db.run('CREATE INDEX IF NOT EXISTS idx_sites_user ON sites(user_id)')
+db.run('CREATE INDEX IF NOT EXISTS idx_sites_url ON sites(url)')
+db.run('CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id)')
+db.run('CREATE INDEX IF NOT EXISTS idx_chat_sessions_user ON chat_sessions(user_id)')
+
+// ============================================================
+// AUTO-SAVE to disk
+// ============================================================
+function save() {
+  try {
+    const data = db.export()
+    const buffer = Buffer.from(data)
+    writeFileSync(DB_PATH, buffer)
+  } catch (e) {
+    console.error('[DB] Save error:', e.message)
+  }
+}
+
+// Сохраняем через 1s после последнего изменения (debounce)
+let saveTimer = null
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(() => {
+    save()
+    saveTimer = null
+  }, 1000)
+}
+
+import { writeFileSync } from 'fs'
 
 // ============================================================
 // MIGRATION из JSON в SQLite
 // ============================================================
 function migrateFromJson() {
-  const jsonFile = JSON_PATH
-  if (!existsSync(jsonFile)) return false
+  if (!existsSync(JSON_PATH)) return false
 
-  // Проверяем, есть ли уже данные в SQLite
-  const count = db.prepare('SELECT COUNT(*) as c FROM users').get()
-  if (count.c > 0) return false
+  // Проверяем, есть ли уже данные
+  const count = db.exec('SELECT COUNT(*) as c FROM users')
+  if (count.length > 0 && count[0].values[0][0] > 0) return false
 
   console.log('[DB] Migrating from JSON to SQLite...')
 
   let jsonData
   try {
-    jsonData = JSON.parse(readFileSync(jsonFile, 'utf-8'))
+    jsonData = JSON.parse(readFileSync(JSON_PATH, 'utf-8'))
   } catch (e) {
     console.warn('[DB] Failed to parse JSON file, skipping migration:', e.message)
     return false
   }
 
-  const insertUser = db.prepare(
-    'INSERT INTO users (id, email, password_hash, name, role, email_verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  )
-  const insertSite = db.prepare(
-    'INSERT INTO sites (id, user_id, url, name, api_token, wp_version, verified, cached_structure, cached_soul, cached_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  )
-  const insertVerification = db.prepare(
-    'INSERT INTO email_verifications (id, user_id, code, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
-  )
-  const insertSession = db.prepare(
-    'INSERT INTO chat_sessions (id, user_id, site_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-  )
-
-  const transaction = db.transaction(() => {
+  try {
     for (const u of (jsonData.users || [])) {
-      insertUser.run(u.id, u.email, u.password_hash, u.name || null, u.role || 'client', u.email_verified || 0, u.created_at, u.updated_at)
+      db.run('INSERT INTO users (id, email, password_hash, name, role, email_verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [u.id, u.email, u.password_hash, u.name || null, u.role || 'client', u.email_verified || 0, u.created_at, u.updated_at])
     }
     for (const s of (jsonData.sites || [])) {
       const cachedStruct = typeof s.cached_structure === 'object' ? JSON.stringify(s.cached_structure) : (s.cached_structure || null)
       const cachedSoul = typeof s.cached_soul === 'object' ? JSON.stringify(s.cached_soul) : (s.cached_soul || null)
-      insertSite.run(s.id, s.user_id, s.url, s.name || null, s.api_token || null, s.wp_version || null, s.verified || 0, cachedStruct, cachedSoul, s.cached_at || null, s.created_at, s.updated_at)
+      db.run('INSERT INTO sites (id, user_id, url, name, api_token, wp_version, verified, cached_structure, cached_soul, cached_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [s.id, s.user_id, s.url, s.name || null, s.api_token || null, s.wp_version || null, s.verified || 0, cachedStruct, cachedSoul, s.cached_at || null, s.created_at, s.updated_at])
     }
     for (const v of (jsonData.emailVerifications || [])) {
-      insertVerification.run(v.id, v.user_id, v.code, v.expires_at, v.created_at)
+      db.run('INSERT INTO email_verifications (id, user_id, code, expires_at, created_at) VALUES (?, ?, ?, ?, ?)',
+        [v.id, v.user_id, v.code, v.expires_at, v.created_at])
     }
     for (const s of (jsonData.chatSessions || [])) {
-      insertSession.run(s.id, s.user_id, s.site_id || null, s.title || null, s.created_at, s.updated_at)
+      db.run('INSERT INTO chat_sessions (id, user_id, site_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        [s.id, s.user_id, s.site_id || null, s.title || null, s.created_at, s.updated_at])
     }
-  })
-
-  try {
-    transaction()
-    // Переименовываем JSON, чтобы не перемигрировать
-    renameSync(jsonFile, jsonFile + '.migrated')
-    console.log('[DB] Migration complete. JSON renamed to', jsonFile + '.migrated')
+    save()
+    renameSync(JSON_PATH, JSON_PATH + '.migrated')
+    console.log('[DB] Migration complete. JSON renamed to', JSON_PATH + '.migrated')
   } catch (e) {
     console.error('[DB] Migration failed:', e.message)
   }
@@ -149,7 +178,7 @@ function migrateFromJson() {
 migrateFromJson()
 
 // ============================================================
-// HELPERS
+// HELPERS — sql.js wrapper
 // ============================================================
 
 function uid() {
@@ -159,155 +188,150 @@ function now() {
   return new Date().toISOString().replace('T', ' ').slice(0, 19)
 }
 
-// --- Users ---
-const stmtFindUserByEmail = db.prepare('SELECT * FROM users WHERE email = ?')
-const stmtFindUserById = db.prepare('SELECT * FROM users WHERE id = ?')
-const stmtCreateUser = db.prepare(
-  'INSERT INTO users (id, email, password_hash, name, role, email_verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?)'
-)
-const stmtUpdateUser = db.prepare(
-  'UPDATE users SET name = COALESCE(?, name), email_verified = COALESCE(?, email_verified), updated_at = ? WHERE id = ?'
-)
+// Вспомогательные функции для работы с sql.js
+function queryOne(sql, params = []) {
+  const stmt = db.prepare(sql)
+  if (params.length > 0) stmt.bind(params)
+  let row = null
+  if (stmt.step()) row = stmt.getAsObject()
+  stmt.free()
+  return row || null
+}
 
+function queryAll(sql, params = []) {
+  const stmt = db.prepare(sql)
+  if (params.length > 0) stmt.bind(params)
+  const rows = []
+  while (stmt.step()) rows.push(stmt.getAsObject())
+  stmt.free()
+  return rows
+}
+
+function run(sql, params = []) {
+  db.run(sql, params)
+  scheduleSave()
+}
+
+// --- Users ---
 export function findUserByEmail(email) {
-  return stmtFindUserByEmail.get(email) || null
+  return queryOne('SELECT * FROM users WHERE email = ?', [email])
 }
 export function findUserById(id) {
-  return stmtFindUserById.get(id) || null
+  return queryOne('SELECT * FROM users WHERE id = ?', [id])
 }
 export function createUser({ email, passwordHash, name, role = 'client' }) {
   const id = uid()
   const t = now()
-  stmtCreateUser.run(id, email, passwordHash, name || null, role, t, t)
+  run('INSERT INTO users (id, email, password_hash, name, role, email_verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, ?, ?)',
+    [id, email, passwordHash, name || null, role, t, t])
   return findUserById(id)
 }
 export function updateUser(id, fields) {
-  stmtUpdateUser.run(fields.name ?? null, fields.email_verified ?? null, now(), id)
+  const sets = []
+  const params = []
+  if (fields.name !== undefined) { sets.push('name = ?'); params.push(fields.name) }
+  if (fields.email_verified !== undefined) { sets.push('email_verified = ?'); params.push(fields.email_verified) }
+  if (sets.length === 0) return findUserById(id)
+  params.push(now(), id)
+  run(`UPDATE users SET ${sets.join(', ')}, updated_at = ? WHERE id = ?`, params)
   return findUserById(id)
 }
 
 // --- Sites ---
-const stmtFindSitesByUser = db.prepare('SELECT * FROM sites WHERE user_id = ?')
-const stmtFindSiteByUserAndUrl = db.prepare('SELECT * FROM sites WHERE user_id = ? AND url = ?')
-const stmtFindSiteById = db.prepare('SELECT * FROM sites WHERE id = ?')
-const stmtCreateSite = db.prepare(
-  'INSERT INTO sites (id, user_id, url, name, api_token, wp_version, verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-)
-const stmtUpdateSiteCache = db.prepare(
-  'UPDATE sites SET cached_structure = COALESCE(?, cached_structure), cached_soul = COALESCE(?, cached_soul), cached_at = COALESCE(?, cached_at), updated_at = ? WHERE id = ?'
-)
-const stmtUpdateSiteToken = db.prepare(
-  'UPDATE sites SET api_token = ?, verified = 1, updated_at = ? WHERE id = ?'
-)
-const stmtDeleteSite = db.prepare('DELETE FROM sites WHERE id = ?')
-const stmtAllSites = db.prepare('SELECT * FROM sites ORDER BY created_at DESC')
-
 export function findSitesByUser(userId) {
-  return stmtFindSitesByUser.all(userId)
+  return queryAll('SELECT * FROM sites WHERE user_id = ?', [userId])
 }
 export function findSiteByUserAndUrl(userId, url) {
-  return stmtFindSiteByUserAndUrl.get(userId, url) || null
+  return queryOne('SELECT * FROM sites WHERE user_id = ? AND url = ?', [userId, url])
 }
 export function findSiteById(id) {
-  return stmtFindSiteById.get(id) || null
+  return queryOne('SELECT * FROM sites WHERE id = ?', [id])
 }
 export function createSite({ userId, url, name, apiToken, wpVersion, verified = 0 }) {
   const id = uid()
   const t = now()
-  stmtCreateSite.run(id, userId, url, name || null, apiToken || null, wpVersion || null, verified, t, t)
+  run('INSERT INTO sites (id, user_id, url, name, api_token, wp_version, verified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [id, userId, url, name || null, apiToken || null, wpVersion || null, verified, t, t])
   return findSiteById(id)
 }
 export function updateSiteCache(id, fields) {
   const struct = fields.cached_structure ? (typeof fields.cached_structure === 'string' ? fields.cached_structure : JSON.stringify(fields.cached_structure)) : null
   const soul = fields.cached_soul ? (typeof fields.cached_soul === 'string' ? fields.cached_soul : JSON.stringify(fields.cached_soul)) : null
-  stmtUpdateSiteCache.run(struct, soul, fields.cached_at || null, now(), id)
+  run('UPDATE sites SET cached_structure = COALESCE(?, cached_structure), cached_soul = COALESCE(?, cached_soul), cached_at = COALESCE(?, cached_at), updated_at = ? WHERE id = ?',
+    [struct, soul, fields.cached_at || null, now(), id])
   return findSiteById(id)
 }
 export function updateSiteToken(id, token) {
-  stmtUpdateSiteToken.run(token, now(), id)
+  run('UPDATE sites SET api_token = ?, verified = 1, updated_at = ? WHERE id = ?', [token, now(), id])
   return findSiteById(id)
 }
 export function deleteSite(id) {
-  stmtDeleteSite.run(id)
+  run('DELETE FROM sites WHERE id = ?', [id])
   return true
 }
 export function allSites() {
-  return stmtAllSites.all()
+  return queryAll('SELECT * FROM sites ORDER BY created_at DESC')
 }
 
 // --- Email verifications ---
-const stmtCreateVerification = db.prepare(
-  'INSERT INTO email_verifications (id, user_id, code, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
-)
-const stmtFindVerification = db.prepare(
-  'SELECT * FROM email_verifications WHERE user_id = ? AND code = ? AND expires_at > ?'
-)
-const stmtDeleteVerificationsByUser = db.prepare('DELETE FROM email_verifications WHERE user_id = ?')
-
 export function createVerification(userId, code) {
   const id = uid()
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19)
-  stmtCreateVerification.run(id, userId, code, expiresAt, now())
-  return { id, user_id: userId, code, expires_at: expiresAt }
+  run('INSERT INTO email_verifications (id, user_id, code, expires_at, created_at) VALUES (?, ?, ?, ?, ?)',
+    [id, userId, code, expiresAt, now()])
+  return { id, user_id: userId, code, expires_at: expiresAt, created_at: now() }
 }
 export function findVerification(userId, code) {
-  return stmtFindVerification.get(userId, code, now()) || null
+  return queryOne('SELECT * FROM email_verifications WHERE user_id = ? AND code = ? AND expires_at > ?', [userId, code, now()])
 }
 export function deleteVerificationsByUser(userId) {
-  stmtDeleteVerificationsByUser.run(userId)
+  run('DELETE FROM email_verifications WHERE user_id = ?', [userId])
 }
 
 // --- Chat sessions ---
-const stmtCreateChatSession = db.prepare(
-  'INSERT INTO chat_sessions (id, user_id, site_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-)
-const stmtFindSessionsByUserAndSite = db.prepare(
-  'SELECT * FROM chat_sessions WHERE user_id = ? AND site_id = ? ORDER BY created_at DESC'
-)
-const stmtFindSessionById = db.prepare('SELECT * FROM chat_sessions WHERE id = ?')
-
 export function createChatSession({ userId, siteId, title }) {
   const id = uid()
   const t = now()
-  stmtCreateChatSession.run(id, userId, siteId || null, title || null, t, t)
-  return stmtFindSessionById.get(id)
+  run('INSERT INTO chat_sessions (id, user_id, site_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+    [id, userId, siteId || null, title || null, t, t])
+  return queryOne('SELECT * FROM chat_sessions WHERE id = ?', [id])
 }
 export function findSessionsByUserAndSite(userId, siteId) {
-  return stmtFindSessionsByUserAndSite.all(userId, siteId)
+  return queryAll('SELECT * FROM chat_sessions WHERE user_id = ? AND site_id = ? ORDER BY created_at DESC', [userId, siteId])
 }
 export function findOrCreateSession(userId, siteId) {
-  // Ищем последнюю сессию для user+site, если нет — создаём
-  const sessions = stmtFindSessionsByUserAndSite.all(userId, siteId)
+  const sessions = queryAll('SELECT * FROM chat_sessions WHERE user_id = ? AND site_id = ? ORDER BY created_at DESC', [userId, siteId])
   if (sessions.length > 0) return sessions[0]
   return createChatSession({ userId, siteId, title: 'Чат' })
 }
 
 // --- Messages ---
-const stmtCreateMessage = db.prepare(
-  'INSERT INTO messages (id, session_id, role, content, metadata, source, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-)
-const stmtMessagesBySession = db.prepare(
-  'SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC'
-)
-
 export function createMessage({ sessionId, role, content, metadata, source = 'gateway' }) {
   const id = uid()
   const meta = metadata ? (typeof metadata === 'string' ? metadata : JSON.stringify(metadata)) : null
   const t = now()
-  stmtCreateMessage.run(id, sessionId, role, content, meta, source, t)
+  run('INSERT INTO messages (id, session_id, role, content, metadata, source, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [id, sessionId, role, content, meta, source, t])
   return { id, session_id: sessionId, role, content, created_at: t }
 }
 export function getMessagesBySession(sessionId) {
-  return stmtMessagesBySession.all(sessionId)
+  return queryAll('SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC', [sessionId])
 }
 
 // ============================================================
-// CLEANUP
+// PERIODIC SAVE & SHUTDOWN
 // ============================================================
+// Дополнительный автосейв каждые 10 секунд
+setInterval(() => {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
+  save()
+}, 10000)
+
 export function close() {
+  if (saveTimer) clearTimeout(saveTimer)
+  save()
   db.close()
 }
 
-// Graceful shutdown
 process.on('SIGINT', () => { close(); process.exit(0) })
 process.on('SIGTERM', () => { close(); process.exit(0) })
