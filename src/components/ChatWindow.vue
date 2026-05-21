@@ -295,12 +295,12 @@ watch([messages, streamingContent], async () => {
   flex-shrink: 0; background: var(--bg-primary);
 }
 .chat-header-left, .chat-header-right { display: flex; align-items: center; gap: 10px; }
-.chat-title { font-size: var(--typography-h3-size); color: var(--text-primary); margin: 0; }
+.chat-title { font-size: var(--typography-h3-size); color: var(--text-primary); margin: 0; font-weight: 600; }
 .status-dot {
   width: 8px; height: 8px; border-radius: 50%; background: var(--color-error);
-  transition: background 0.3s;
+  transition: background 0.3s, box-shadow 0.3s;
 }
-.status-dot--online { background: var(--color-success); box-shadow: 0 0 4px color-mix(in srgb, var(--color-success) 50%, transparent); }
+.status-dot--online { background: var(--color-success); box-shadow: 0 0 6px color-mix(in srgb, var(--color-success) 60%, transparent); }
 .status-text { font-size: var(--typography-body-small); color: var(--text-quaternary); }
 .badge {
   font-size: var(--typography-body-small); color: var(--text-secondary);
@@ -316,69 +316,69 @@ watch([messages, streamingContent], async () => {
 /* === Client Layout === */
 .client-layout { height: 100%; display: flex; width: 100%; }
 .client-sidebar {
-  width: 220px; flex-shrink: 0; background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color); display: flex; flex-direction: column;
+  width: 240px; flex-shrink: 0; position: relative;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
+  display: flex; flex-direction: column;
 }
-.cs-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 12px 12px 16px; }
+.cs-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 16px 12px; }
 .cs-brand { display: flex; align-items: center; gap: 8px; }
-.cs-logo { font-size: 22px; }
-.cs-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
-.cs-theme-btn {
-  width: 32px; height: 32px; border: none; background: transparent;
-  border-radius: var(--border-radius-sm); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--color-primary); transition: all 0.15s;
+.cs-logo { font-size: 22px; line-height: 1; }
+.cs-title { font-size: 16px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
+.cs-site { padding: 4px 16px; font-size: 12px; color: var(--text-tertiary); display: flex; align-items: center; gap: 4px; }
+.cs-site::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--color-success); }
+
+.cs-new-btn {
+  margin: 8px 12px; padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px; background: transparent;
+  color: var(--text-secondary); font-family: var(--font-family);
+  font-size: 13px; cursor: pointer; font-weight: 500;
+  transition: all 0.2s; display: flex; align-items: center; gap: 6px;
 }
-.cs-theme-btn:hover { background: color-mix(in srgb, var(--color-primary) 12%, transparent); }
-.cs-theme-btn svg { display: block; }
-.cs-site { padding: 8px 16px; font-size: var(--typography-body-small); color: var(--text-secondary); }
-.cs-divider { height: 1px; background: var(--border-color); margin: 8px 12px; }
+.cs-new-btn:hover {
+  background: var(--color-primary); color: var(--text-inverse); border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
 .cs-section-title {
-  font-size: var(--typography-caps-size); font-weight: var(--typography-caps-weight);
-  text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-quaternary);
-  padding: 4px 16px 8px;
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-quaternary);
+  padding: 12px 16px 6px;
 }
-.cs-history { flex: 1; overflow-y: auto; padding: 0 8px; }
-.cs-empty { font-size: var(--typography-body-small); color: var(--text-quaternary); text-align: center; padding: 20px; }
-.cs-conv { padding: 10px 8px; border-radius: var(--border-radius-sm); cursor: pointer; transition: background 0.12s; }
-.cs-conv:hover { background: var(--bg-hover); }
-.cs-conv-title { font-size: var(--typography-body-small); font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cs-conv-preview { font-size: 11px; color: var(--text-quaternary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.cs-history { flex: 1; overflow-y: auto; padding: 0 8px 8px; scrollbar-width: thin; }
+.cs-empty { font-size: var(--typography-body-small); color: var(--text-quaternary); text-align: center; padding: 24px 16px; }
+.cs-conv {
+  padding: 10px 10px; margin: 2px 0;
+  border-radius: 10px; cursor: pointer;
+  transition: all 0.15s; border: 1px solid transparent;
+}
+.cs-conv:hover { background: var(--bg-hover); border-color: var(--border-color); }
+.cs-conv--active {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+.cs-conv-title { font-size: 13px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-conv-date { font-size: 10px; color: var(--text-quaternary); margin-top: 1px; }
+.cs-conv-preview { font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
+
 .cs-footer { padding: 12px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
-.cs-theme-btn { width: 32px; height: 32px; border: none; background: transparent; border-radius: var(--border-radius-sm); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
-.cs-theme-btn:hover { background: var(--bg-hover); }
-.cs-logout-btn { border: none; background: transparent; color: var(--text-tertiary); cursor: pointer; font-size: var(--typography-body-small); padding: 6px 10px; border-radius: var(--border-radius-sm); transition: 0.12s; }
-.cs-logout-btn:hover { background: var(--bg-hover); color: var(--color-error); }
+.cs-theme-btn { width: 32px; height: 32px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); transition: all 0.15s; }
+.cs-theme-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.cs-logout-btn { border: none; background: transparent; color: var(--text-tertiary); cursor: pointer; font-size: 13px; padding: 6px 10px; border-radius: 8px; transition: all 0.15s; font-weight: 500; }
+.cs-logout-btn:hover { background: color-mix(in srgb, var(--color-error) 10%, transparent); color: var(--color-error); }
+
 .client-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.connection-status { display: flex; align-items: center; gap: 8px; }
 
 /* ============ Mobile ============ */
 @media (max-width: 767px) {
-  .chat-header {
-    padding: 12px 16px 12px 56px; /* room for burger */
-  }
-
-  .client-layout {
-    flex-direction: column;
-  }
-
-  .client-sidebar {
-    display: none;
-  }
-
-  .chat-messages {
-    padding: 12px;
-  }
-
-  .bubble {
-    max-width: 90%;
-  }
-
-  .chat-input-wrapper {
-    padding: 8px 12px;
-  }
-
-  .chat-input {
-    font-size: var(--typography-button-size);
-  }
+  .chat-header { padding: 12px 16px 12px 56px; }
+  .client-layout { flex-direction: column; }
+  .client-sidebar { display: none; width: 100%; }
+  .chat-messages { padding: 12px; }
+  .bubble { max-width: 90%; }
+  .chat-input-wrapper { padding: 8px 12px; }
+  .chat-input { font-size: var(--typography-button-size); }
 }
 </style>
