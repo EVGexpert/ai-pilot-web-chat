@@ -1,5 +1,5 @@
 import initSqlJs from 'sql.js'
-import { readFileSync, existsSync, mkdirSync, renameSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -15,7 +15,9 @@ if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
 // INIT SQLite
 // ============================================================
 let db
-const SQL = await initSqlJs()
+const SQL = await initSqlJs({
+  locateFile: file => path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', file)
+})
 
 function openDb() {
   if (existsSync(DB_PATH)) {
@@ -125,7 +127,7 @@ function scheduleSave() {
   }, 1000)
 }
 
-import { writeFileSync } from 'fs'
+
 
 // ============================================================
 // MIGRATION из JSON в SQLite
