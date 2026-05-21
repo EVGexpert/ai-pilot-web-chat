@@ -95,13 +95,12 @@ async function handleSend(text) {
   client?.sendMessage(text).catch(err => { error.value = err; isLoading.value = false })
 }
 function handleReconnect() { error.value = null; connect() }
-}
 
 // Загрузить список сессий
 async function loadSessions() {
   try {
     const res = await fetch('/api/chat/sessions?siteUrl=' + encodeURIComponent(authStore.siteUrl), {
-      headers: { 'Authorization': 'Bearer ' + authStore.token }
+      headers: { 'Authorization': 'Bea...' + authStore.token }
     })
     if (res.ok) {
       const data = await res.json()
@@ -116,7 +115,7 @@ async function loadSessions() {
 async function loadSessionHistory(sessionId) {
   try {
     const res = await fetch('/api/chat/history?sessionId=' + encodeURIComponent(sessionId), {
-      headers: { 'Authorization': 'Bearer ' + authStore.token }
+      headers: { 'Authorization': 'Bea...' + authStore.token }
     })
     if (res.ok) {
       const hist = await res.json()
@@ -193,31 +192,18 @@ if (props.clientMode) {
       // Приветствие — только если нет сессий
       const greeted = localStorage.getItem('aipilot_greeted_' + authStore.siteUrl)
       if (!greeted && sessionsList.value.length === 0) {
-      
-      // Приветствие — только если нет истории
-      const greeted = localStorage.getItem('aipilot_greeted_' + authStore.siteUrl)
-      if (!greeted) {
         try {
           const res = await fetch('/api/chat/send', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + authStore.token
-            },
-            body: JSON.stringify({
-              message: '/start',
-              siteUrl: authStore.siteUrl,
-              sessionId: currentSessionId.value
-            })
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bea...' + authStore.token },
+            body: JSON.stringify({ message: '/start', siteUrl: authStore.siteUrl, sessionId: currentSessionId.value })
           })
           if (res.ok) {
             const data = await res.json()
             messages.value = [{ id: 'greeting', role: 'assistant', content: data.message }]
             localStorage.setItem('aipilot_greeted_' + authStore.siteUrl, '1')
           }
-        } catch (e) {
-          console.warn('Greeting failed:', e)
-        }
+        } catch (e) { console.warn('Greeting failed:', e) }
       }
     }
   })
