@@ -77,6 +77,7 @@ async function handleSend(text) {
       
       if (res.ok) {
         const data = await res.json()
+        currentSessionId.value = data.sessionId || currentSessionId.value
         messages.value = [...messages.value, { id: `msg-${Date.now()}`, role: 'assistant', content: data.message }]
         await loadSessions()
       } else {
@@ -220,6 +221,7 @@ if (props.clientMode) {
           })
           if (res.ok) {
             const data = await res.json()
+            currentSessionId.value = data.sessionId || currentSessionId.value
             messages.value = [{ id: 'greeting', role: 'assistant', content: data.message }]
             localStorage.setItem('aipilot_greeted_' + authStore.siteUrl, '1')
           }
