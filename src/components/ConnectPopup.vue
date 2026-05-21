@@ -67,6 +67,9 @@ async function handleSubmit() {
     const token = data.token
     localStorage.setItem('aipilot_token', token)
     localStorage.setItem('aipilot_user', JSON.stringify(data.user))
+    if (siteUrl.value) {
+      localStorage.setItem('aipilot_site_url', siteUrl.value)
+    }
 
     // Переходим к подключению
     step.value = 'connecting'
