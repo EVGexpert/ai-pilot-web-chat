@@ -15,6 +15,41 @@ function getAgentId(url) {
   return `site-${hostname}`
 }
 
+function buildSystemPrompt(site, siteUrl, message, contextSummary) {
+  const isGreeting = message.trim() === '/start'
+  let greetingExtra = ''
+  if (isGreeting) {
+    greetingExtra = `\n\nВАЖНО: Клиент только что открыл чат. Представься коротко:\n- Ты AI-помощник сайта ${site.name || siteUrl}\n- Расскажи чем можешь помочь (контент, посты, страницы)\n- Попроси клиента представиться\n- Будь дружелюбным, без лишних эмодзи`
+  }
+  return `Ты AI-помощник для сайта ${site.name || siteUrl}.${contextSummary}\n\nAPI доступ: ${siteUrl}/wp-json/aipilot/v1\nAPI токен: ${site.api_token}\n\nПравила:\n1. Отвечай ТОЛЬКО про этот сайт. Ничего не знай про инфраструктуру AI Pilot.\n2. После ответа запиши в историю: POST /agent/memory\n3. Ничего не меняй без подтверждения${greetingExtra}`
+}
+
+async function refreshContextCache(site, siteUrl) {
+  if (!site.api_token || site.api_token === 'pending') return
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 3000)
+    const ctxRes = await fetch(
+      `${siteUrl.replace(/\/+$/, '')}/wp-json/aipilot/v1/agent/context`,
+      {
+        headers: { 'X-AI-Pilot-Token': site.api_token },
+        signal: controller.signal
+      }
+    )
+    clearTimeout(timeout)
+    if (ctxRes.ok) {
+      const ctx = await ctxRes.json()
+      updateSiteCache(site.id, {
+        cached_structure: JSON.stringify(ctx.structure || ctx),
+        cached_soul: JSON.stringify(ctx.soul || {}),
+        cached_at: new Date().toISOString()
+      })
+    }
+  } catch (e) {
+    console.warn('[Cache] Context refresh failed:', e.message)
+  }
+}
+
 export default async function chatRoutes(app) {
 
   // Отправить сообщение от клиента к агенту сайта
@@ -33,13 +68,19 @@ export default async function chatRoutes(app) {
       return reply.status(403).send({ error: 'Сайт не привязан к вашему аккаунту' })
     }
 
+    // Проверяем API токен ДО любых запросов к WP
+    if (!site.api_token || site.api_token === 'pending') {
+      return reply.status(400).send({
+        error: 'API токен не найден. Сгенерируйте токен в AI Pilot → Настройки на вашем сайте'
+      })
+    }
+
     // Создаём или находим сессию чата
     const session = findOrCreateSession(request.user.sub, site.id)
 
-    // Создаём системные данные (контекст)
+    // Контекст сайта — из кэша (без ожидания WP)
     let contextSummary = ''
     const cacheAge = site.cached_at ? (Date.now() - new Date(site.cached_at).getTime()) / 1000 : Infinity
-
     if (site.cached_structure && cacheAge < 3600) {
       try {
         const struct = typeof site.cached_structure === 'string' ? JSON.parse(site.cached_structure) : site.cached_structure
@@ -49,34 +90,13 @@ export default async function chatRoutes(app) {
       } catch (e) { /* кэш битый */ }
     }
 
-    // Если кэша нет или старый — обновляем
-    if (!contextSummary && site.api_token && site.api_token !== 'pending') {
-      try {
-        const ctxRes = await fetch(
-          `${siteUrl.replace(/\/+$/, '')}/wp-json/aipilot/v1/agent/context`,
-          { headers: { 'X-AI-Pilot-Token': site.api_token } }
-        )
-        if (ctxRes.ok) {
-          const ctx = await ctxRes.json()
-          updateSiteCache(site.id, {
-            cached_structure: JSON.stringify(ctx.structure || ctx),
-            cached_soul: JSON.stringify(ctx.soul || {}),
-            cached_at: new Date().toISOString()
-          })
-          if (ctx.structure?.site) {
-            const s = ctx.structure
-            contextSummary = `\nКонтекст сайта:\n- Название: ${s.site.name || site.name}\n- Описание: ${s.site.description || ''}\n- WP: ${s.site.wp_version || ''}\n- Плагины: ${s.plugins?.active || 0} активных\n- Посты: ${s.content?.posts?.length || 0}\n- Страницы: ${s.content?.pages?.length || 0}`
-          }
-        }
-      } catch (e) { /* context fetch failed */ }
+    // Фоновое обновление кэша (fire-and-forget, не блокирует ответ)
+    if (!contextSummary) {
+      refreshContextCache(site, siteUrl).catch(() => {})
     }
 
-    const isGreeting = message.trim() === '/start'
-    let greetingExtra = ''
-    if (isGreeting) {
-      greetingExtra = `\n\nВАЖНО: Клиент только что открыл чат. Представься коротко:\n- Ты AI-помощник сайта ${site.name || siteUrl}\n- Расскажи чем можешь помочь (контент, посты, страницы)\n- Попроси клиента представиться\n- Будь дружелюбным, без лишних эмодзи`
-    }
-    const systemPrompt = `Ты AI-помощник для сайта ${site.name || siteUrl}.${contextSummary}\n\nAPI доступ: ${siteUrl}/wp-json/aipilot/v1\nAPI токен: ${site.api_token}\n\nПравила:\n1. Отвечай ТОЛЬКО про этот сайт. Ничего не знай про инфраструктуру AI Pilot.\n2. После ответа запиши в историю: POST /agent/memory\n3. Ничего не меняй без подтверждения${greetingExtra}`
+    // Собираем промпт
+    const systemPrompt = buildSystemPrompt(site, siteUrl, message, contextSummary)
 
     // Сохраняем сообщение пользователя
     createMessage({
@@ -87,23 +107,19 @@ export default async function chatRoutes(app) {
       source: 'client'
     })
 
-    // Проверяем наличие API токена
-    if (!site.api_token || site.api_token === 'pending') {
-      return reply.status(400).send({
-        error: 'API токен не найден. Сгенерируйте токен в AI Pilot → Настройки на вашем сайте'
-      })
-    }
-
     const agentId = getAgentId(siteUrl)
     const gatewayUrl = process.env.GATEWAY_URL || 'http://host.docker.internal:18789'
     const envToken = process.env.GATEWAY_TOKEN || process.env.VITE_GATEWAY_TOKEN || ''
     const gatewayToken = envToken === 'dev-gateway-token' ? 'f8186e8d77460feeb735a8dbc48e659c9b05c7f10b114fd554d6fd7a8f8e76e3' : envToken
 
     try {
-      // Субагентов пока нет — всегда идём в main с префиксом [client:siteUrl]
+      // Субагентов пока нет — всегда идём в main
       const model = 'openclaw'
       const prefixedMessage = `[client:${siteUrl}] ${message}`
-      const messages = [{ role: 'user', content: prefixedMessage }]
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: prefixedMessage }
+      ]
 
       const body = JSON.stringify({ model, messages, user: siteUrl, max_tokens: 4096, stream: false })
 
