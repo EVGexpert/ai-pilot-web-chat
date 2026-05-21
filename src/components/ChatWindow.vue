@@ -102,7 +102,7 @@ function handleReconnect() { error.value = null; connect() }
 async function loadSessions() {
   try {
     const res = await fetch('/api/chat/sessions?siteUrl=' + encodeURIComponent(authStore.siteUrl), {
-      headers: { 'Authorization': 'Bea...' + authStore.token }
+      headers: { 'Authorization': 'Bearer ' + authStore.token }
     })
     if (res.ok) {
       const data = await res.json()
@@ -117,7 +117,7 @@ async function loadSessions() {
 async function loadSessionHistory(sessionId) {
   try {
     const res = await fetch('/api/chat/history?sessionId=' + encodeURIComponent(sessionId), {
-      headers: { 'Authorization': 'Bea...' + authStore.token }
+      headers: { 'Authorization': 'Bearer ' + authStore.token }
     })
     if (res.ok) {
       const hist = await res.json()
@@ -182,7 +182,7 @@ if (props.clientMode) {
     try {
       if (!authStore.siteUrl && authStore.token) {
         const meRes = await fetch('/api/auth/me', {
-          headers: { 'Authorization': 'Bea...' + authStore.token }
+          headers: { 'Authorization': 'Bearer ' + authStore.token }
         })
         if (meRes.ok) {
           const meData = await meRes.json()
@@ -202,7 +202,7 @@ if (props.clientMode) {
       if (sessionsList.value.length === 0) {
         const res = await fetch('/api/chat/send', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bea...' + authStore.token },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
           body: JSON.stringify({ message: '/start', siteUrl: authStore.siteUrl })
         })
         if (res.ok) {
