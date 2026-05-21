@@ -123,11 +123,15 @@ export default async function chatRoutes(app) {
 
       const body = JSON.stringify({ model, messages, user: siteUrl, max_tokens: 4096, stream: false })
 
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 30000)
       const resp = await fetch(`${gatewayUrl}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${gatewayToken}` },
+        signal: controller.signal,
         body
       })
+      clearTimeout(timeout)
 
       if (!resp.ok) {
         const text = await resp.text()
