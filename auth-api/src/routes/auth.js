@@ -46,18 +46,18 @@ export default async function authRoutes(app) {
 
     const token = generateToken(user)
     // Админ видит ВСЕ уникальные сайты
-    let allSites
+    let siteList
     if (user.role === 'admin') {
       const seen = new Set()
-      allSites = allSites().filter(s => {
+      siteList = allSites().filter(s => {
         if (seen.has(s.url)) return false
         seen.add(s.url)
         return true
       })
     } else {
-      allSites = findSitesByUser(user.id)
+      siteList = findSitesByUser(user.id)
     }
-    const sites = allSites.map(s => ({
+    const sites = siteList.map(s => ({
       id: s.id, url: s.url, name: s.name, wp_version: s.wp_version
     }))
 
