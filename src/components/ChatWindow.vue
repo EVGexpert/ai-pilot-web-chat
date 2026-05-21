@@ -175,58 +175,45 @@ function handleLogout() {
 connect()
 onUnmounted(() => disconnect())
 
-// Если клиент — сразу готов к работе
+// Клиент: всё из БД, без localStorage
 if (props.clientMode) {
   nextTick(async () => {
     isConnected.value = true
-    
-    // Если нет siteUrl — загружаем из БД
-    if (!authStore.siteUrl && authStore.token) {
-      try {
+    try {
+      if (!authStore.siteUrl && authStore.token) {
         const meRes = await fetch('/api/auth/me', {
-          headers: { 'Authorization': '***' + authStore.token }
+          headers: { 'Authorization': 'Bea...' + authStore.token }
         })
         if (meRes.ok) {
           const meData = await meRes.json()
-          const siteUrls = (meData.sites || []).map(s => s.url)
-          if (siteUrls.length > 0) {
-            authStore.siteUrl = siteUrls[0]
-            localStorage.setItem('aipilot_site_url', siteUrls[0])
+          if (meData.sites && meData.sites.length > 0) {
+            authStore.siteUrl = meData.sites[0].url
+            localStorage.setItem('aipilot_site_url', authStore.siteUrl)
           }
         }
-      } catch (e) {
-        console.warn('Site load failed:', e)
       }
-    }
-    
-    if (authStore.siteUrl) {
-      // Загружаем сессии
+      if (!authStore.siteUrl) return
       await loadSessions()
-
-      // Загружаем последнюю сессию
       if (sessionsList.value.length > 0) {
-        currentSessionId.value = sessionsList.value[0].id
-        await loadSessionHistory(sessionsList.value[0].id)
-        localStorage.setItem('aipilot_greeted_' + authStore.siteUrl, '1')
+        const last = sessionsList.value[0]
+        currentSessionId.value = last.id
+        await loadSessionHistory(last.id)
       }
-
-      // Приветствие — только если нет сессий
-      const greeted = localStorage.getItem('aipilot_greeted_' + authStore.siteUrl)
-      if (!greeted && sessionsList.value.length === 0) {
-        try {
-          const res = await fetch('/api/chat/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bea...' + authStore.token },
-            body: JSON.stringify({ message: '/start', siteUrl: authStore.siteUrl, sessionId: currentSessionId.value })
-          })
-          if (res.ok) {
-            const data = await res.json()
-            currentSessionId.value = data.sessionId || currentSessionId.value
-            messages.value = [{ id: 'greeting', role: 'assistant', content: data.message }]
-            localStorage.setItem('aipilot_greeted_' + authStore.siteUrl, '1')
-          }
-        } catch (e) { console.warn('Greeting failed:', e) }
+      if (sessionsList.value.length === 0) {
+        const res = await fetch('/api/chat/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bea...' + authStore.token },
+          body: JSON.stringify({ message: '/start', siteUrl: authStore.siteUrl })
+        })
+        if (res.ok) {
+          const data = await res.json()
+          currentSessionId.value = data.sessionId
+          messages.value = [{ id: 'greeting', role: 'assistant', content: data.message }]
+          await loadSessions()
+        }
       }
+    } catch (e) {
+      console.warn('Init failed:', e)
     }
   })
 }
