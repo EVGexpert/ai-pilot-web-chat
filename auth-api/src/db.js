@@ -124,7 +124,7 @@ if (ver < 1) {
 
 // Migration 2: add jobs table
 if (ver < 2) {
-  db.run(\`CREATE TABLE IF NOT EXISTS jobs (
+  db.run(`CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,
     site_id TEXT,
@@ -140,14 +140,14 @@ if (ver < 2) {
     last_error TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
-  )\`)
+  )`)
   db.run('CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status, run_after)')
   db.run('INSERT INTO schema_version (version, applied_at) VALUES (2, ?)', [now()])
 }
 
 // Migration 3: add audit_events table
 if (ver < 3) {
-  db.run(\`CREATE TABLE IF NOT EXISTS audit_events (
+  db.run(`CREATE TABLE IF NOT EXISTS audit_events (
     id TEXT PRIMARY KEY,
     user_id TEXT,
     site_id TEXT,
@@ -161,7 +161,7 @@ if (ver < 3) {
     request_id TEXT,
     status TEXT,
     created_at TEXT NOT NULL
-  )\`)
+  )`)
   db.run('CREATE INDEX IF NOT EXISTS idx_audit_site ON audit_events(site_id, created_at)')
   db.run('CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_events(user_id, created_at)')
   db.run('INSERT INTO schema_version (version, applied_at) VALUES (3, ?)', [now()])
