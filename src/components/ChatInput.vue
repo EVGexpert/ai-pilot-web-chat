@@ -71,6 +71,12 @@ defineExpose({ messageInput })
   flex-shrink: 0;
   background: var(--bg-primary);
 }
+
+@media (max-width: 767px) {
+  .chat-footer {
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+}
 .input-wrapper {
   display: flex;
   align-items: flex-end;

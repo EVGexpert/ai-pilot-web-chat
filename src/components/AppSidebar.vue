@@ -31,7 +31,10 @@ function handleLogout() {
         <span class="sidebar-logo">🎯</span>
         <span class="sidebar-title">AI Pilot</span>
       </div>
-      <ThemeToggle />
+      <div class="sidebar-header-actions">
+        <button class="sidebar-close-btn" @click="$emit('close')" title="Закрыть меню">✕</button>
+        <ThemeToggle />
+      </div>
     </div>
 
     <!-- Список сайтов -->
@@ -113,6 +116,38 @@ function handleLogout() {
   justify-content: space-between;
   padding: 20px 16px 12px;
   flex-shrink: 0;
+}
+
+.sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sidebar-close-btn {
+  display: none;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.sidebar-close-btn:hover {
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+  color: var(--color-error);
+}
+
+@media (max-width: 767px) {
+  .sidebar-close-btn {
+    display: flex;
+  }
 }
 
 .sidebar-brand {

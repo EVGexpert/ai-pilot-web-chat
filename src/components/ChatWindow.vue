@@ -22,6 +22,15 @@ const currentSessionId = ref(null)
 const sessionsList = ref([])
 
 const showClientHistory = ref(false)
+const csSidebarOpen = ref(false)
+
+function toggleCsSidebar() {
+  csSidebarOpen.value = !csSidebarOpen.value
+}
+
+function closeCsSidebar() {
+  csSidebarOpen.value = false
+}
 const currentSiteConversations = computed(() => sitesStore.currentSiteConversations)
 
 const gatewayWs = import.meta.env.VITE_GATEWAY_WS || 'wss://pilotsite.ru'
@@ -247,9 +256,14 @@ watch([messages, streamingContent], async () => {
 
   <!-- КЛИЕНТ: сайдбар + хедер + сообщения + ввод -->
   <div v-else class="client-layout">
-    <aside class="client-sidebar">
+    <!-- Мобильный оверлей для клиента -->
+    <div v-if="csSidebarOpen" class="cs-overlay" @click="closeCsSidebar"></div>
+
+    <aside class="client-sidebar" :class="{ 'cs-sidebar--open': csSidebarOpen }">
       <div class="cs-header">
         <div class="cs-brand"><span class="cs-logo">🎯</span><span class="cs-title">AI Pilot</span></div>
+        <!-- Кнопка закрытия сайдбара на мобилке -->
+        <button class="cs-close-btn" @click="closeCsSidebar" title="Закрыть">✕</button>
         <button class="cs-theme-btn" @click="authStore.setTheme(authStore.theme === 'dark' ? 'light' : 'dark')" :title="authStore.theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'">
           <svg v-if="authStore.theme === 'dark'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -276,6 +290,13 @@ watch([messages, streamingContent], async () => {
       </div>
     </aside>
     <div class="client-main">
+      <!-- Мобильная кнопка для открытия сайдбара у клиента -->
+      <button class="cs-mobile-burger" @click="toggleCsSidebar">
+        <span class="burger-line"></span>
+        <span class="burger-line"></span>
+        <span class="burger-line"></span>
+      </button>
+
       <div class="chat-header">
         <div class="connection-status">
           <span class="status-dot" :class="{ 'status-dot--online': isConnected }"></span>
@@ -323,12 +344,13 @@ watch([messages, streamingContent], async () => {
 .btn-reconnect:hover { background: var(--bg-hover); }
 
 /* === Client Layout === */
-.client-layout { height: 100%; display: flex; width: 100%; }
+.client-layout { flex: 1; display: flex; width: 100%; min-height: 0; }
 .client-sidebar {
   width: 240px; flex-shrink: 0; position: relative;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-color);
   display: flex; flex-direction: column;
+  overflow-y: auto;
 }
 .cs-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 16px 12px; }
 .cs-brand { display: flex; align-items: center; gap: 8px; }
@@ -374,20 +396,127 @@ watch([messages, streamingContent], async () => {
 .cs-footer { padding: 12px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
 .cs-theme-btn { width: 32px; height: 32px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); transition: all 0.15s; }
 .cs-theme-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* Close button for mobile client sidebar */
+.cs-close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.cs-close-btn:hover {
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+  color: var(--color-error);
+}
+
+@media (max-width: 767px) {
+  .cs-close-btn {
+    display: flex;
+  }
+}
 .cs-logout-btn { border: none; background: transparent; color: var(--text-tertiary); cursor: pointer; font-size: 13px; padding: 6px 10px; border-radius: 8px; transition: all 0.15s; font-weight: 500; }
 .cs-logout-btn:hover { background: color-mix(in srgb, var(--color-error) 10%, transparent); color: var(--color-error); }
 
-.client-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.client-main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
+
+/* Mobile burger for client mode */
+.cs-mobile-burger {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cs-mobile-burger:hover {
+  background: var(--bg-hover);
+}
+
+.cs-mobile-burger .burger-line {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 2px;
+}
 .connection-status { display: flex; align-items: center; gap: 8px; }
 
 /* ============ Mobile ============ */
 @media (max-width: 767px) {
-  .chat-header { padding: 12px 16px 12px 56px; }
-  .client-layout { flex-direction: column; }
-  .client-sidebar { display: none; width: 100%; }
-  .chat-messages { padding: 12px; }
+  .chat-header { padding: 12px 16px; }
+
+  /* У админа — отступ для бургер-кнопки */
+  .chat-window .chat-header { padding: 12px 16px 12px 56px; }
+
   .bubble { max-width: 90%; }
-  .chat-input-wrapper { padding: 8px 12px; }
-  .chat-input { font-size: var(--typography-button-size); }
+
+  .messages-area { padding: 12px 16px; }
+
+  /* === Клиентский режим на мобилке === */
+  .client-layout {
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .client-sidebar {
+    position: fixed;
+    left: -100%;
+    top: 0;
+    bottom: 0;
+    width: min(85vw, 320px);
+    z-index: 100;
+    display: flex !important;
+    transition: left 0.25s ease;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+  }
+
+  .client-sidebar.cs-sidebar--open {
+    left: 0;
+  }
+
+  .client-main {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Оверлей для клиентского сайдбара */
+  .cs-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    animation: fadeIn 0.2s ease;
+  }
+
+  /* Кнопка открытия сайдбара у клиента */
+  .cs-mobile-burger {
+    display: flex !important;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>
