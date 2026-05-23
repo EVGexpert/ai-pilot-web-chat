@@ -44,6 +44,7 @@
   --bg-card: #ffffff;
   --bg-sidebar: #f5f5f6;
   --bg-hover: #e9eaeb;
+  --code-bg: #f1f1f4;
 
   /* Текст */
   --text-primary: #191919;
@@ -111,6 +112,7 @@
   --bg-card: #222222;
   --bg-sidebar: #191919;
   --bg-hover: #333333;
+  --code-bg: #1a1a2e;
 
   --text-primary: #ededed;
   --text-secondary: #bfbfbf;
