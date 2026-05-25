@@ -34,13 +34,16 @@ jobs:
               -v "$(pwd)/auth-data:/app/data" \
               -e PORT=3001 \
               -e JWT_SECRET=dev-jwt-secret-change-in-production \
-              -e GATEWAY_TOKEN=dev-gateway-token \
+              -e GATEWAY_TOKEN=f8186e8d77460feeb735a8dbc48e659c9b05c7f10b114fd554d6fd7a8f8e76e3 \
               -e GATEWAY_WS=ws://host.docker.internal:18789 \
               -e APP_URL=https://pilotsite.ru \
               ai-pilot-auth
 
             # === Веб-чат ===
-            docker build -t ai-pilot-chat .
+            docker build \
+              --build-arg VITE_GATEWAY_TOKEN=f8186e8d77460feeb735a8dbc48e659c9b05c7f10b114fd554d6fd7a8f8e76e3 \
+              --build-arg VITE_GATEWAY_WS=wss://pilotsite.ru \
+              -t ai-pilot-chat .
             docker rm -f ai-pilot-chat 2>/dev/null || true
             docker run -d \
               --name ai-pilot-chat \
