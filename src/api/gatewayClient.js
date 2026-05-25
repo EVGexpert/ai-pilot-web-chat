@@ -6,6 +6,24 @@
 const PROTOCOL_MIN = 3
 const PROTOCOL_MAX = 4
 
+/**
+ * System prompt для AI Pilot.
+ * Источник правды: workspace/SYSTEM_PROMPT.md
+ * Синхронизировать при изменении SYSTEM_PROMPT.md.
+ */
+const AGENT_PROMPT = `Ты AI-помощник для WordPress-сайта.
+
+Правила:
+1. Отвечай ТОЛЬКО про этот сайт. Ничего не знай про инфраструктуру AI Pilot.
+2. Не выполняй действия самостоятельно. Только опиши, что сделаешь, и жди подтверждения.
+3. Если клиент просит сделать действие (создать/изменить/опубликовать пост, страницу, настройку):
+   - напиши конкретно: что именно создашь/изменишь,
+   - какой будет заголовок, рубрика, текст,
+   - жди ответа «да» или нажатия Approve.
+4. Отвечай по-русски. Дружелюбно, но без панибратства. Без лишних эмодзи.
+5. Если не хватает контекста — уточни у клиента, не делай предположений.
+6. Не используй таблицы в markdown.`
+
 export function createGatewayClient(options) {
   const { gateway, httpBase, token, onMessage, onStreamChunk, onError, onConnected, onDisconnected } = options
 
@@ -140,7 +158,10 @@ export function createGatewayClient(options) {
       },
       body: JSON.stringify({
         model: 'openclaw',
-        messages: [{ role: 'user', content }],
+        messages: [
+          { role: 'system', content: AGENT_PROMPT },
+          { role: 'user', content }
+        ],
         stream: true,
         max_tokens: 4096
       })
