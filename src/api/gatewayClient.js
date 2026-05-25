@@ -140,10 +140,7 @@ export function createGatewayClient(options) {
       },
       body: JSON.stringify({
         model: 'openclaw',
-        messages: [
-          { role: 'system', content: 'Ты AI Pilot — ассистент для управления WordPress-сайтами. Отвечай по-русски.\n\n=== ACTION PROPOSAL ===\nКогда клиент просит сделать действие (создать/изменить пост, страницу, настройку):\n1. Сначала напиши обычным текстом, что предлагаешь\n2. ПОТОМ добавь блок action proposal в ТОЧНО таком формате:\n\n[ACTION_PROPOSE]\n{"title":"Краткое название","description":"Описание действия","diff":["+ Добавленная строка","- Удалённая строка"]}\n[/ACTION_PROPOSE]\n\nВажно: блок должен быть валидным JSON. Не добавляй пояснений внутри блока.' },
-          { role: 'user', content }
-        ],
+        messages: [{ role: 'user', content }],
         stream: true,
         max_tokens: 4096
       })
@@ -182,37 +179,44 @@ export function createGatewayClient(options) {
       }
     }
 
-    // Парсим action proposal из ответа
-    function extractActions(text) {
-      const regex = /\[ACTION_PROPOSE\]\s*([\s\S]*?)\s*\[\/ACTION_PROPOSE\]/g
-      const actions = []
-      let match
-      while ((match = regex.exec(text)) !== null) {
-        try {
-          const data = JSON.parse(match[1])
-          if (data.title) {
-            actions.push({
-              id: 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-              title: data.title,
-              description: data.description || '',
-              diff: Array.isArray(data.diff) ? data.diff : [],
-              status: 'pending'
-            })
-          }
-        } catch (e) { /* skip parse errors */ }
+    // Детектируем намерение действия в ответе модели
+    function detectActionIntent(content, userMsg) {
+      const actionKeywords = [/созда(ть|м|й|ю|ём|ла|н)/i,/опублик(овать|уй|ую)/i,/обнов(ить|и|им)/i,/добав(ить|им|лю)/i,/удали(ть|м|ю)/i,/измен(ить|им|яю)/i,/редактир(овать|уй)/i,/напиш(и|ем|у)/i,/загру(зить|жу|зим)/i,/настро(ить|й|им)/i]
+      const agreePhrases = [/предлагаю/i,/могу/i,/давай/i,/сделаю/i,/можно/i,/готов/i,/создам/i,/опубликую/i,/обновлю/i,/добавлю/i]
+      const userWantsAction = actionKeywords.some(r => r.test(userMsg))
+      const modelAgrees = agreePhrases.some(r => r.test(content))
+      if (!userWantsAction || !modelAgrees) return null
+      let title = 'Выполнить'
+      if (/созда(ть|м|й)/i.test(userMsg)) title = 'Создать'
+      if (/опублик(овать|уй)/i.test(userMsg)) title = 'Опубликовать'
+      if (/обнов(ить|и)/i.test(userMsg)) title = 'Обновить'
+      if (/добав(ить|лю)/i.test(userMsg)) title = 'Добавить'
+      if (/удали(ть|м)/i.test(userMsg)) title = 'Удалить'
+      const objMatch = userMsg.match(/(?:пост|страниц[уа]|раздел|рубрик[уа]|категори[юя]|меню|плагин|тем[уа]|настройк[иуа]|пользовател[ья]|комментари[йя])/i)
+      if (objMatch) title += ' ' + objMatch[0].toLowerCase()
+      const topicMatch = userMsg.match(/[«"]([^»"]+)[»"]|про\s+(.+?)(?:\s|$|,|\.)/i)
+      if (topicMatch) { const t = topicMatch[1]||topicMatch[2]; title += ': ' + (t.length>40 ? t.slice(0,40)+'...' : t) }
+      const diff = []
+      for (const line of content.split('\n').filter(l => l.trim())) {
+        const clean = line.replace(/^[-\s*•·]+/, '').trim()
+        if (clean.length > 3 && clean.length < 120) {
+          diff.push((/^[-–—]/.test(line.trim()) ? '- ' : '+ ') + clean)
+        }
+        if (diff.length >= 6) break
       }
-      return { cleanContent: text.replace(regex, '').trim(), actions }
+      if (diff.length === 0) return null
+      return [{ id: 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6), title: title.slice(0,60), description: content.slice(0,200).replace(/\n/g,' '), diff, status: 'pending' }]
     }
 
-    const { cleanContent, actions } = extractActions(fullContent)
-    const msg = { role: 'assistant', content: cleanContent }
-    if (actions.length > 0) {
+    const actions = detectActionIntent(fullContent, content)
+    const msg = { role: 'assistant', content: fullContent }
+    if (actions) {
       msg.actions = actions
     }
 
     onStreamChunk?.('', 'done')
     onMessage?.(msg)
-    return cleanContent
+    return fullContent
   }
 
   function disconnect() {
