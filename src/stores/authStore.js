@@ -8,7 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
   const siteUrl = ref(localStorage.getItem('aipilot_site_url') || '')
 
   // Gateway токен — из env (встраивается при сборке)
-  const gatewayToken = ref(import.meta.env.VITE_GATEWAY_TOKEN || '')
+  const gatewayToken = ref('f8186e…76e3')
 
   const isAuthenticated = computed(() => !!token.value)
   const userName = computed(() => user.value?.name || '')
