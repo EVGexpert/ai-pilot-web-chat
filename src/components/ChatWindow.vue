@@ -87,7 +87,11 @@ async function handleSend(text) {
       if (res.ok) {
         const data = await res.json()
         currentSessionId.value = data.sessionId || currentSessionId.value
-        messages.value = [...messages.value, { id: `msg-${Date.now()}`, role: 'assistant', content: data.message }]
+        const newMsg = { id: `msg-${Date.now()}`, role: 'assistant', content: data.message }
+        if (data.actions && data.actions.length > 0) {
+          newMsg.actions = data.actions
+        }
+        messages.value = [...messages.value, newMsg]
         await loadSessions()
       } else {
         const err = await res.json().catch(() => ({ error: 'Unknown error' }))
