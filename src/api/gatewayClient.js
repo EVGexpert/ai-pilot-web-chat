@@ -181,7 +181,7 @@ export function createGatewayClient(options) {
 
     // Детектируем намерение действия в ответе модели
     function detectActionIntent(content, userMsg) {
-      const actionKeywords = [/созда(ть|м|й|ю|ём|ла|н)/i,/опублик(овать|уй|ую)/i,/обнов(ить|и|им)/i,/добав(ить|им|лю)/i,/удали(ть|м|ю)/i,/измен(ить|им|яю)/i,/редактир(овать|уй)/i,/напиш(и|ем|у)/i,/загру(зить|жу|зим)/i,/настро(ить|й|им)/i]
+      const actionKeywords = [/созда(ть|м|й|ю|ём|ла|н)/i,/опублик(овать|уй|ую)/i,/обнов(ить|и|им)/i,/добав(ить|им|лю)/i,/удали(ть|м|ю)/i,/измен(ить|им|яю)/i,/редактир(овать|уй)/i,/напиш(и|ем|у)/i,/загру(зить|жу|зим)/i,/настро(ить|й|им)/i,/сдела(ть|й|ю|ем|ла|н|л)/i]
       const agreePhrases = [/предлагаю/i,/могу/i,/давай/i,/сделаю/i,/можно/i,/готов/i,/создам/i,/опубликую/i,/обновлю/i,/добавлю/i]
       const userWantsAction = actionKeywords.some(r => r.test(userMsg))
       const modelAgrees = agreePhrases.some(r => r.test(content))
@@ -198,11 +198,16 @@ export function createGatewayClient(options) {
       if (topicMatch) { const t = topicMatch[1]||topicMatch[2]; title += ': ' + (t.length>40 ? t.slice(0,40)+'...' : t) }
       const diff = []
       for (const line of content.split('\n').filter(l => l.trim())) {
-        const clean = line.replace(/^[-\s*•·]+/, '').trim()
-        if (clean.length > 3 && clean.length < 120) {
-          diff.push((/^[-–—]/.test(line.trim()) ? '- ' : '+ ') + clean)
-        }
-        if (diff.length >= 6) break
+        const trimmed = line.trim()
+        if (/^(привет|здравствуй|давай|ок|окей|хорошо|понял|отлично|добро|если|уточни|какой|для какого)/i.test(trimmed)) continue
+        if (/[?؟]/.test(trimmed)) continue
+        if (trimmed.length < 10) continue
+        if (trimmed.length > 150) continue
+        const clean = trimmed.replace(/^[-–—•·*\s]+/, '').trim()
+        if (clean.length < 10) continue
+        if (/(не могу|отключен|нет доступа|недоступ|ошибк|не работ)/i.test(clean)) continue
+        diff.push('+ ' + clean)
+        if (diff.length >= 5) break
       }
       if (diff.length === 0) return null
       return [{ id: 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6), title: title.slice(0,60), description: content.slice(0,200).replace(/\n/g,' '), diff, status: 'pending' }]
