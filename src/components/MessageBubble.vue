@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import ActionProposalCard from './ActionProposalCard.vue'
 
 // Настройка marked
 marked.setOptions({
@@ -23,6 +24,8 @@ function isUser(msg) {
 function isSystem(msg) {
   return msg.role === 'system'
 }
+
+defineEmits(['approve-action', 'reject-action'])
 
 /** Рендерим содержимое сообщения как безопасный HTML из Markdown */
 const renderedContent = computed(() => {
@@ -59,18 +62,15 @@ const renderedContent = computed(() => {
       <span v-if="message.time" class="bubble-time">{{ message.time }}</span>
     </div>
     <div class="bubble-content" v-html="renderedContent"></div>
-    <!-- Action preview внутри сообщения ассистента -->
+    <!-- Action Proposal Card — для сообщений с действиями -->
     <div v-if="message.actions && message.actions.length" class="bubble-actions">
-      <div
+      <ActionProposalCard
         v-for="action in message.actions"
         :key="action.id"
-        class="action-chip"
-        :class="`action-${action.status || 'pending'}`"
-      >
-        <span class="action-icon">{{ action.icon || '⚡' }}</span>
-        <span class="action-text">{{ action.label }}</span>
-        <span v-if="action.status === 'completed'" class="action-done">✓</span>
-      </div>
+        :action="action"
+        @approve="(id) => $emit('approve-action', id)"
+        @reject="(id) => $emit('reject-action', id)"
+      />
     </div>
   </div>
 </template>

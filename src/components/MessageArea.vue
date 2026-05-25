@@ -12,6 +12,8 @@ const props = defineProps({
   startHint: { type: String, default: '' },
   clientMode: { type: Boolean, default: false }
 })
+
+const emit = defineEmits(['approve-action', 'reject-action'])
 </script>
 
 <template>
@@ -29,7 +31,12 @@ const props = defineProps({
       <p class="start-hint" v-if="startHint">{{ startHint }}</p>
     </div>
 
-    <MessageBubble v-for="msg in messages" :key="msg.id" :message="msg" />
+    <MessageBubble
+      v-for="msg in messages" :key="msg.id"
+      :message="msg"
+      @approve-action="(id) => emit('approve-action', id)"
+      @reject-action="(id) => emit('reject-action', id)"
+    />
 
     <div v-if="streamingContent" class="streaming-bubble">
       <div class="bubble-avatar">🤖</div>

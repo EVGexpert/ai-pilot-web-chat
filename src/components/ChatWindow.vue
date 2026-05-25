@@ -107,6 +107,25 @@ async function handleSend(text) {
 }
 function handleReconnect() { error.value = null; connect() }
 
+// Action Proposal: approve / reject
+function handleApproveAction(actionId) {
+  const msg = messages.value.find(m => m.actions?.some(a => a.id === actionId))
+  if (!msg) return
+  const action = msg.actions.find(a => a.id === actionId)
+  if (action) action.status = 'approved'
+  // TODO: отправить POST /agent/approve/{id} на сервер
+  console.log('Approved:', actionId)
+}
+
+function handleRejectAction(actionId) {
+  const msg = messages.value.find(m => m.actions?.some(a => a.id === actionId))
+  if (!msg) return
+  const action = msg.actions.find(a => a.id === actionId)
+  if (action) action.status = 'rejected'
+  // TODO: отправить POST /agent/reject/{id} на сервер
+  console.log('Rejected:', actionId)
+}
+
 // Загрузить список сессий
 async function loadSessions() {
   try {
@@ -250,7 +269,9 @@ watch([messages, streamingContent], async () => {
     <MessageArea ref="messagesContainer"
       :messages="messages" :streamingContent :isLoading :isConnected :error
       startTitle="Добро пожаловать в AI Pilot"
-      startHint="Напишите, что нужно сделать с сайтом" />
+      startHint="Напишите, что нужно сделать с сайтом"
+      @approve-action="handleApproveAction"
+      @reject-action="handleRejectAction" />
     <ChatInput :isConnected @send="handleSend" />
   </div>
 
@@ -307,7 +328,9 @@ watch([messages, streamingContent], async () => {
       <MessageArea ref="messagesContainer"
         :messages :streamingContent :isLoading :isConnected :error
         clientMode startTitle="Чем могу помочь?"
-        startHint="Я AI-ассистент вашего сайта." />
+        startHint="Я AI-ассистент вашего сайта."
+        @approve-action="handleApproveAction"
+        @reject-action="handleRejectAction" />
       <ChatInput :isConnected @send="handleSend" />
     </div>
   </div>
