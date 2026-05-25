@@ -47,7 +47,7 @@ async function handleLogin() {
         name: userData.name || email.value.split('@')[0],
         email: userData.email || email.value,
         role: userData.role || 'client'
-      }, siteUrl)
+      }, siteUrl, data.gatewayToken)
       emit('login', data)
       return
     }

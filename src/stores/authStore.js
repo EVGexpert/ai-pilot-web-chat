@@ -8,17 +8,18 @@ export const useAuthStore = defineStore('auth', () => {
   const siteUrl = ref(localStorage.getItem('aipilot_site_url') || '')
 
   // Gateway токен — из env (встраивается при сборке)
-  const gatewayToken = ref('f8186e…76e3')
+  const gatewayToken = ref(import.meta.env.VITE_GATEWAY_TOKEN || '')
 
   const isAuthenticated = computed(() => !!token.value)
   const userName = computed(() => user.value?.name || '')
   const isAdmin = computed(() => user.value?.role === 'admin')
   const isClient = computed(() => user.value?.role === 'client')
 
-  function login(newToken, userData = null, siteUrlData = '') {
+  function login(newToken, userData = null, siteUrlData = '', gwToken = '') {
     token.value = newToken
     user.value = userData
     siteUrl.value = siteUrlData
+    if (gwToken) gatewayToken.value = gwToken
     localStorage.setItem('aipilot_token', newToken)
     if (userData) {
       localStorage.setItem('aipilot_user', JSON.stringify(userData))
