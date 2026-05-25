@@ -140,7 +140,10 @@ export function createGatewayClient(options) {
       },
       body: JSON.stringify({
         model: 'openclaw',
-        messages: [{ role: 'user', content }],
+        messages: [
+          { role: 'system', content: 'Ты AI Pilot — ассистент для управления WordPress-сайтами. Отвечай по-русски.\n\n=== ACTION PROPOSAL ===\nКогда клиент просит сделать действие (создать/изменить пост, страницу, настройку):\n1. Сначала напиши обычным текстом, что предлагаешь\n2. ПОТОМ добавь блок action proposal в ТОЧНО таком формате:\n\n[ACTION_PROPOSE]\n{"title":"Краткое название","description":"Описание действия","diff":["+ Добавленная строка","- Удалённая строка"]}\n[/ACTION_PROPOSE]\n\nВажно: блок должен быть валидным JSON. Не добавляй пояснений внутри блока.' },
+          { role: 'user', content }
+        ],
         stream: true,
         max_tokens: 4096
       })
@@ -179,9 +182,37 @@ export function createGatewayClient(options) {
       }
     }
 
+    // Парсим action proposal из ответа
+    function extractActions(text) {
+      const regex = /\[ACTION_PROPOSE\]\s*([\s\S]*?)\s*\[\/ACTION_PROPOSE\]/g
+      const actions = []
+      let match
+      while ((match = regex.exec(text)) !== null) {
+        try {
+          const data = JSON.parse(match[1])
+          if (data.title) {
+            actions.push({
+              id: 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+              title: data.title,
+              description: data.description || '',
+              diff: Array.isArray(data.diff) ? data.diff : [],
+              status: 'pending'
+            })
+          }
+        } catch (e) { /* skip parse errors */ }
+      }
+      return { cleanContent: text.replace(regex, '').trim(), actions }
+    }
+
+    const { cleanContent, actions } = extractActions(fullContent)
+    const msg = { role: 'assistant', content: cleanContent }
+    if (actions.length > 0) {
+      msg.actions = actions
+    }
+
     onStreamChunk?.('', 'done')
-    onMessage?.({ role: 'assistant', content: fullContent })
-    return fullContent
+    onMessage?.(msg)
+    return cleanContent
   }
 
   function disconnect() {
