@@ -112,22 +112,36 @@ async function handleSend(text) {
 function handleReconnect() { error.value = null; connect() }
 
 // Action Proposal: approve / reject
-function handleApproveAction(actionId) {
+async function handleApproveAction(actionId) {
   const msg = messages.value.find(m => m.actions?.some(a => a.id === actionId))
   if (!msg) return
   const action = msg.actions.find(a => a.id === actionId)
   if (action) action.status = 'approved'
-  // TODO: отправить POST /agent/approve/{id} на сервер
-  console.log('Approved:', actionId)
+  try {
+    await fetch('/api/chat/actions/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
+      body: JSON.stringify({ actionId, sessionId: currentSessionId.value })
+    })
+  } catch (e) {
+    console.warn('Approve API call failed:', e)
+  }
 }
 
-function handleRejectAction(actionId) {
+async function handleRejectAction(actionId) {
   const msg = messages.value.find(m => m.actions?.some(a => a.id === actionId))
   if (!msg) return
   const action = msg.actions.find(a => a.id === actionId)
   if (action) action.status = 'rejected'
-  // TODO: отправить POST /agent/reject/{id} на сервер
-  console.log('Rejected:', actionId)
+  try {
+    await fetch('/api/chat/actions/reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
+      body: JSON.stringify({ actionId, sessionId: currentSessionId.value })
+    })
+  } catch (e) {
+    console.warn('Reject API call failed:', e)
+  }
 }
 
 // Загрузить список сессий
