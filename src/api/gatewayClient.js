@@ -200,44 +200,59 @@ export function createGatewayClient(options) {
       }
     }
 
-    // Детектируем намерение действия в ответе модели
-    function detectActionIntent(content, userMsg) {
-      const actionKeywords = [/созда(ть|м|й|ю|ём|ла|н|в)/i,/опублик(овать|уй|ую|ую)/i,/обнов(ить|и|им|ля)/i,/добав(ить|им|лю|ля)/i,/удали(ть|м|ю)/i,/измен(ить|им|яю|я)/i,/редактир(овать|уй)/i,/напис(ать|а|и|ем|у|ан)/i,/загру(зить|жу|зим|з)/i,/настро(ить|й|им|и)/i,/сдела(ть|й|ю|ем|ла|н|л|в)/i]
-      const agreePhrases = [/предлагаю/i,/могу/i,/давай/i,/сделаю/i,/можно/i,/готов/i,/создам/i,/опубликую/i,/обновлю/i,/добавлю/i]
-      const userWantsAction = actionKeywords.some(r => r.test(userMsg))
-      const modelAgrees = agreePhrases.some(r => r.test(content))
-      if (!userWantsAction || !modelAgrees) return null
+    // Парсим действия: сначала Structured JSON, потом эвристика
+    function parseActions(text, userMsg) {
+      // 1. Structured JSON block
+      const blockMatch = text.match(/\`\`\`(?:action|json)\s*([\s\S]*?)\`\`\`/)
+      if (blockMatch) {
+        try {
+          const data = JSON.parse(blockMatch[1])
+          if (data && data.actions && Array.isArray(data.actions) && data.actions.length > 0 && data.actions[0].type) {
+            const cleanText = text.replace(/\`\`\`(?:action|json)\s*[\s\S]*?\`\`\`/g, '').trim()
+            const actions = data.actions.map(a => ({
+              id: 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6),
+              title: (a.type || 'action').replace(/_/g, ' ') + (a.target?.title ? ': ' + a.target.title : ''),
+              description: 'Тип: ' + a.type + (a.target?.slug ? ', цель: ' + a.target.slug : ''),
+              diff: Object.entries(a.patch || {}).map(([k,v]) => '+ ' + k + ': ' + String(v).slice(0,80)),
+              status: 'pending'
+            }))
+            return { content: cleanText, actions }
+          }
+        } catch(e) { /* JSON parse error, fallback to heuristic */ }
+      }
+      
+      // 2. Fallback: эвристика
+      const kw = [/созда(ть|м|й|ю|ём|ла|н|в)/i,/опублик(овать|уй|ую)/i,/обнов(ить|и|им|ля)/i,/добав(ить|им|лю|ля)/i,/удали(ть|м|ю)/i,/измен(ить|им|яю|я)/i,/редактир(овать|уй)/i,/напис(ать|а|и|ем|у|ан)/i,/загру(зить|жу|зим|з)/i,/настро(ить|й|им|и)/i,/сдела(ть|й|ю|ем|ла|н|л|в)/i]
+      const agree = [/предлагаю/i,/могу/i,/давай/i,/сделаю/i,/можно/i,/готов/i,/создам/i,/опубликую/i,/обновлю/i,/добавлю/i]
+      if (!kw.some(r => r.test(userMsg)) || !agree.some(r => r.test(text))) return null
       let title = 'Выполнить'
       if (/созда(ть|м|й)/i.test(userMsg)) title = 'Создать'
       if (/опублик(овать|уй)/i.test(userMsg)) title = 'Опубликовать'
       if (/обнов(ить|и)/i.test(userMsg)) title = 'Обновить'
       if (/добав(ить|лю)/i.test(userMsg)) title = 'Добавить'
       if (/удали(ть|м)/i.test(userMsg)) title = 'Удалить'
-      const objMatch = userMsg.match(/(?:пост|страниц[уа]|раздел|рубрик[уа]|категори[юя]|меню|плагин|тем[уа]|настройк[иуа]|пользовател[ья]|комментари[йя])/i)
-      if (objMatch) title += ' ' + objMatch[0].toLowerCase()
-      const topicMatch = userMsg.match(/[«"]([^»"]+)[»"]|про\s+(.+?)(?:\s|$|,|\.)/i)
-      if (topicMatch) { const t = topicMatch[1]||topicMatch[2]; title += ': ' + (t.length>40 ? t.slice(0,40)+'...' : t) }
+      const obj = userMsg.match(/(?:пост|страниц[уа]|раздел|рубрик[уа]|категори[юя]|меню|плагин|тем[уа]|настройк[иуа]|пользовател[ья]|комментари[йя])/i)
+      if (obj) title += ' ' + obj[0].toLowerCase()
+      const top = userMsg.match(/[«"]([^»"]+)[»"]|про\s+(.+?)(?:\s|$|,|\.)/i)
+      if (top) title += ': ' + ((top[1]||top[2]).length > 40 ? (top[1]||top[2]).slice(0,40)+'...' : (top[1]||top[2]))
       const diff = []
-      for (const line of content.split('\n').filter(l => l.trim())) {
-        const trimmed = line.trim()
-        if (/^(привет|здравствуй|давай|ок|окей|хорошо|понял|отлично|добро|если|уточни|какой|для какого)/i.test(trimmed)) continue
-        if (/[?؟]/.test(trimmed)) continue
-        if (trimmed.length < 10) continue
-        if (trimmed.length > 150) continue
-        const clean = trimmed.replace(/^[-–—•·*\s]+/, '').trim()
-        if (clean.length < 10) continue
-        if (/(не могу|отключен|нет доступа|недоступ|ошибк|не работ)/i.test(clean)) continue
-        diff.push('+ ' + clean)
+      for (const line of text.split('\n').filter(l => l.trim())) {
+        const t = line.trim()
+        if (/^(привет|здравствуй|давай|ок|окей|хорошо|понял|отлично|добро|если|уточни|какой|для какого)/i.test(t)) continue
+        if (/[?؟]/.test(t)) continue
+        if (t.length < 10 || t.length > 150) continue
+        if (/(не могу|отключен|нет доступа|недоступ|ошибк|не работ)/i.test(t)) continue
+        diff.push('+ ' + t.replace(/^[-–—•·*\s]+/, '').trim())
         if (diff.length >= 5) break
       }
       if (diff.length === 0) return null
-      return [{ id: 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6), title: title.slice(0,60), description: content.slice(0,200).replace(/\n/g,' '), diff, status: 'pending' }]
+      return { content: text, actions: [{ id: 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6), title: title.slice(0,60), description: text.slice(0,200).replace(/\n/g," "), diff, status: 'pending' }] }
     }
 
-    const actions = detectActionIntent(fullContent, content)
-    const msg = { role: 'assistant', content: fullContent }
-    if (actions) {
-      msg.actions = actions
+    const parsed = parseActions(fullContent, content)
+    const msg = { role: 'assistant', content: parsed?.content || fullContent }
+    if (parsed?.actions) {
+      msg.actions = parsed.actions
     }
 
     onStreamChunk?.('', 'done')
