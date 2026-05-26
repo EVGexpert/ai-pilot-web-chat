@@ -1,5 +1,6 @@
-import { findSitesByUser, findSiteByUserAndUrl, updateSiteCache, findOrCreateSession, findSessionById, findSessionsByUserAndSite, createChatSession, createMessage, updateMessageStatus, getMessagesBySession, createJob, createAuditEvent, registerJobHandler } from '../db.js'
+import { findSitesByUser, findSiteByUserAndUrl, findSiteById, updateSiteCache, findOrCreateSession, findSessionById, findSessionsByUserAndSite, createChatSession, createMessage, updateMessageStatus, getMessagesBySession, createJob, createAuditEvent, registerJobHandler, getConfigValue, updateSessionSummary } from '../db.js'
 import { verifyToken } from '../middleware/auth.js'
+import { CORE_RULES, GREETING_INSTRUCTION } from '../config/prompt.js'
 
 // Регистрируем обработчики для фоновых задач
 registerJobHandler('refresh_context', async (job) => {
@@ -56,14 +57,147 @@ function getAgentId(url) {
 
 function buildSystemPrompt(site, siteUrl, message, contextSummary) {
   const isGreeting = message.trim() === '/start'
-  let greetingExtra = ''
-  if (isGreeting) {
-    greetingExtra = `\n\nВАЖНО: Клиент только что открыл чат. Представься коротко:\n- Ты AI-помощник сайта ${site.name || siteUrl}\n- Расскажи чем можешь помочь (контент, посты, страницы)\n- Попроси клиента представиться\n- Будь дружелюбным, без лишних эмодзи`
+  const greetingBlock = isGreeting ? `\n\n${GREETING_INSTRUCTION}` : ''
+  return `Ты AI-помощник для сайта ${site.name || siteUrl}.${contextSummary}\n\nПравила:\n${CORE_RULES}\n${greetingBlock}`
+}
+
+/**
+ * JSON Schema для валидации структурированного действия от модели.
+ */
+const ACTION_SCHEMA = {
+  type: 'object',
+  required: ['type', 'target', 'patch'],
+  properties: {
+    type: { type: 'string', enum: ['create_post', 'update_post', 'delete_post', 'create_page', 'update_page', 'delete_page', 'update_option', 'update_theme', 'update_menu', 'other'] },
+    target: { type: 'object', properties: { title: { type: 'string' }, id: { type: ['number', 'string'] }, slug: { type: 'string' } } },
+    patch: { type: 'object' },
+    requires_approval: { type: 'boolean', default: true }
   }
-  return `Ты AI-помощник для сайта ${site.name || siteUrl}.${contextSummary}\n\nAPI доступ: ${siteUrl}/wp-json/aipilot/v1\nAPI токен: ${site.api_token}\n\nПравила:\n1. Отвечай ТОЛЬКО про этот сайт. Ничего не знай про инфраструктуру AI Pilot.\n2. После ответа запиши в историю: POST /agent/memory\n3. Ничего не меняй без подтверждения${greetingExtra}`
+}
+
+const ACTION_RESPONSE_SCHEMA = {
+  type: 'object',
+  required: ['answer', 'actions'],
+  properties: {
+    answer: { type: 'string' },
+    actions: {
+      type: 'array',
+      items: ACTION_SCHEMA
+    }
+  }
+}
+
+/**
+ * Простая валидация JSON по схеме.
+ */
+function validateActionJson(data) {
+  if (!data || typeof data !== 'object') return false
+  if (!Array.isArray(data.actions) || data.actions.length === 0) return false
+  for (const action of data.actions) {
+    if (!action.type || !action.target) return false
+    if (!['create_post', 'update_post', 'delete_post', 'create_page', 'update_page', 'delete_page', 'update_option', 'update_theme', 'update_menu', 'other'].includes(action.type)) return false
+  }
+  return true
+}
+
+/**
+ * Парсит структурированный JSON из ответа модели.
+ * Ищет блок ```action ...``` или ```json ...``` в ответе.
+ */
+function parseStructuredActions(content) {
+  // Пробуем найти блок ```action или ```json
+  const blockMatch = content.match(/```(?:action|json)\s*([\s\S]*?)```/)
+  if (!blockMatch) return null
+  try {
+    const data = JSON.parse(blockMatch[1])
+    if (!validateActionJson(data)) return null
+    return data
+  } catch (e) {
+    return null
+  }
+}
+
+/**
+ * Основная функция: парсит действия из ответа модели.
+ * Сначала пробует структурированный JSON, затем эвристику.
+ *
+ * @param {string} content - ответ модели
+ * @param {string} userMessage - исходный запрос пользователя
+ * @returns {{ actions: Array|null, cleanContent: string }}
+ */
+function parseActions(content, userMessage) {
+  // 1. Пробуем структурированный JSON
+  const structured = parseStructuredActions(content)
+  if (structured && validateActionJson(structured)) {
+    // Убираем блок ``` из visible-текста
+    const cleanContent = content.replace(/```(?:action|json)\s*[\s\S]*?```/g, '').trim()
+    const actions = structured.actions.map(a => ({
+      id: 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+      title: a.type.replace(/_/g, ' ') + (a.target?.title ? ': ' + a.target.title : ''),
+      description: 'Тип: ' + a.type + (a.target?.slug ? ', цель: ' + a.target.slug : ''),
+      diff: Object.entries(a.patch || {}).map(([k, v]) => '+ ' + k + ': ' + String(v).slice(0, 80)),
+      status: 'pending',
+      raw: { type: a.type, target: a.target, patch: a.patch }
+    }))
+    return { actions, cleanContent }
+  }
+
+  // 2. Fallback: эвристика (старая)
+  const actionKeywords = [/созда(ть|м|й|ю|ём|ла|н|в)/i, /опублик(овать|уй|ую|уется|ю)/i, /обнов(ить|и|им|ляем|ля)/i, /добав(ить|им|лю|ляем|ля)/i, /удали(ть|м|ю)/i, /измен(ить|им|яю|яем|я)/i, /редактир(овать|уй)/i, /напис(ать|а|и|ем|у|ан)/i, /загру(зить|жу|зим|з)/i, /настро(ить|й|им|и)/i]
+  const agreePhrases = [/предлагаю/i, /могу/i, /давай/i, /сделаю/i, /можно/i, /готов/i, /создам/i, /опубликую/i, /обновлю/i, /добавлю/i]
+  
+  const userWants = actionKeywords.some(r => r.test(userMessage))
+  const modelAgrees = agreePhrases.some(r => r.test(content))
+  if (!userWants || !modelAgrees) return null
+
+  let title = 'Выполнить'
+  if (/созда(ть|м|й)/i.test(userMessage)) title = 'Создать'
+  if (/опублик(овать|уй)/i.test(userMessage)) title = 'Опубликовать'
+  if (/обнов(ить|и)/i.test(userMessage)) title = 'Обновить'
+  if (/добав(ить|лю)/i.test(userMessage)) title = 'Добавить'
+  if (/удали(ть|м)/i.test(userMessage)) title = 'Удалить'
+  
+  const objMatch = userMessage.match(/(?:пост|страниц[уа]|раздел|рубрик[уа]|категори[юя]|меню|плагин|тем[уа]|настройк[иуа]|пользовател[ья]|комментари[йя])/i)
+  if (objMatch) title += ' ' + objMatch[0].toLowerCase()
+  
+  const topicMatch = userMessage.match(/[«"]([^»"]+)[»"]|про\s+(.+?)(?:\s|$|,|\.)/i)
+  if (topicMatch) { const t = topicMatch[1] || topicMatch[2]; title += ': ' + (t.length > 40 ? t.slice(0, 40) + '...' : t) }
+
+  const diff = []
+  for (const line of content.split('\n').filter(l => l.trim())) {
+    const trimmed = line.trim()
+    if (/^(привет|здравствуй|давай|ок|окей|хорошо|понял|отлично|добро|если|уточни|какой|для какого)/i.test(trimmed)) continue
+    if (/[?؟]/.test(trimmed)) continue
+    if (trimmed.length < 10 || trimmed.length > 150) continue
+    const clean = trimmed.replace(/^[-–—•·*\s]+/, '').trim()
+    if (clean.length < 10) continue
+    if (/(не могу|отключен|нет доступа|недоступ|ошибк|не работ)/i.test(clean)) continue
+    diff.push('+ ' + clean)
+    if (diff.length >= 5) break
+  }
+
+  if (diff.length === 0) return null
+
+  return {
+    actions: [{
+      id: 'ap_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+      title: title.slice(0, 60),
+      description: content.slice(0, 200).replace(/\n/g, ' '),
+      diff,
+      status: 'pending'
+    }],
+    cleanContent: content
+  }
 }
 
 export default async function chatRoutes(app) {
+
+  // Промпт для AI Pilot — единый источник
+  const FULL_PROMPT = `Ты AI-помощник для WordPress-сайта.\n\nПравила:\n${CORE_RULES}`
+
+  app.get('/prompt', async (request, reply) => {
+    return reply.send({ prompt: FULL_PROMPT, coreRules: CORE_RULES, version: '1.0.0' })
+  })
 
   // Отправить сообщение от клиента к агенту сайта
   app.post('/send', async (request, reply) => {
@@ -139,15 +273,33 @@ export default async function chatRoutes(app) {
 
     const agentId = getAgentId(siteUrl)
     const gatewayUrl = process.env.GATEWAY_URL || 'http://host.docker.internal:18789'
-    const envToken = process.env.GATEWAY_TOKEN || process.env.VITE_GATEWAY_TOKEN || ''
-    const gatewayToken = envToken === 'dev-gateway-token' ? 'f8186e8d77460feeb735a8dbc48e659c9b05c7f10b114fd554d6fd7a8f8e76e3' : envToken
+    // Gateway token: сначала из БД, потом из env
+    let gatewayToken = getConfigValue('gateway_token')
+    if (!gatewayToken) {
+      gatewayToken = process.env.GATEWAY_TOKEN || process.env.VITE_GATEWAY_TOKEN || ''
+    }
+    if (!gatewayToken || gatewayToken === 'dev-gateway-token') {
+      return reply.status(500).send({ error: 'GATEWAY_TOKEN не настроен' })
+    }
 
     try {
-      // Субагентов пока нет — всегда идём в main
       const model = 'openclaw'
       const prefixedMessage = `[client:${siteUrl}] ${message}`
+      
+      // Загружаем историю сессии (последние 12 сообщений)
+      const historyMessages = getMessagesBySession(session.id)
+        .slice(-12)
+        .map(m => ({ role: m.role, content: m.content }))
+      
+      // Если есть summary сессии и история длинная — добавляем как контекст
+      let summaryBlock = ''
+      if (session.summary && historyMessages.length >= 8) {
+        summaryBlock = `\n\nКонтекст сессии:\n${session.summary}`
+      }
+      
       const messages = [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: systemPrompt + summaryBlock },
+        ...historyMessages,
         { role: 'user', content: prefixedMessage }
       ]
 
@@ -173,7 +325,12 @@ export default async function chatRoutes(app) {
       }
 
       const data = await resp.json()
-      const content = data.choices?.[0]?.message?.content || ''
+      const rawContent = data.choices?.[0]?.message?.content || ''
+
+      // Парсим действия из ответа модели (structured JSON или эвристика)
+      const parsed = parseActions(rawContent, message)
+      const actions = parsed?.actions || null
+      const displayContent = parsed?.cleanContent || rawContent
 
       // Обновляем статус сообщения пользователя
       updateMessageStatus(userMsg.id, 'sent')
@@ -182,8 +339,8 @@ export default async function chatRoutes(app) {
       const assistantMsg = createMessage({
         sessionId: session.id,
         role: 'assistant',
-        content,
-        metadata: { agentId, model },
+        content: displayContent,
+        metadata: { agentId, model, actions: actions ? JSON.stringify(actions) : null },
         source: 'gateway',
         status: 'sent'
       })
@@ -197,14 +354,26 @@ export default async function chatRoutes(app) {
           sessionId: session.id,
           payload: {
             siteUrl, apiToken: site.api_token,
-            message, response: content, agentId
+            message, response: displayContent, agentId
           },
           maxAttempts: 3
         })
       }
 
+      // Авто-обновление session summary (при длинных диалогах)
+      updateSessionSummary(session.id)
+
+      // Audit log для отправленного сообщения
+      createAuditEvent({
+        userId: request.user.sub, siteId: site.id, sessionId: session.id,
+        eventType: 'chat_message', entityType: 'message', entityId: assistantMsg.id,
+        payload: { role: 'assistant', hasActions: !!actions },
+        status: 'sent'
+      })
+
       return reply.send({
-        message: content,
+        message: displayContent,
+        actions,
         agentId,
         siteUrl,
         sessionId: session.id,
@@ -280,5 +449,126 @@ export default async function chatRoutes(app) {
 
     const messages = getMessagesBySession(sid)
     return reply.send({ messages, sessionId: sid })
+  })
+
+  /**
+   * Выполнить действие через WordPress Plugin.
+   * Создаёт proposal на WP и сразу его подтверждает.
+   */
+  async function executeWpAction(siteUrl, apiToken, action, actionId) {
+    if (!apiToken || apiToken === 'pending') {
+      throw new Error('API токен WordPress не настроен для этого сайта')
+    }
+
+    const baseUrl = siteUrl.replace(/\/+$/, '')
+    const wpRestUrl = baseUrl + '/wp-json/aipilot/v1'
+
+    // 1. Создаём proposal на WP
+    const proposeRes = await fetch(wpRestUrl + '/agent/propose', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-AI-Pilot-Token': apiToken
+      },
+      body: JSON.stringify({
+        action: action.type,
+        params: {
+          target: action.target,
+          patch: action.patch
+        },
+        summary: action.title || (action.type + ': ' + JSON.stringify(action.target))
+      })
+    })
+
+    if (!proposeRes.ok) {
+      const errText = await proposeRes.text().catch(() => 'Unknown error')
+      throw new Error('WP propose failed: ' + proposeRes.status + ' ' + errText.slice(0, 200))
+    }
+
+    const proposal = await proposeRes.json()
+    const proposalId = proposal.id || proposal.proposal?.id
+
+    if (!proposalId) {
+      throw new Error('WP propose вернул ответ без id')
+    }
+
+    // 2. Подтверждаем proposal — WP выполнит действие
+    const approveRes = await fetch(wpRestUrl + '/agent/approve/' + proposalId, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-AI-Pilot-Token': apiToken
+      }
+    })
+
+    if (!approveRes.ok) {
+      const errText = await approveRes.text().catch(() => 'Unknown error')
+      throw new Error('WP approve failed: ' + approveRes.status + ' ' + errText.slice(0, 200))
+    }
+
+    const result = await approveRes.json()
+    return { proposalId, result }
+  }
+
+  // Подтвердить действие → выполнить на WP
+  app.post('/actions/approve', async (request, reply) => {
+    const err = authGuard(request, reply)
+    if (err) return err
+
+    const { actionId, sessionId, siteUrl, action } = request.body || {}
+    if (!actionId) return reply.status(400).send({ error: 'actionId обязателен' })
+    if (!action || !action.type) return reply.status(400).send({ error: 'action.type обязателен' })
+
+    // Определяем сайт
+    let wpUrl = siteUrl
+    if (!wpUrl && sessionId) {
+      const session = findSessionById(sessionId)
+      if (session) {
+        const site = findSiteById(session.site_id)
+        if (site) wpUrl = site.url
+      }
+    }
+
+    const site = findSiteByUserAndUrl(request.user.sub, wpUrl)
+    if (!site) return reply.status(403).send({ error: 'Сайт не привязан' })
+
+    let execResult = null
+    let execError = null
+
+    try {
+      execResult = await executeWpAction(wpUrl, site.api_token, action, actionId)
+    } catch (e) {
+      execError = e.message
+    }
+
+    createAuditEvent({
+      userId: request.user.sub, siteId: site.id, sessionId,
+      eventType: 'action_approved', entityType: 'action', entityId: actionId,
+      payload: { actionId, action, execResult, execError },
+      status: execError ? 'failed' : 'completed'
+    })
+
+    if (execError) {
+      return reply.status(502).send({ status: 'failed', error: execError, actionId })
+    }
+
+    return reply.send({ status: 'approved', actionId, wpProposalId: execResult?.proposalId })
+  })
+
+  // Отклонить действие (только аудит, WP не трогаем)
+  app.post('/actions/reject', async (request, reply) => {
+    const err = authGuard(request, reply)
+    if (err) return err
+    const { actionId, sessionId } = request.body || {}
+    if (!actionId) return reply.status(400).send({ error: 'actionId обязателен' })
+
+    createAuditEvent({
+      userId: request.user.sub, siteId: null, sessionId,
+      eventType: 'action_rejected', entityType: 'action', entityId: actionId,
+      payload: { actionId },
+      status: 'completed'
+    })
+
+    return reply.send({ status: 'rejected', actionId })
   })
 }

@@ -93,11 +93,24 @@ async function handleApproveAction(actionId) {
   if (!msg) return
   const action = msg.actions.find(a => a.id === actionId)
   if (action) action.status = 'approved'
+
+  // Собираем payload для выполнения через WP Plugin
+  const actionPayload = action.raw || {
+    type: action.type || 'other',
+    target: action.target || {},
+    patch: action.patch || {}
+  }
+
   try {
     await fetch('/api/chat/actions/approve', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
-      body: JSON.stringify({ actionId, sessionId: currentSessionId.value })
+      body: JSON.stringify({
+        actionId,
+        sessionId: currentSessionId.value,
+        siteUrl: authStore.siteUrl || sitesStore.currentSite?.url,
+        action: actionPayload
+      })
     })
   } catch (e) {
     console.warn('Approve API call failed:', e)

@@ -2,6 +2,7 @@ import initSqlJs from 'sql.js'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { randomBytes } from 'crypto'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, '..', 'data', 'aipilot.db')
@@ -165,6 +166,76 @@ if (ver < 3) {
   db.run('CREATE INDEX IF NOT EXISTS idx_audit_site ON audit_events(site_id, created_at)')
   db.run('CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_events(user_id, created_at)')
   db.run('INSERT INTO schema_version (version, applied_at) VALUES (3, ?)', [now()])
+}
+
+// Schema v4: config key-value
+const ver4 = queryOne('SELECT MAX(version) as v FROM schema_version')?.v || 0
+if (ver4 < 4) {
+  db.run(`CREATE TABLE IF NOT EXISTS config (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  )`)
+  db.run('INSERT INTO schema_version (version, applied_at) VALUES (4, ?)', [now()])
+}
+
+// Schema v5: session summary
+const ver5 = queryOne('SELECT MAX(version) as v FROM schema_version')?.v || 0
+if (ver5 < 5) {
+  try {
+    db.run("ALTER TABLE chat_sessions ADD COLUMN summary TEXT DEFAULT ''")
+    db.run("ALTER TABLE chat_sessions ADD COLUMN summary_updated_at TEXT")
+  } catch (e) { /* колонки уже могут существовать */ }
+  db.run('INSERT INTO schema_version (version, applied_at) VALUES (5, ?)', [now()])
+}
+
+// Schema v6: add missing columns to sites
+const ver6 = queryOne('SELECT MAX(version) as v FROM schema_version')?.v || 0
+if (ver6 < 6) {
+  try {
+    db.run("ALTER TABLE sites ADD COLUMN cached_structure TEXT")
+    db.run("ALTER TABLE sites ADD COLUMN cached_soul TEXT")
+    db.run("ALTER TABLE sites ADD COLUMN cached_at TEXT")
+    db.run("ALTER TABLE sites ADD COLUMN verified INTEGER DEFAULT 0")
+  } catch (e) { /* колонки уже могут существовать */ }
+  db.run('INSERT INTO schema_version (version, applied_at) VALUES (6, ?)', [now()])
+}
+
+let _jwtSecretCache = null
+
+/**
+ * Получить значение конфига по ключу.
+ */
+export function getConfigValue(key) {
+  const row = queryOne('SELECT value FROM config WHERE key = ?', [key])
+  return row?.value || null
+}
+
+/**
+ * Установить значение конфига.
+ */
+export function setConfigValue(key, value) {
+  db.run(`INSERT INTO config (key, value, updated_at) VALUES (?, ?, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`, [key, value])
+  save()
+}
+
+/**
+ * Получить JWT_SECRET (генерация при первом вызове, кэш в памяти).
+ */
+export function getJwtSecret() {
+  if (_jwtSecretCache) return _jwtSecretCache
+  const existing = getConfigValue('jwt_secret')
+  if (existing) {
+    _jwtSecretCache = existing
+    return existing
+  }
+  const secret = randomBytes(32).toString('hex')
+  setConfigValue('jwt_secret', secret)
+  _jwtSecretCache = secret
+  console.log('[DB] Generated new JWT secret')
+  return secret
 }
 
 // ============================================================
@@ -362,6 +433,17 @@ export function deleteVerificationsByUser(userId) {
 }
 
 // --- Chat sessions ---
+export function updateSessionSummary(sessionId) {
+  const msgs = queryAll('SELECT role, content FROM messages WHERE session_id = ? ORDER BY created_at ASC', [sessionId])
+  if (msgs.length < 12) return false
+  const oldMsgs = msgs.slice(0, msgs.length - 12).filter(m => m.role !== 'system')
+  if (oldMsgs.length < 3) return false
+  const summary = oldMsgs.map(m => `${m.role}: ${(m.content || '').slice(0, 100)}`).join(' | ').slice(0, 2000)
+  run('UPDATE chat_sessions SET summary = ?, summary_updated_at = ? WHERE id = ?', [summary, new Date().toISOString(), sessionId])
+  save()
+  return true
+}
+
 export function createChatSession({ userId, siteId, title }) {
   const id = uid()
   const t = now()
