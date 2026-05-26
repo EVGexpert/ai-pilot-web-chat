@@ -8,21 +8,26 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          timeout: 120s
           script: |
             set -e
             cd ~/ai-pilot-web-chat
-            # Сбрасываем локальные изменения (если были ручные правки на сервере)
+
+            # Сбрасываем локальные изменения
             git stash --include-untracked
             git clean -fd
             git pull origin main
 
-            # === Общая Docker сеть ===
+            # Docker сеть
             docker network create aipilot 2>/dev/null || true
 
             # === Auth API ===
