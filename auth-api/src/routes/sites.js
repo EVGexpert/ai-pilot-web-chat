@@ -1,4 +1,4 @@
-import { findSitesByUser, findSiteByUserAndUrl, findSiteById, createSite, deleteSite, allSites, updateSiteToken } from '../db.js'
+import { findSitesByUser, findSiteByUserAndUrl, findSiteById, createSite, deleteSite, allSites, updateSiteToken, getSiteMemory, setSiteMemory, formatSiteMemory } from '../db.js'
 import { verifyToken } from '../middleware/auth.js'
 
 function authGuard(request, reply) {
@@ -251,6 +251,39 @@ export default async function sitesRoutes(app) {
     } catch (e) {
       return reply.send({ memory: [], total: 0, error: e.message })
     }
+  })
+
+  // Запись в локальную память сайта (site_memory таблица в auth-api)
+  app.post('/:id/memory', async (request, reply) => {
+    const err = authGuard(request, reply)
+    if (err) return err
+
+    const site = findSiteById(request.params.id)
+    if (!site) return reply.status(404).send({ error: 'Site not found' })
+    if (!isAdmin(request.user) && site.user_id !== request.user.sub) {
+      return reply.status(403).send({ error: 'Access denied' })
+    }
+
+    const { key, value, source } = request.body || {}
+    if (!key || value === undefined) {
+      return reply.status(400).send({ error: 'key и value обязательны' })
+    }
+
+    const result = setSiteMemory(site.id, key, String(value).slice(0, 2000), source || 'client')
+    return reply.send({ status: 'saved', key, value: result.value, source: result.source })
+  })
+
+  // Чтение локальной памяти сайта
+  app.get('/:id/memory-local', async (request, reply) => {
+    const err = authGuard(request, reply)
+    if (err) return err
+    const site = findSiteById(request.params.id)
+    if (!site) return reply.status(404).send({ error: 'Site not found' })
+    if (!isAdmin(request.user) && site.user_id !== request.user.sub) {
+      return reply.status(403).send({ error: 'Access denied' })
+    }
+    const memory = getSiteMemory(site.id)
+    return reply.send({ memory })
   })
 
   // Обновить токен сайта

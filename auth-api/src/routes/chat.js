@@ -1,4 +1,4 @@
-import { findSitesByUser, findSiteByUserAndUrl, findSiteById, updateSiteCache, findOrCreateSession, findSessionById, findSessionsByUserAndSite, createChatSession, createMessage, updateMessageStatus, getMessagesBySession, createJob, createAuditEvent, registerJobHandler, getConfigValue, updateSessionSummary } from '../db.js'
+import { findSitesByUser, findSiteByUserAndUrl, findSiteById, updateSiteCache, findOrCreateSession, findSessionById, findSessionsByUserAndSite, createChatSession, createMessage, updateMessageStatus, getMessagesBySession, createJob, createAuditEvent, registerJobHandler, getConfigValue, updateSessionSummary, formatSiteMemory, setSiteMemory } from '../db.js'
 import { verifyToken } from '../middleware/auth.js'
 import { CORE_RULES, GREETING_INSTRUCTION } from '../config/prompt.js'
 
@@ -258,8 +258,15 @@ export default async function chatRoutes(app) {
       })
     }
 
+    // Добавляем память сайта в контекст
+    const siteMemoryBlock = formatSiteMemory(site.id)
+    const memoryContext = siteMemoryBlock ? `
+
+Память о предыдущих решениях:
+${siteMemoryBlock}` : ''
+
     // Собираем промпт
-    const systemPrompt = buildSystemPrompt(site, siteUrl, message, contextSummary)
+    const systemPrompt = buildSystemPrompt(site, siteUrl, message, contextSummary + memoryContext)
 
     // Сохраняем сообщение пользователя со статусом 'pending'
     const userMsg = createMessage({

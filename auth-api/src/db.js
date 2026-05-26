@@ -202,6 +202,23 @@ if (ver6 < 6) {
   db.run('INSERT INTO schema_version (version, applied_at) VALUES (6, ?)', [now()])
 }
 
+// Schema v7: site_memory — долгосрочная память по сайтам
+const ver7 = queryOne('SELECT MAX(version) as v FROM schema_version')?.v || 0
+if (ver7 < 7) {
+  db.run(`CREATE TABLE IF NOT EXISTS site_memory (
+    id TEXT PRIMARY KEY,
+    site_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    source TEXT DEFAULT 'agent',
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (site_id) REFERENCES sites(id),
+    UNIQUE(site_id, key)
+  )`)
+  db.run('CREATE INDEX IF NOT EXISTS idx_site_memory_site ON site_memory(site_id)')
+  db.run('INSERT INTO schema_version (version, applied_at) VALUES (7, ?)', [now()])
+}
+
 let _jwtSecretCache = null
 
 /**
@@ -415,6 +432,50 @@ export function deleteSite(id) {
 }
 export function allSites() {
   return queryAll('SELECT * FROM sites ORDER BY created_at DESC')
+}
+
+// --- Site memory ---
+
+/**
+ * Получить всю память сайта.
+ */
+export function getSiteMemory(siteId) {
+  return queryAll('SELECT key, value, source, updated_at FROM site_memory WHERE site_id = ? ORDER BY updated_at DESC', [siteId])
+}
+
+/**
+ * Получить конкретную запись памяти по ключу.
+ */
+export function getSiteMemoryByKey(siteId, key) {
+  return queryOne('SELECT value, source, updated_at FROM site_memory WHERE site_id = ? AND key = ?', [siteId, key])
+}
+
+/**
+ * Установить/обновить запись в памяти сайта.
+ */
+export function setSiteMemory(siteId, key, value, source = 'agent') {
+  const t = now()
+  db.run(`INSERT INTO site_memory (id, site_id, key, value, source, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(site_id, key) DO UPDATE SET value = excluded.value, source = excluded.source, updated_at = excluded.updated_at`,
+    [uid(), siteId, key, value, source, t])
+  return { site_id: siteId, key, value, source, updated_at: t }
+}
+
+/**
+ * Удалить запись из памяти сайта.
+ */
+export function deleteSiteMemory(siteId, key) {
+  run('DELETE FROM site_memory WHERE site_id = ? AND key = ?', [siteId, key])
+}
+
+/**
+ * Собрать память сайта в компактный текст для промпта.
+ * Возвращает строку вроде "Предпочтения: ... | Запрещённые формулировки: ..."
+ */
+export function formatSiteMemory(siteId) {
+  const mems = getSiteMemory(siteId)
+  if (mems.length === 0) return ''
+  return mems.map(m => `${m.key}: ${m.value.slice(0, 200)}`).join(' | ')
 }
 
 // --- Email verifications ---
