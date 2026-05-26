@@ -253,10 +253,16 @@ function now() {
   return new Date().toISOString().replace('T', ' ').slice(0, 19)
 }
 
+// Санитизация параметров — заменяет undefined на null (sql.js не принимает undefined)
+function sanitize(params) {
+  return (params || []).map(p => p === undefined ? null : p)
+}
+
 // Вспомогательные функции для работы с sql.js
 function queryOne(sql, params = []) {
   const stmt = db.prepare(sql)
-  if (params.length > 0) stmt.bind(params)
+  const safe = sanitize(params)
+  if (safe.length > 0) stmt.bind(safe)
   let row = null
   if (stmt.step()) row = stmt.getAsObject()
   stmt.free()
@@ -265,7 +271,8 @@ function queryOne(sql, params = []) {
 
 function queryAll(sql, params = []) {
   const stmt = db.prepare(sql)
-  if (params.length > 0) stmt.bind(params)
+  const safe = sanitize(params)
+  if (safe.length > 0) stmt.bind(safe)
   const rows = []
   while (stmt.step()) rows.push(stmt.getAsObject())
   stmt.free()
@@ -273,7 +280,8 @@ function queryAll(sql, params = []) {
 }
 
 function run(sql, params = []) {
-  db.run(sql, params)
+  const safe = sanitize(params)
+  db.run(sql, safe)
   scheduleSave()
 }
 
