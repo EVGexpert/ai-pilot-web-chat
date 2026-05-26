@@ -17,7 +17,9 @@ jobs:
           script: |
             set -e
             cd ~/ai-pilot-web-chat
-            git stash
+            # Сбрасываем локальные изменения (если были ручные правки на сервере)
+            git stash --include-untracked
+            git clean -fd
             git pull origin main
 
             # === Общая Docker сеть ===
@@ -32,7 +34,7 @@ jobs:
               --network aipilot \
               --add-host host.docker.internal:host-gateway \
               -p 127.0.0.1:3001:3001 \
-              -v "$(pwd)/auth-data:/app/data" \
+              -v /root/ai-pilot-web-chat/auth-data:/app/data \
               -e PORT=3001 \
               -e JWT_SECRET=dev-jwt-secret-change-in-production \
               -e GATEWAY_TOKEN=f8186e8d77460feeb735a8dbc48e659c9b05c7f10b114fd554d6fd7a8f8e76e3 \
