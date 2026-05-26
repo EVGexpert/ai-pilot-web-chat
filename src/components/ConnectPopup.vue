@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 
-// Состояния: login | connecting | scanning | success | error
+// Состояния: login | scanning | success | error
 const step = ref('login')
 const email = ref('')
 const password = ref('')
@@ -15,11 +15,10 @@ const redirectUrl = ref('')
 const siteCode = ref('')
 const directToken = ref('')
 
-const GATEWAY_TOKEN = import.meta.env.VITE_GATEWAY_TOKEN
+// Gateway токен больше не нужен на фронте — Auth API работает с Gateway на сервере
 
 const pageTitle = computed(() => {
   if (step.value === 'login') return isRegister.value ? 'Регистрация' : 'Вход в AI Pilot'
-  if (step.value === 'connecting') return siteName.value ? `Подключаю ${siteName.value}...` : 'Подключаюсь...'
   if (step.value === 'scanning') return `Сканирую ${siteName.value}...`
   if (step.value === 'success') return 'Подключено!'
   return 'Ошибка подключения'
@@ -72,8 +71,6 @@ async function handleSubmit() {
     }
 
     // Переходим к подключению
-    step.value = 'connecting'
-
     // Регистрируем сайт
     let apiToken = 'pending'
     if (siteUrl.value) {
@@ -138,8 +135,6 @@ async function handleSubmit() {
       }
     }
 
-    await connectToGateway()
-
     // Сканируем сайт через auth-api (прокси на WP REST API)
     if (siteUrl.value && apiToken !== 'pending') {
       step.value = 'scanning'
@@ -168,64 +163,12 @@ async function handleSubmit() {
   }
 }
 
-function waitForEvent(ws, filter, timeoutMs = 8000) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Timeout')), timeoutMs)
-    ws.onmessage = (e) => {
-      try {
-        const frame = JSON.parse(e.data)
-        if (filter(frame)) { clearTimeout(timer); resolve(frame) }
-      } catch {}
-    }
-  })
-}
-
-async function connectToGateway() {
-  if (!GATEWAY_TOKEN) {
-    step.value = 'error'
-    errorMsg.value = 'Gateway token not configured'
-    return
-  }
-
-  try {
-    const ws = new WebSocket('wss://pilotsite.ru/')
-
-    await new Promise((resolve, reject) => {
-      ws.onopen = resolve
-      ws.onerror = () => reject(new Error('WebSocket connection failed'))
-      setTimeout(() => reject(new Error('Connection timeout')), 8000)
-    })
-
-    await waitForEvent(ws, (f) => f.type === 'event' && f.event === 'connect.challenge')
-
-    ws.send(JSON.stringify({
-      type: 'req', id: '1', method: 'connect',
-      params: {
-        minProtocol: 3, maxProtocol: 4,
-        client: { id: 'cli', version: '0.1.0', platform: 'browser', mode: 'cli' },
-        role: 'operator', scopes: ['operator.read'],
-        caps: [], commands: [], permissions: {},
-        auth: { token: GATEWAY_TOKEN },
-        locale: 'ru-RU', userAgent: 'ai-pilot-connect/0.1.0'
-      }
-    }))
-
-    const res = await waitForEvent(ws, (f) => f.type === 'res')
-    ws.close()
-
-    if (!res.ok) throw new Error(res.error?.message || 'Connection rejected')
-
     step.value = 'success'
     if (redirectUrl.value) {
       setTimeout(() => {
         window.location.href = decodeURIComponent(redirectUrl.value)
       }, 1500)
     }
-  } catch (e) {
-    step.value = 'error'
-    errorMsg.value = e.message || 'Connection failed'
-  }
-}
 </script>
 
 <template>
@@ -264,13 +207,6 @@ async function connectToGateway() {
           {{ isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться' }}
         </button>
       </form>
-
-      <!-- Подключение -->
-      <div v-if="step === 'connecting'" class="status-body">
-        <div class="spinner"></div>
-        <p class="status-desc">Устанавливаю защищённое соединение с сервером AI Pilot</p>
-        <div class="progress-bar"><div class="progress-fill"></div></div>
-      </div>
 
       <!-- Сканирование -->
       <div v-if="step === 'scanning'" class="status-body">

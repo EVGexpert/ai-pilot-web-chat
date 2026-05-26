@@ -2,7 +2,6 @@
 import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
-import { createGatewayClient } from '../api/gatewayClient'
 import MessageArea from './MessageArea.vue'
 import ChatInput from './ChatInput.vue'
 import ThemeToggle from './ThemeToggle.vue'
@@ -33,81 +32,58 @@ function closeCsSidebar() {
 }
 const currentSiteConversations = computed(() => sitesStore.currentSiteConversations)
 
-const gatewayWs = import.meta.env.VITE_GATEWAY_WS || 'wss://pilotsite.ru'
-const chatBase = `${window.location.protocol}//${window.location.host}`
-const httpBase = import.meta.env.VITE_GATEWAY_HTTP || chatBase
-
-let client = null
-
-function connect() {
-  // Клиенты подключаются через auth-api proxy, не через Gateway напрямую
-  if (props.clientMode) {
-    isConnected.value = true
-    return
-  }
-  
-  client = createGatewayClient({
-    gateway: gatewayWs, httpBase, token: authStore.gatewayToken,
-    onConnected: () => { isConnected.value = true; error.value = null },
-    onDisconnected: () => { isConnected.value = false },
-    onMessage: (msg) => { messages.value = [...messages.value, { id: `msg-${Date.now()}`, ...msg }]; isLoading.value = false; streamingContent.value = '' },
-    onStreamChunk: (chunk, type) => {
-      if (type === 'start') { isLoading.value = true; streamingContent.value = '' }
-      else if (type === 'chunk') { streamingContent.value += chunk }
-      else if (type === 'done') { isLoading.value = false; streamingContent.value = '' }
-    },
-    onError: (err) => { error.value = err; isConnected.value = false }
-  })
-  client.connect()
-}
-
-function disconnect() { client?.disconnect(); client = null }
+function disconnect() {}
 
 async function handleSend(text) {
   messages.value = [...messages.value, { id: `user-${Date.now()}`, role: 'user', content: text }]
   isLoading.value = true
   error.value = null
 
-  if (props.clientMode && authStore.siteUrl) {
-    // Клиент: отправляем через auth-api proxy
-    try {
-      const res = await fetch('/api/chat/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + authStore.token
-        },
-        body: JSON.stringify({
-          message: text,
-          siteUrl: authStore.siteUrl,
-          sessionId: currentSessionId.value
-        })
-      })
-      
-      if (res.ok) {
-        const data = await res.json()
-        currentSessionId.value = data.sessionId || currentSessionId.value
-        const newMsg = { id: `msg-${Date.now()}`, role: 'assistant', content: data.message }
-        if (data.actions && data.actions.length > 0) {
-          newMsg.actions = data.actions
-        }
-        messages.value = [...messages.value, newMsg]
-        await loadSessions()
-      } else {
-        const err = await res.json().catch(() => ({ error: 'Unknown error' }))
-        error.value = err.error || 'Ошибка отправки'
-      }
-    } catch (e) {
-      error.value = 'Сетевая ошибка: ' + e.message
-    } finally {
-      isLoading.value = false
-      streamingContent.value = ''
-    }
+  // Определяем siteUrl
+  let sendSiteUrl = authStore.siteUrl
+  if (!sendSiteUrl && sitesStore.currentSite) {
+    sendSiteUrl = sitesStore.currentSite.url
+  }
+
+  if (!sendSiteUrl) {
+    error.value = 'Не выбран сайт. Выберите сайт в боковой панели.'
+    isLoading.value = false
     return
   }
 
-  // Админ: отправляем через Gateway HTTP API
-  client?.sendMessage(text).catch(err => { error.value = err; isLoading.value = false })
+  try {
+    const res = await fetch('/api/chat/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + authStore.token
+      },
+      body: JSON.stringify({
+        message: text,
+        siteUrl: sendSiteUrl,
+        sessionId: currentSessionId.value
+      })
+    })
+    
+    if (res.ok) {
+      const data = await res.json()
+      currentSessionId.value = data.sessionId || currentSessionId.value
+      const newMsg = { id: `msg-${Date.now()}`, role: 'assistant', content: data.message }
+      if (data.actions && data.actions.length > 0) {
+        newMsg.actions = data.actions
+      }
+      messages.value = [...messages.value, newMsg]
+      await loadSessions()
+    } else {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+      error.value = err.error || 'Ошибка отправки'
+    }
+  } catch (e) {
+    error.value = 'Сетевая ошибка: ' + e.message
+  } finally {
+    isLoading.value = false
+    streamingContent.value = ''
+  }
 }
 function handleReconnect() { error.value = null; connect() }
 
@@ -218,7 +194,7 @@ function handleLogout() {
   disconnect(); authStore.logout() 
 }
 
-connect()
+isConnected.value = true
 onUnmounted(() => disconnect())
 
 // Клиент: всё из БД, без localStorage

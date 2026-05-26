@@ -7,19 +7,17 @@ export const useAuthStore = defineStore('auth', () => {
   const theme = ref(localStorage.getItem('aipilot_theme') || 'light')
   const siteUrl = ref(localStorage.getItem('aipilot_site_url') || '')
 
-  // Gateway токен — из env (встраивается при сборке)
-  const gatewayToken = ref(import.meta.env.VITE_GATEWAY_TOKEN || '')
+
 
   const isAuthenticated = computed(() => !!token.value)
   const userName = computed(() => user.value?.name || '')
   const isAdmin = computed(() => user.value?.role === 'admin')
   const isClient = computed(() => user.value?.role === 'client')
 
-  function login(newToken, userData = null, siteUrlData = '', gwToken = '') {
+  function login(newToken, userData = null, siteUrlData = '') {
     token.value = newToken
     user.value = userData
     siteUrl.value = siteUrlData
-    if (gwToken) gatewayToken.value = gwToken
     localStorage.setItem('aipilot_token', newToken)
     if (userData) {
       localStorage.setItem('aipilot_user', JSON.stringify(userData))
@@ -61,5 +59,5 @@ export const useAuthStore = defineStore('auth', () => {
     applyTheme(theme.value)
   }
 
-  return { token, user, theme, siteUrl, gatewayToken, isAuthenticated, userName, isAdmin, isClient, login, logout, setTheme, initTheme }
+  return { token, user, theme, siteUrl, isAuthenticated, userName, isAdmin, isClient, login, logout, setTheme, initTheme }
 })
