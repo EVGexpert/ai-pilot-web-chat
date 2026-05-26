@@ -1,18 +1,17 @@
-import { scryptSync, randomBytes, timingSafeEqual } from 'crypto'
+import bcrypt from 'bcryptjs'
 
-const KEY_LENGTH = 64
-const SALT_LENGTH = 16
+const SALT_ROUNDS = 10
 
+/**
+ * Хеширование пароля — bcryptjs (совместимость с существующими хешами в БД).
+ */
 export async function hashPassword(password) {
-  const salt = randomBytes(SALT_LENGTH).toString('hex')
-  const derivedKey = scryptSync(password, salt, KEY_LENGTH)
-  return salt + ':' + derivedKey.toString('hex')
+  return bcrypt.hash(password, SALT_ROUNDS)
 }
 
+/**
+ * Верификация пароля через bcryptjs.
+ */
 export async function verifyPassword(password, hashed) {
-  const [salt, key] = hashed.split(':')
-  const derivedKey = scryptSync(password, salt, KEY_LENGTH)
-  const keyBuf = Buffer.from(key, 'hex')
-  const derivedBuf = derivedKey
-  return keyBuf.length === derivedBuf.length && timingSafeEqual(keyBuf, derivedBuf)
+  return bcrypt.compare(password, hashed)
 }
