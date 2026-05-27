@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useSitesStore } from '../stores/sitesStore'
 import { useAuthStore } from '../stores/authStore'
+import DOMPurify from 'dompurify'
 
 const props = defineProps({
   conversations: { type: Array, default: () => [] },
@@ -164,7 +165,7 @@ const hasSiteSelected = computed(() => !!sitesStore.currentSiteId)
             <span class="msg-role">{{ msg.role === 'client' ? '👤 Клиент' : '🤖 AI Pilot' }}</span>
             <span class="msg-time">{{ msg.time || formatTime(msg.timestamp) }}</span>
           </div>
-          <div class="msg-text" v-html="(msg.content || msg.text || '').replace(/\n/g, '<br/>')"></div>
+          <div class="msg-text" v-html="DOMPurify.sanitize((msg.content || msg.text || '').replace(/\n/g, '<br/>'))"></div>
         </div>
         <div v-if="getConvMessages(selectedConversation.id).length === 0" class="history-empty">
           <p>Нет сообщений в этом обращении</p>
