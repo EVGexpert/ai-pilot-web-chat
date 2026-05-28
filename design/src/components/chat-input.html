@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat Input — AI Pilot Design</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .preview-wrap { max-width: 640px; margin: 0 auto; padding: 2rem; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <nav class="sticky top-0 z-10 bg-slate-950/80 backdrop-blur border-b border-slate-800 px-4 py-2">
+    <a href="/" class="text-sm text-slate-400 hover:text-blue-400 transition-colors">← Назад к списку</a>
+  </nav>
+
+  <div class="preview-wrap space-y-10">
+    <h2 class="text-lg font-semibold text-slate-300">✏️ Chat Input — состояния</h2>
+
+    <!-- Обычное состояние -->
+    <div>
+      <p class="text-xs text-slate-500 mb-3">Обычное (пустое)</p>
+      <div class="flex items-end gap-2 bg-slate-900 border border-slate-700/60 rounded-2xl px-4 py-3 transition-colors">
+        <textarea rows="1"
+                  placeholder="Напишите сообщение…"
+                  class="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 resize-none outline-none leading-relaxed max-h-32"
+        ></textarea>
+        <button disabled
+                class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-600 cursor-not-allowed transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- С текстом -->
+    <div>
+      <p class="text-xs text-slate-500 mb-3">С текстом (активна кнопка)</p>
+      <div class="flex items-end gap-2 bg-slate-900 border border-blue-500/40 rounded-2xl px-4 py-3 ring-1 ring-blue-500/20 transition-colors">
+        <textarea rows="2"
+                  class="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 resize-none outline-none leading-relaxed"
+        >Обнови контакты на главной: замени телефон и email</textarea>
+        <button class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Disabled -->
+    <div>
+      <p class="text-xs text-slate-500 mb-3">Отключено (загрузка ответа)</p>
+      <div class="flex items-end gap-2 bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-3 opacity-60">
+        <textarea rows="1" disabled
+                  placeholder="Ожидайте ответа…"
+                  class="flex-1 bg-transparent text-sm text-slate-500 placeholder-slate-600 resize-none outline-none leading-relaxed"
+        ></textarea>
+        <button disabled
+                class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-700 cursor-not-allowed">
+          <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Мультилайн (3 строки) -->
+    <div>
+      <p class="text-xs text-slate-500 mb-3">Мультилайн</p>
+      <div class="flex items-end gap-2 bg-slate-900 border border-slate-700/60 rounded-2xl px-4 py-3 transition-colors">
+        <textarea rows="3"
+                  class="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 resize-none outline-none leading-relaxed"
+        >Вот длинное сообщение с детальным описанием задачи:
+
+1. Обновить телефон
+2. Сменить email
+3. Добавить ссылку на VK</textarea>
+        <button class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

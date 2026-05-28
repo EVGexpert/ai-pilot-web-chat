@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Pilot — Дизайн-система</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="max-w-4xl mx-auto px-6 py-12">
+    <!-- Header -->
+    <header class="mb-12">
+      <h1 class="text-4xl font-bold tracking-tight mb-2">
+        AI Pilot <span class="text-blue-400">Design Kit</span>
+      </h1>
+      <p class="text-slate-400 text-lg">
+        Vite + Tailwind CSS v4 — компоненты веб-чата
+      </p>
+      <div class="flex gap-2 mt-3">
+        <span class="px-3 py-1 text-xs font-medium bg-slate-800 text-slate-300 rounded-full">Vue → HTML</span>
+        <span class="px-3 py-1 text-xs font-medium bg-slate-800 text-slate-300 rounded-full">Tailwind v4</span>
+        <span class="px-3 py-1 text-xs font-medium bg-slate-800 text-slate-300 rounded-full">Тёмная тема</span>
+      </div>
+    </header>
+
+    <!-- Инструкция -->
+    <section class="mb-10 p-5 bg-slate-900/60 border border-slate-800 rounded-xl">
+      <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">Как пользоваться</h2>
+      <ol class="space-y-2 text-sm text-slate-400">
+        <li>1️⃣ Открой любой компонент — он откроется в браузере с HMR</li>
+        <li>2️⃣ Меняй Tailwind-классы прямо в <code class="text-blue-300 bg-slate-800 px-1 rounded">.html</code></li>
+        <li>3️⃣ Сохрани — и изменения сразу видны</li>
+        <li>4️⃣ Когда всё готово, я перенесу изменения обратно в <code class="text-blue-300 bg-slate-800 px-1 rounded">.vue</code></li>
+      </ol>
+    </section>
+
+    <!-- Сетка компонентов -->
+    <div class="grid gap-4 sm:grid-cols-2">
+      <a href="/src/components/message-bubble.html"
+         class="block p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all group">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-lg">💬 Message Bubble</h3>
+          <span class="text-xs text-slate-500 group-hover:text-blue-400 transition-colors">→</span>
+        </div>
+        <p class="text-sm text-slate-400">Пузырьки сообщений: пользователь, ассистент, загрузка</p>
+      </a>
+
+      <a href="/src/components/chat-input.html"
+         class="block p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all group">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-lg">✏️ Chat Input</h3>
+          <span class="text-xs text-slate-500 group-hover:text-blue-400 transition-colors">→</span>
+        </div>
+        <p class="text-sm text-slate-400">Поле ввода с кнопкой отправки, placeholder, disabled</p>
+      </a>
+
+      <a href="/src/components/sidebar.html"
+         class="block p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all group">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-lg">📋 Sidebar</h3>
+          <span class="text-xs text-slate-500 group-hover:text-blue-400 transition-colors">→</span>
+        </div>
+        <p class="text-sm text-slate-400">Боковая панель: навигация, список сайтов, logout</p>
+      </a>
+
+      <a href="/src/components/login-form.html"
+         class="block p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all group">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-lg">🔐 Login Form</h3>
+          <span class="text-xs text-slate-500 group-hover:text-blue-400 transition-colors">→</span>
+        </div>
+        <p class="text-sm text-slate-400">Форма входа: email, пароль, кнопка, ошибки</p>
+      </a>
+
+      <a href="/src/components/site-selector.html"
+         class="block p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all group">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-lg">🌐 Site Selector</h3>
+          <span class="text-xs text-slate-500 group-hover:text-blue-400 transition-colors">→</span>
+        </div>
+        <p class="text-sm text-slate-400">Выбор сайта из списка с иконкой статуса</p>
+      </a>
+
+      <a href="/src/components/action-card.html"
+         class="block p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all group">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-lg">✅ Action Card</h3>
+          <span class="text-xs text-slate-500 group-hover:text-blue-400 transition-colors">→</span>
+        </div>
+        <p class="text-sm text-slate-400">Карточка действия с approve/reject</p>
+      </a>
+
+      <a href="/src/components/chat-layout.html"
+         class="block p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500/50 transition-all col-span-1 sm:col-span-2 group">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-lg">🖼️ Полный Layout чата</h3>
+          <span class="text-xs text-slate-500 group-hover:text-blue-400 transition-colors">→</span>
+        </div>
+        <p class="text-sm text-slate-400">Сборка: sidebar + chat window + input + сообщения</p>
+      </a>
+    </div>
+
+    <!-- Подвал -->
+    <footer class="mt-12 pt-6 border-t border-slate-800 text-center text-sm text-slate-600">
+      AI Pilot Design Kit · <a href="https://github.com/EVGexpert/ai-pilot-web-chat/tree/main/design" class="text-slate-500 hover:text-blue-400">GitHub</a>
+    </footer>
+  </div>
+</body>
+</html>

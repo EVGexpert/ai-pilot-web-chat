@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Message Bubble — AI Pilot Design</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .preview-wrap { max-width: 640px; margin: 0 auto; padding: 2rem; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <nav class="sticky top-0 z-10 bg-slate-950/80 backdrop-blur border-b border-slate-800 px-4 py-2">
+    <a href="/" class="text-sm text-slate-400 hover:text-blue-400 transition-colors">← Назад к списку</a>
+  </nav>
+
+  <div class="preview-wrap space-y-8">
+    <h2 class="text-lg font-semibold text-slate-300">💬 Message Bubble — состояния</h2>
+
+    <!-- Сообщение пользователя -->
+    <div class="flex justify-end animate-fade-in">
+      <div class="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
+        <p>Привет! Нужно обновить контакты на сайте.</p>
+        <span class="block text-[10px] text-blue-200 mt-1 text-right">10:34</span>
+      </div>
+    </div>
+
+    <!-- Сообщение ассистента (без action) -->
+    <div class="flex justify-start animate-fade-in">
+      <div class="max-w-[75%] bg-slate-800 text-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
+        <p>Принято! Что именно нужно изменить? Могу обновить телефон, email или добавить новый контакт.</p>
+        <span class="block text-[10px] text-slate-500 mt-1">10:35</span>
+      </div>
+    </div>
+
+    <!-- Сообщение с кодом / форматированием -->
+    <div class="flex justify-start animate-fade-in">
+      <div class="max-w-[75%] bg-slate-800 text-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
+        <p class="mb-2">Вот что я нашёл в контактах:</p>
+        <div class="bg-slate-900/80 rounded-lg p-3 text-xs font-mono">
+          <span class="text-blue-400">Телефон:</span> <span class="text-slate-300">+7 (4012) 123-456</span><br/>
+          <span class="text-blue-400">Email:</span> <span class="text-slate-300">info@pilotsite.ru</span>
+        </div>
+        <span class="block text-[10px] text-slate-500 mt-2">10:35</span>
+      </div>
+    </div>
+
+    <!-- Action proposal (типа "я хочу сделать") -->
+    <div class="flex justify-start animate-fade-in">
+      <div class="max-w-[85%] bg-slate-800/80 border border-slate-700/60 rounded-2xl rounded-bl-md p-4 text-sm shadow-lg">
+        <div class="flex items-center gap-2 mb-2 text-slate-300">
+          <span class="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">!</span>
+          <span class="font-medium">Предлагаю действие</span>
+        </div>
+        <p class="text-slate-300 mb-3">Обновить контактный email на главной странице с <span class="line-through text-slate-500">info@pilotsite.ru</span> на <span class="text-green-400 font-medium">hello@pilotsite.ru</span></p>
+        <div class="flex gap-2">
+          <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer">✓ Подтвердить</button>
+          <button class="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-lg transition-colors cursor-pointer">✕ Отклонить</button>
+        </div>
+        <span class="block text-[10px] text-slate-600 mt-2">10:36</span>
+      </div>
+    </div>
+
+    <!-- Длинное сообщение (ассистент) -->
+    <div class="flex justify-start animate-fade-in">
+      <div class="max-w-[75%] bg-slate-800 text-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
+        <p class="mb-2">Вот контакты, которые сейчас на сайте:</p>
+        <ul class="list-disc list-inside space-y-1 text-slate-300 mb-2">
+          <li><strong class="text-slate-100">Телефон:</strong> +7 (4012) 123-456</li>
+          <li><strong class="text-slate-100">Email:</strong> info@pilotsite.ru</li>
+          <li><strong class="text-slate-100">Адрес:</strong> г. Калининград, ул. Примерная, д. 1</li>
+        </ul>
+        <p class="text-slate-400">Хотите что-то изменить?</p>
+        <span class="block text-[10px] text-slate-500 mt-1">10:35</span>
+      </div>
+    </div>
+
+    <!-- Typing indicator -->
+    <div class="flex justify-start animate-fade-in">
+      <div class="bg-slate-800 text-slate-400 rounded-2xl rounded-bl-md px-4 py-3 text-sm shadow-lg">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]" style="animation-delay: 0s;"></span>
+          <span class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]" style="animation-delay: 0.16s;"></span>
+          <span class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]" style="animation-delay: 0.32s;"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- System message (центр) -->
+    <div class="flex justify-center animate-fade-in">
+      <div class="text-xs text-slate-500 bg-slate-800/50 rounded-full px-4 py-1.5">
+        Сессия начата 28 мая 2026
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

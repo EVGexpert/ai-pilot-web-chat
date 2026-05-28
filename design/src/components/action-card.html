@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Action Card — AI Pilot Design</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .demo-wrap { max-width: 640px; margin: 0 auto; padding: 2rem; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <nav class="sticky top-0 z-10 bg-slate-950/80 backdrop-blur border-b border-slate-800 px-4 py-2">
+    <a href="/" class="text-sm text-slate-400 hover:text-blue-400 transition-colors">← Назад к списку</a>
+  </nav>
+
+  <div class="demo-wrap space-y-6">
+    <h2 class="text-lg font-semibold text-slate-300">✅ Action Proposal Card</h2>
+
+    <!-- Pending (ожидает решения) -->
+    <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-4 shadow-lg ring-1 ring-amber-500/5 animate-fade-in">
+      <div class="flex items-start gap-3">
+        <div class="shrink-0 w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-sm font-medium text-amber-400">Ожидает подтверждения</span>
+            <span class="px-2 py-0.5 text-[10px] font-medium bg-amber-500/10 text-amber-400 rounded-full">pending</span>
+          </div>
+          <p class="text-sm text-slate-200 mb-3">
+            <strong>Действие:</strong> Обновить опцию сайта
+          </p>
+          <div class="bg-slate-950/60 rounded-xl p-3 mb-3 font-mono text-xs space-y-1">
+            <div><span class="text-blue-400">option:</span> <span class="text-slate-300">site_description</span></div>
+            <div><span class="text-blue-400">value:</span> <span class="text-green-300">«Профессиональная разработка сайтов в Калининграде»</span></div>
+          </div>
+          <p class="text-xs text-slate-500 mb-3">Сайт: <span class="text-slate-400">pilotsite.ru</span></p>
+          <div class="flex gap-2">
+            <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Подтвердить
+            </button>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm rounded-xl transition-colors cursor-pointer flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              Отклонить
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Approved -->
+    <div class="bg-slate-900 border border-green-500/20 rounded-2xl p-4 shadow-lg opacity-70 animate-fade-in">
+      <div class="flex items-start gap-3">
+        <div class="shrink-0 w-9 h-9 rounded-xl bg-green-500/15 text-green-400 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-sm font-medium text-green-400">Выполнено</span>
+            <span class="px-2 py-0.5 text-[10px] font-medium bg-green-500/10 text-green-400 rounded-full">approved</span>
+          </div>
+          <p class="text-sm text-slate-300 mb-2">
+            <strong>Действие:</strong> Обновить контактный email
+          </p>
+          <div class="bg-slate-950/60 rounded-xl p-3 mb-2 font-mono text-xs space-y-1">
+            <div><span class="text-blue-400">option:</span> <span class="text-slate-300">admin_email</span></div>
+            <div><span class="text-blue-400">new value:</span> <span class="text-green-300">hello@pilotsite.ru</span></div>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-600">
+            <span>Подтверждено вами</span>
+            <span>·</span>
+            <span>28 мая, 10:37</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejected -->
+    <div class="bg-slate-900 border border-red-500/20 rounded-2xl p-4 shadow-lg opacity-70 animate-fade-in">
+      <div class="flex items-start gap-3">
+        <div class="shrink-0 w-9 h-9 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-sm font-medium text-red-400">Отклонено</span>
+            <span class="px-2 py-0.5 text-[10px] font-medium bg-red-500/10 text-red-400 rounded-full">rejected</span>
+          </div>
+          <p class="text-sm text-slate-300 mb-2">
+            <strong>Действие:</strong> Удалить страницу «О нас»
+          </p>
+          <div class="bg-slate-950/60 rounded-xl p-3 mb-2 font-mono text-xs space-y-1">
+            <div><span class="text-blue-400">action:</span> <span class="text-slate-300">delete_post</span></div>
+            <div><span class="text-blue-400">post_id:</span> <span class="text-slate-300">7</span></div>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-600">
+            <span>Отклонено вами</span>
+            <span>·</span>
+            <span>28 мая, 10:40</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

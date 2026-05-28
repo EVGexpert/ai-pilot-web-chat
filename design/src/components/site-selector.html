@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Site Selector — AI Pilot Design</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .demo-wrap { max-width: 640px; margin: 0 auto; padding: 2rem; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <nav class="sticky top-0 z-10 bg-slate-950/80 backdrop-blur border-b border-slate-800 px-4 py-2">
+    <a href="/" class="text-sm text-slate-400 hover:text-blue-400 transition-colors">← Назад к списку</a>
+  </nav>
+
+  <div class="demo-wrap space-y-8">
+    <h2 class="text-lg font-semibold text-slate-300">🌐 Site Selector — список сайтов</h2>
+
+    <!-- Список сайтов -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <!-- Активный сайт -->
+      <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 cursor-pointer border-b border-slate-800/60 transition-colors">
+        <div class="shrink-0 w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold">P</div>
+        <div class="flex-1 min-w-0">
+          <span class="block text-sm font-medium text-slate-100 truncate">pilotsite.ru</span>
+          <span class="block text-xs text-slate-500">ID: 1 · Подключён</span>
+        </div>
+        <span class="shrink-0 w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-500/30"></span>
+      </div>
+
+      <!-- Неактивный сайт -->
+      <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 cursor-pointer border-b border-slate-800/60 transition-colors">
+        <div class="shrink-0 w-8 h-8 rounded-lg bg-slate-700/40 text-slate-400 flex items-center justify-center text-xs font-bold">C</div>
+        <div class="flex-1 min-w-0">
+          <span class="block text-sm font-medium text-slate-100 truncate">client1.ru</span>
+          <span class="block text-xs text-slate-500">ID: 2 · Подключён</span>
+        </div>
+        <span class="shrink-0 w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-500/30"></span>
+      </div>
+
+      <!-- Неподключённый -->
+      <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 cursor-pointer transition-colors">
+        <div class="shrink-0 w-8 h-8 rounded-lg bg-slate-700/40 text-slate-500 flex items-center justify-center text-xs font-bold">O</div>
+        <div class="flex-1 min-w-0">
+          <span class="block text-sm font-medium text-slate-400 truncate">obelisk.evgexpert.ru</span>
+          <span class="block text-xs text-slate-600">Не подключён</span>
+        </div>
+        <span class="shrink-0 w-2 h-2 rounded-full bg-slate-700"></span>
+      </div>
+    </div>
+
+    <!-- Выпадающий селект (альтернатива) -->
+    <div>
+      <p class="text-xs text-slate-500 mb-3">Альтернатива — выпадающий список</p>
+      <div class="relative">
+        <select class="w-full appearance-none bg-slate-900 border border-slate-700/60 text-slate-100 text-sm rounded-xl px-4 py-3 pr-10 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-colors cursor-pointer">
+          <option class="bg-slate-900">pilotsite.ru 🟢</option>
+          <option class="bg-slate-900">client1.ru 🟢</option>
+          <option class="bg-slate-900">obelisk.evgexpert.ru ⚪</option>
+        </select>
+        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Connect code popup (мини) -->
+    <div>
+      <p class="text-xs text-slate-500 mb-3">Подключение нового сайта</p>
+      <div class="bg-slate-900/70 border border-dashed border-slate-700/50 rounded-xl p-6 text-center">
+        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+        </div>
+        <h3 class="text-sm font-medium text-slate-200 mb-2">Подключить сайт</h3>
+        <p class="text-xs text-slate-500 mb-4">Сгенерируйте код и вставьте его в плагин на сайте</p>
+        <button class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer">
+          Создать код подключения
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
