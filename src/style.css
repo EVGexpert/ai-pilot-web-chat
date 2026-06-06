@@ -3,12 +3,15 @@
    ======================================== */
 
 /* Inter Variable */
-@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap");
+
+/* Tailwind CSS */
+@import "tailwindcss";
 
 /* ============ CSS Variables (Light) ============ */
 :root {
   /* Типографика */
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --typography-h1-size: 28px;
   --typography-h1-weight: 400;
   --typography-h2-size: 24px;
@@ -147,7 +150,9 @@
   box-sizing: border-box;
 }
 
-html, body, #app {
+html,
+body,
+#app {
   height: 100%;
   font-family: var(--font-family);
   font-size: var(--typography-body-size);
