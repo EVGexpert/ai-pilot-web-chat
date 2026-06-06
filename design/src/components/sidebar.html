@@ -1,104 +1,181 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sidebar — AI Pilot Design</title>
-  <link rel="stylesheet" href="/src/style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    .demo-wrap { max-width: 320px; }
-  </style>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
-  <nav class="sticky top-0 z-10 bg-slate-950/80 backdrop-blur border-b border-slate-800 px-4 py-2">
-    <a href="/" class="text-sm text-slate-400 hover:text-blue-400 transition-colors">← Назад к списку</a>
-  </nav>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sidebar — AI Pilot Design</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .demo-wrap {
+        max-width: 320px;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-950 text-slate-100 min-h-screen">
+    <nav
+      class="sticky top-0 z-10 bg-white backdrop-blur border-b border-slate-800 px-4 py-2"
+    >
+      <a
+        href="/"
+        class="text-sm text-slate-400 hover:text-blue-400 transition-colors"
+        >← Назад к списку</a
+      >
+    </nav>
 
-  <div class="flex justify-center pt-6">
-    <div class="demo-wrap w-full bg-slate-950 border-r border-slate-800 min-h-[600px] flex flex-col">
-      <!-- Шапка -->
-      <div class="px-4 py-5 border-b border-slate-800">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-600/20">
-            AP
-          </div>
-          <div>
-            <h1 class="text-base font-bold text-slate-100">AI Pilot</h1>
-            <p class="text-xs text-slate-500">Управление сайтами</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Поиск -->
-      <div class="px-4 pt-4 pb-2">
-        <div class="relative">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <input type="text" placeholder="Поиск..."
-                 class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 rounded-xl pl-10 pr-4 py-2 outline-none focus:border-blue-500/40 transition-colors" />
-        </div>
-      </div>
-
-      <!-- Секция: Сайты -->
-      <div class="px-4 py-3">
-        <h2 class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Мои сайты</h2>
-        <nav class="space-y-1">
-          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-sm font-medium transition-colors">
-            <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0"></span>
-            <span class="truncate">pilotsite.ru</span>
-          </a>
-          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 text-slate-300 text-sm transition-colors">
-            <span class="w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
-            <span class="truncate">client1.ru</span>
-          </a>
-          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 text-slate-400 text-sm transition-colors">
-            <span class="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>
-            <span class="truncate">obelisk.evgexpert.ru</span>
-          </a>
-        </nav>
-      </div>
-
-      <!-- Секция: История -->
-      <div class="px-4 py-3 flex-1">
-        <h2 class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Недавние диалоги</h2>
-        <div class="space-y-1">
-          <a href="#" class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors">
-            <span class="block text-sm text-slate-300 truncate">Обновить контакты</span>
-            <span class="block text-xs text-slate-600">28 мая</span>
-          </a>
-          <a href="#" class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors">
-            <span class="block text-sm text-slate-300 truncate">Добавить страницу «Услуги»</span>
-            <span class="block text-xs text-slate-600">27 мая</span>
-          </a>
-          <a href="#" class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors">
-            <span class="block text-sm text-slate-300 truncate">Настроить формы обратной связи</span>
-            <span class="block text-xs text-slate-600">26 мая</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- Подвал: юзер -->
-      <div class="px-4 py-4 border-t border-slate-800">
-        <div class="flex items-center justify-between">
+    <div class="flex justify-center pt-6">
+      <div
+        class="demo-wrap w-full bg-slate-950 border-r border-slate-800 min-h-[600px] flex flex-col"
+      >
+        <!-- Шапка -->
+        <div class="px-4 py-5 border-b border-slate-800">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300">
-              A
+            <div
+              class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-600/20"
+            >
+              AP
             </div>
             <div>
-              <span class="block text-sm text-slate-200 font-medium">admin@demo.ru</span>
-              <span class="block text-xs text-slate-600">Администратор</span>
+              <h1 class="text-base font-bold text-slate-100">AI Pilot</h1>
+              <p class="text-xs text-slate-500">Управление сайтами</p>
             </div>
           </div>
-          <button class="p-2 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer" title="Выйти">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </div>
+
+        <!-- Поиск -->
+        <div class="px-4 pt-4 pb-2">
+          <div class="relative">
+            <svg
+              class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
-          </button>
+            <input
+              type="text"
+              placeholder="Поиск..."
+              class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 rounded-xl pl-10 pr-4 py-2 outline-none focus:border-blue-500/40 transition-colors"
+            />
+          </div>
+        </div>
+
+        <!-- Секция: Сайты -->
+        <div class="px-4 py-3">
+          <h2
+            class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2"
+          >
+            Мои сайты
+          </h2>
+          <nav class="space-y-1">
+            <a
+              href="#"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-sm font-medium transition-colors"
+            >
+              <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0"></span>
+              <span class="truncate">pilotsite.ru</span>
+            </a>
+            <a
+              href="#"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 text-slate-300 text-sm transition-colors"
+            >
+              <span class="w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
+              <span class="truncate">client1.ru</span>
+            </a>
+            <a
+              href="#"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 text-slate-400 text-sm transition-colors"
+            >
+              <span class="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>
+              <span class="truncate">obelisk.evgexpert.ru</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Секция: История -->
+        <div class="px-4 py-3 flex-1">
+          <h2
+            class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2"
+          >
+            Недавние диалоги
+          </h2>
+          <div class="space-y-1">
+            <a
+              href="#"
+              class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors"
+            >
+              <span class="block text-sm text-slate-300 truncate"
+                >Обновить контакты</span
+              >
+              <span class="block text-xs text-slate-600">28 мая</span>
+            </a>
+            <a
+              href="#"
+              class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors"
+            >
+              <span class="block text-sm text-slate-300 truncate"
+                >Добавить страницу «Услуги»</span
+              >
+              <span class="block text-xs text-slate-600">27 мая</span>
+            </a>
+            <a
+              href="#"
+              class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors"
+            >
+              <span class="block text-sm text-slate-300 truncate"
+                >Настроить формы обратной связи</span
+              >
+              <span class="block text-xs text-slate-600">26 мая</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Подвал: юзер -->
+        <div class="px-4 py-4 border-t border-slate-800">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300"
+              >
+                A
+              </div>
+              <div>
+                <span class="block text-sm text-slate-200 font-medium"
+                  >admin@demo.ru</span
+                >
+                <span class="block text-xs text-slate-600">Администратор</span>
+              </div>
+            </div>
+            <button
+              class="p-2 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+              title="Выйти"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</body>
+  </body>
 </html>
