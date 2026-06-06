@@ -3,6 +3,7 @@
 /* ─── Дизайн-токены AI Pilot Chat ─── */
 @theme {
   --color-chat-bg: #0f172a;
+  --color-chat-bg2: #f6f6f6;
   --color-chat-surface: #1e293b;
   --color-chat-sidebar: #0b1120;
   --color-chat-border: #334155;
@@ -16,14 +17,14 @@
   --color-chat-user: #3b82f6;
   --color-chat-assistant: #1e293b;
   --color-chat-system: #1e293b;
-  --font-chat: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-chat: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 /* ─── Базовые стили ─── */
 body {
-  font-family: var(--font-chat);
-  background: var(--color-chat-bg);
-  color: var(--color-chat-text);
+  font-family: var(--font-chat) !important;
+  background: var(--color-chat-bg2) !important;
+  color: bg-gray-300;
   margin: 0;
   -webkit-font-smoothing: antialiased;
 }
@@ -49,18 +50,38 @@ body {
 
 /* ─── Анимации ─── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(16px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes pulse-dot {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .animate-fade-in {

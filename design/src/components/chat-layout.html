@@ -1,192 +1,359 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat Layout — AI Pilot Design</title>
-  <link rel="stylesheet" href="/src/style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen overflow-hidden">
-  <div class="flex h-screen">
-    <!-- Sidebar -->
-    <aside class="w-72 shrink-0 bg-slate-950 border-r border-slate-800 flex flex-col overflow-hidden">
-      <div class="px-4 py-5 border-b border-slate-800">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-600/20">AP</div>
-          <div>
-            <h1 class="text-base font-bold text-slate-100">AI Pilot</h1>
-            <p class="text-xs text-slate-500">Управление сайтами</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="px-4 pt-4 pb-2">
-        <div class="relative">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <input type="text" placeholder="Поиск..." class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 rounded-xl pl-10 pr-4 py-2 outline-none focus:border-blue-500/40 transition-colors" />
-        </div>
-      </div>
-
-      <div class="px-4 py-3 flex-1 overflow-y-auto scrollbar-thin">
-        <h2 class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Мои сайты</h2>
-        <nav class="space-y-1 mb-6">
-          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-sm font-medium transition-colors">
-            <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0"></span>
-            <span class="truncate">pilotsite.ru</span>
-          </a>
-          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 text-slate-300 text-sm transition-colors">
-            <span class="w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
-            <span class="truncate">client1.ru</span>
-          </a>
-          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 text-slate-400 text-sm transition-colors">
-            <span class="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>
-            <span class="truncate">obelisk.evgexpert.ru</span>
-          </a>
-        </nav>
-
-        <h2 class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Недавние диалоги</h2>
-        <div class="space-y-1">
-          <a href="#" class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors">
-            <span class="block text-sm text-slate-300 truncate">Обновить контакты</span>
-            <span class="block text-xs text-slate-600">28 мая</span>
-          </a>
-          <a href="#" class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors">
-            <span class="block text-sm text-slate-300 truncate">Добавить страницу «Услуги»</span>
-            <span class="block text-xs text-slate-600">27 мая</span>
-          </a>
-          <a href="#" class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors">
-            <span class="block text-sm text-slate-300 truncate">Настроить формы</span>
-            <span class="block text-xs text-slate-600">26 мая</span>
-          </a>
-        </div>
-      </div>
-
-      <div class="px-4 py-4 border-t border-slate-800">
-        <div class="flex items-center justify-between">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Layout — AI Pilot Design</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body class="bg-gray-300 text-slate-100 min-h-screen overflow-hidden p-5">
+    <div class="flex h-screen">
+      <!-- Sidebar -->
+      <aside
+        class="w-72 shrink-0 bg-white flex flex-col rounded-2xl overflow-hidden"
+      >
+        <div class="px-4 py-5 border-b border-slate-800">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300">A</div>
+            <div
+              class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-600/20"
+            >
+              AP
+            </div>
             <div>
-              <span class="block text-sm text-slate-200 font-medium">admin@demo.ru</span>
-              <span class="block text-xs text-slate-600">Администратор</span>
+              <h1 class="text-base font-bold text-slate-100">AI Pilot</h1>
+              <p class="text-xs text-slate-500">Управление сайтами</p>
             </div>
           </div>
-          <button class="p-2 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer" title="Выйти">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </div>
+
+        <div class="px-4 pt-4 pb-2">
+          <div class="relative">
+            <svg
+              class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
-          </button>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Main area -->
-    <main class="flex-1 flex flex-col min-w-0">
-      <!-- Header чата -->
-      <header class="shrink-0 px-6 py-3 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-        <div class="flex items-center gap-3">
-          <div>
-            <h2 class="text-sm font-semibold text-slate-100">pilotsite.ru</h2>
-            <p class="text-xs text-slate-500">Активный сайт · 2 задачи ожидают</p>
-          </div>
-        </div>
-      </header>
-
-      <!-- Messages -->
-      <div class="flex-1 overflow-y-auto px-4 py-6 space-y-4 scrollbar-thin">
-        <!-- Дата-разделитель -->
-        <div class="flex justify-center"><span class="text-xs text-slate-600 bg-slate-800/50 rounded-full px-4 py-1">28 мая 2026</span></div>
-
-        <!-- Приветствие -->
-        <div class="flex justify-start animate-fade-in">
-          <div class="max-w-[75%] bg-slate-800/80 text-slate-100 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed">
-            <p>Привет! Я AI Pilot. Чем могу помочь? Могу:</p>
-            <ul class="list-disc list-inside mt-2 text-slate-300 space-y-1">
-              <li>Обновить контент на сайте</li>
-              <li>Добавить/изменить страницы</li>
-              <li>Настроить плагины и опции</li>
-            </ul>
+            <input
+              type="text"
+              placeholder="Поиск..."
+              class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 rounded-xl pl-10 pr-4 py-2 outline-none focus:border-blue-500/40 transition-colors"
+            />
           </div>
         </div>
 
-        <!-- Сообщение пользователя -->
-        <div class="flex justify-end animate-fade-in">
-          <div class="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
-            <p>Обнови контакты на главной. Телефон: +7 (4012) 999-999, email: hello@pilotsite.ru</p>
-            <span class="block text-[10px] text-blue-200 mt-1 text-right">10:34</span>
+        <div class="px-4 py-3 flex-1 overflow-y-auto scrollbar-thin">
+          <h2
+            class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2"
+          >
+            Мои сайты
+          </h2>
+          <nav class="space-y-1 mb-6">
+            <a
+              href="#"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-sm font-medium transition-colors"
+            >
+              <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0"></span>
+              <span class="truncate">pilotsite.ru</span>
+            </a>
+            <a
+              href="#"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 text-slate-300 text-sm transition-colors"
+            >
+              <span class="w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
+              <span class="truncate">client1.ru</span>
+            </a>
+            <a
+              href="#"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 text-slate-400 text-sm transition-colors"
+            >
+              <span class="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>
+              <span class="truncate">obelisk.evgexpert.ru</span>
+            </a>
+          </nav>
+
+          <h2
+            class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2"
+          >
+            Недавние диалоги
+          </h2>
+          <div class="space-y-1">
+            <a
+              href="#"
+              class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors"
+            >
+              <span class="block text-sm text-slate-300 truncate"
+                >Обновить контакты</span
+              >
+              <span class="block text-xs text-slate-600">28 мая</span>
+            </a>
+            <a
+              href="#"
+              class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors"
+            >
+              <span class="block text-sm text-slate-300 truncate"
+                >Добавить страницу «Услуги»</span
+              >
+              <span class="block text-xs text-slate-600">27 мая</span>
+            </a>
+            <a
+              href="#"
+              class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors"
+            >
+              <span class="block text-sm text-slate-300 truncate"
+                >Настроить формы</span
+              >
+              <span class="block text-xs text-slate-600">26 мая</span>
+            </a>
           </div>
         </div>
 
-        <!-- Ответ ассистента -->
-        <div class="flex justify-start animate-fade-in">
-          <div class="max-w-[75%] bg-slate-800/80 text-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed">
-            <p>Нашёл текущие контакты:</p>
-            <div class="bg-slate-900/60 rounded-lg p-3 mt-2 text-xs font-mono space-y-1">
-              <div><span class="text-blue-400">Телефон:</span> <span class="text-slate-300">+7 (4012) 123-456</span></div>
-              <div><span class="text-blue-400">Email:</span> <span class="text-slate-300">info@pilotsite.ru</span></div>
+        <div class="px-4 py-4 border-t border-slate-800">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300"
+              >
+                A
+              </div>
+              <div>
+                <span class="block text-sm text-slate-200 font-medium"
+                  >admin@demo.ru</span
+                >
+                <span class="block text-xs text-slate-600">Администратор</span>
+              </div>
             </div>
-            <p class="mt-2">Хотите заменить оба контакта? Я подготовлю изменения.</p>
-            <span class="block text-[10px] text-slate-500 mt-1">10:35</span>
+            <button
+              class="p-2 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+              title="Выйти"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main area -->
+      <main class="flex-1 flex flex-col min-w-0">
+        <!-- Header чата -->
+        <header
+          class="shrink-0 px-6 py-3 border-b border-slate-800 bg-gray-300 backdrop-blur"
+        >
+          <div class="flex items-center gap-3">
+            <div>
+              <h2 class="text-sm font-semibold text-slate-100">pilotsite.ru</h2>
+              <p class="text-xs text-slate-500">
+                Активный сайт · 2 задачи ожидают
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <!-- Messages -->
+        <div class="flex-1 overflow-y-auto px-4 py-6 space-y-4 scrollbar-thin">
+          <!-- Дата-разделитель -->
+          <div class="flex justify-center">
+            <span
+              class="text-xs text-slate-600 bg-slate-800/50 rounded-full px-4 py-1"
+              >28 мая 2026</span
+            >
+          </div>
+
+          <!-- Приветствие -->
+          <div class="flex justify-start animate-fade-in">
+            <div
+              class="max-w-[75%] bg-slate-800/80 text-slate-100 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed"
+            >
+              <p>Привет! Я AI Pilot. Чем могу помочь? Могу:</p>
+              <ul class="list-disc list-inside mt-2 text-slate-300 space-y-1">
+                <li>Обновить контент на сайте</li>
+                <li>Добавить/изменить страницы</li>
+                <li>Настроить плагины и опции</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Сообщение пользователя -->
+          <div class="flex justify-end animate-fade-in">
+            <div
+              class="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed shadow-lg"
+            >
+              <p>
+                Обнови контакты на главной. Телефон: +7 (4012) 999-999, email:
+                hello@pilotsite.ru
+              </p>
+              <span class="block text-[10px] text-blue-200 mt-1 text-right"
+                >10:34</span
+              >
+            </div>
+          </div>
+
+          <!-- Ответ ассистента -->
+          <div class="flex justify-start animate-fade-in">
+            <div
+              class="max-w-[75%] bg-slate-800/80 text-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed"
+            >
+              <p>Нашёл текущие контакты:</p>
+              <div
+                class="bg-slate-900/60 rounded-lg p-3 mt-2 text-xs font-mono space-y-1"
+              >
+                <div>
+                  <span class="text-blue-400">Телефон:</span>
+                  <span class="text-slate-300">+7 (4012) 123-456</span>
+                </div>
+                <div>
+                  <span class="text-blue-400">Email:</span>
+                  <span class="text-slate-300">info@pilotsite.ru</span>
+                </div>
+              </div>
+              <p class="mt-2">
+                Хотите заменить оба контакта? Я подготовлю изменения.
+              </p>
+              <span class="block text-[10px] text-slate-500 mt-1">10:35</span>
+            </div>
+          </div>
+
+          <!-- Подтверждение пользователя -->
+          <div class="flex justify-end animate-fade-in">
+            <div
+              class="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed shadow-lg"
+            >
+              <p>Да, заменяй</p>
+              <span class="block text-[10px] text-blue-200 mt-1 text-right"
+                >10:35</span
+              >
+            </div>
+          </div>
+
+          <!-- Action proposal -->
+          <div class="flex justify-start animate-fade-in">
+            <div
+              class="max-w-[85%] bg-slate-800/80 border border-amber-500/20 rounded-2xl rounded-bl-md p-4 text-sm shadow-lg"
+            >
+              <div class="flex items-center gap-2 mb-2 text-slate-300">
+                <span
+                  class="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold"
+                  >!</span
+                >
+                <span class="font-medium">Предлагаю действие</span>
+              </div>
+              <p class="text-slate-300 mb-2">
+                Обновить контакты на главной странице:
+              </p>
+              <div
+                class="bg-slate-950/60 rounded-xl p-3 mb-3 font-mono text-xs space-y-1"
+              >
+                <div>
+                  <span class="text-blue-400">option:</span>
+                  <span class="text-slate-300">contacts_phone</span>
+                </div>
+                <div>
+                  <span class="text-blue-400">new value:</span>
+                  <span class="text-green-300">+7 (4012) 999-999</span>
+                </div>
+                <div>
+                  <span class="text-blue-400">option:</span>
+                  <span class="text-slate-300">contacts_email</span>
+                </div>
+                <div>
+                  <span class="text-blue-400">new value:</span>
+                  <span class="text-green-300">hello@pilotsite.ru</span>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button
+                  class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
+                >
+                  ✓ Подтвердить
+                </button>
+                <button
+                  class="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-xl transition-colors cursor-pointer"
+                >
+                  ✕ Отклонить
+                </button>
+              </div>
+              <span class="block text-[10px] text-slate-600 mt-2">10:36</span>
+            </div>
+          </div>
+
+          <!-- Typing -->
+          <div class="flex justify-start animate-fade-in">
+            <div
+              class="bg-slate-800/80 text-slate-400 rounded-2xl rounded-bl-md px-4 py-3 text-sm"
+            >
+              <div class="flex items-center gap-1.5">
+                <span
+                  class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]"
+                ></span>
+                <span
+                  class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]"
+                  style="animation-delay: 0.16s"
+                ></span>
+                <span
+                  class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]"
+                  style="animation-delay: 0.32s"
+                ></span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Подтверждение пользователя -->
-        <div class="flex justify-end animate-fade-in">
-          <div class="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
-            <p>Да, заменяй</p>
-            <span class="block text-[10px] text-blue-200 mt-1 text-right">10:35</span>
+        <!-- Input -->
+        <div
+          class="shrink-0 px-4 py-3 border-t border-slate-800 bg-slate-950/80 backdrop-blur"
+        >
+          <div
+            class="flex items-end gap-2 bg-slate-900 border border-slate-700/60 rounded-2xl px-4 py-3 transition-colors max-w-3xl mx-auto"
+          >
+            <textarea
+              rows="1"
+              placeholder="Напишите сообщение…"
+              class="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 resize-none outline-none leading-relaxed max-h-32"
+            ></textarea>
+            <button
+              disabled
+              class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-600 cursor-not-allowed transition-colors"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 12h14M12 5l7 7-7 7"
+                />
+              </svg>
+            </button>
           </div>
         </div>
-
-        <!-- Action proposal -->
-        <div class="flex justify-start animate-fade-in">
-          <div class="max-w-[85%] bg-slate-800/80 border border-amber-500/20 rounded-2xl rounded-bl-md p-4 text-sm shadow-lg">
-            <div class="flex items-center gap-2 mb-2 text-slate-300">
-              <span class="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">!</span>
-              <span class="font-medium">Предлагаю действие</span>
-            </div>
-            <p class="text-slate-300 mb-2">Обновить контакты на главной странице:</p>
-            <div class="bg-slate-950/60 rounded-xl p-3 mb-3 font-mono text-xs space-y-1">
-              <div><span class="text-blue-400">option:</span> <span class="text-slate-300">contacts_phone</span></div>
-              <div><span class="text-blue-400">new value:</span> <span class="text-green-300">+7 (4012) 999-999</span></div>
-              <div><span class="text-blue-400">option:</span> <span class="text-slate-300">contacts_email</span></div>
-              <div><span class="text-blue-400">new value:</span> <span class="text-green-300">hello@pilotsite.ru</span></div>
-            </div>
-            <div class="flex gap-2">
-              <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer">✓ Подтвердить</button>
-              <button class="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-xl transition-colors cursor-pointer">✕ Отклонить</button>
-            </div>
-            <span class="block text-[10px] text-slate-600 mt-2">10:36</span>
-          </div>
-        </div>
-
-        <!-- Typing -->
-        <div class="flex justify-start animate-fade-in">
-          <div class="bg-slate-800/80 text-slate-400 rounded-2xl rounded-bl-md px-4 py-3 text-sm">
-            <div class="flex items-center gap-1.5">
-              <span class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]"></span>
-              <span class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]" style="animation-delay: 0.16s;"></span>
-              <span class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]" style="animation-delay: 0.32s;"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Input -->
-      <div class="shrink-0 px-4 py-3 border-t border-slate-800 bg-slate-950/80 backdrop-blur">
-        <div class="flex items-end gap-2 bg-slate-900 border border-slate-700/60 rounded-2xl px-4 py-3 transition-colors max-w-3xl mx-auto">
-          <textarea rows="1" placeholder="Напишите сообщение…"
-                    class="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 resize-none outline-none leading-relaxed max-h-32"></textarea>
-          <button disabled class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-600 cursor-not-allowed transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </main>
-  </div>
-</body>
+      </main>
+    </div>
+  </body>
 </html>
