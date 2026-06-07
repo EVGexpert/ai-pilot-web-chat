@@ -2,8 +2,9 @@
 
 /* ─── Дизайн-токены AI Pilot Chat ─── */
 @theme {
-  --color-chat-bg: #0f172a;
-  --color-chat-bg2: #f6f6f6;
+  --color-chat-bg: #eae9ec;
+  --color-accent: #7e4ce0;
+
   --color-chat-surface: #1e293b;
   --color-chat-sidebar: #0b1120;
   --color-chat-border: #334155;
@@ -23,8 +24,8 @@
 /* ─── Базовые стили ─── */
 body {
   font-family: var(--font-chat) !important;
-  background: var(--color-chat-bg2) !important;
-  color: bg-gray-300;
+  background: var(--color-chat-bg) !important;
+  color: var(--color-chat-text);
   margin: 0;
   -webkit-font-smoothing: antialiased;
 }
