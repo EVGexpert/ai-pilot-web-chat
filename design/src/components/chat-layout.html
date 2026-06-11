@@ -14,9 +14,9 @@
     <div class="flex gap-5 h-full">
       <!-- Sidebar -->
       <aside
-        class="w-72 shrink-0 bg-white flex flex-col rounded-2xl overflow-hidden py-5 px-4"
+        class="w-72 shrink-0 bg-gray-100 flex flex-col divide-y divide-gray-200 rounded-2xl overflow-hidden py-5 px-4"
       >
-        <div class="side-header space-y-5">
+        <div class="side-header space-y-5 pb-5 shrink-0">
           <div class="flex justify-between">
             <img
               src="img/logo-aipilot-v3.png"
@@ -24,16 +24,26 @@
               alt="AI Pilot"
             />
 
-            <img
-              src="img/icon-frame.svg"
-              class="open-close size-5 shrink-0"
-              alt="close"
-            />
+            <div class="open-close">
+              <svg
+                class="size-7 text-gray-500"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  d="M9.67272 0.522841C10.8339 0.522841 11.76 0.522714 12.4963 0.602493C13.2453 0.683657 13.8789 0.854248 14.4264 1.25197C14.7504 1.48739 15.0355 1.77247 15.2709 2.0965C15.6686 2.64394 15.8392 3.27758 15.9204 4.02655C16.0002 4.7629 16 5.68895 16 6.85014V9.14986C16 10.3111 16.0002 11.2371 15.9204 11.9735C15.8392 12.7224 15.6686 13.3561 15.2709 13.9035C15.0355 14.2275 14.7504 14.5126 14.4264 14.748C13.8789 15.1458 13.2453 15.3163 12.4963 15.3975C11.76 15.4773 10.8339 15.4772 9.67272 15.4772H6.3273C5.16611 15.4772 4.24006 15.4773 3.50371 15.3975C2.75474 15.3163 2.1211 15.1458 1.57366 14.748C1.24963 14.5126 0.964549 14.2275 0.729131 13.9035C0.331407 13.3561 0.160817 12.7224 0.0796529 11.9735C-0.000126137 11.2371 1.25338e-09 10.3111 1.25338e-09 9.14986V6.85014C1.25329e-09 5.68895 -0.000126137 4.7629 0.0796529 4.02655C0.160817 3.27758 0.331407 2.64394 0.729131 2.0965C0.964549 1.77247 1.24963 1.48739 1.57366 1.25197C2.1211 0.854248 2.75474 0.683657 3.50371 0.602493C4.24006 0.522714 5.16611 0.522841 6.3273 0.522841H9.67272ZM5.54303 1.88715V14.1118C5.78636 14.1128 6.04709 14.1169 6.3273 14.1169H9.67272C10.8639 14.1169 11.7032 14.1164 12.3493 14.0465C12.9824 13.9779 13.3497 13.8494 13.6268 13.6482C13.8354 13.4966 14.0195 13.3125 14.1711 13.1039C14.3723 12.8268 14.5007 12.4595 14.5693 11.8264C14.6393 11.1803 14.6398 10.341 14.6398 9.14986V6.85014C14.6398 5.65896 14.6393 4.81967 14.5693 4.1736C14.5007 3.54048 14.3723 3.17318 14.1711 2.89609C14.0195 2.68747 13.8354 2.50337 13.6268 2.35179C13.3497 2.1506 12.9824 2.02212 12.3493 1.95353C11.7032 1.88358 10.8639 1.88307 9.67272 1.88307H6.3273C6.04709 1.88307 5.78636 1.8862 5.54303 1.88715ZM4.1828 1.91166C3.99125 1.9216 3.8148 1.93577 3.65076 1.95353C3.01764 2.02212 2.65034 2.1506 2.37325 2.35179C2.16463 2.50337 1.98052 2.68747 1.82895 2.89609C1.62776 3.17318 1.49928 3.54048 1.43069 4.1736C1.36074 4.81967 1.36023 5.65896 1.36023 6.85014V9.14986C1.36023 10.341 1.36074 11.1803 1.43069 11.8264C1.49928 12.4595 1.62776 12.8268 1.82895 13.1039C1.98052 13.3125 2.16463 13.4966 2.37325 13.6482C2.65034 13.8494 3.01764 13.9779 3.65076 14.0465C3.81478 14.0642 3.99127 14.0774 4.1828 14.0873V1.91166Z"
+                  fill="currentColor"
+                ></path>
+              </svg>
+            </div>
           </div>
           <!-- Поиск -->
           <div class="relative">
             <svg
-              class="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-gray-400"
+              class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -49,8 +59,217 @@
             <input
               type="text"
               placeholder="Поиск"
-              class="w-full py-2 pl-10 pr-4 bg-gray-100 border-0 rounded-xl text-gray-700 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+              class="w-full py-2 pl-10 pr-4 bg-white border-0 rounded-xl text-gray-700 text-sm placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
             />
+          </div>
+          <!-- Новый чат -->
+          <div class="">
+            <button class="new-chat">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="size-4"
+                viewBox="0 0 16 16"
+                fill="none"
+              >
+                <path
+                  d="M8 0.599609C3.91309 0.599609 0.599609 3.91309 0.599609 8C0.599609 9.13376 0.855461 10.2098 1.3125 11.1719L1.5918 11.7588L2.76562 11.2012L2.48633 10.6143C2.11034 9.82278 1.90039 8.93675 1.90039 8C1.90039 4.63106 4.63106 1.90039 8 1.90039C11.3689 1.90039 14.0996 4.63106 14.0996 8C14.0996 11.3689 11.3689 14.0996 8 14.0996C7.31041 14.0996 6.80528 14.0514 6.35742 13.9277C5.91623 13.8059 5.49768 13.6021 4.99707 13.2529C4.26492 12.7422 3.21611 12.5616 2.35156 13.1074L2.33789 13.1162L2.32422 13.126L1.58789 13.6436L2.01953 14.9297L3.0459 14.207C3.36351 14.0065 3.83838 14.0294 4.25293 14.3184C4.84547 14.7317 5.39743 15.011 6.01172 15.1807C6.61947 15.3485 7.25549 15.4004 8 15.4004C12.0869 15.4004 15.4004 12.0869 15.4004 8C15.4004 3.91309 12.0869 0.599609 8 0.599609ZM7.34473 4.93945V7.34961H4.93945V8.65039H7.34473V11.0605H8.64551V8.65039H11.0605V7.34961H8.64551V4.93945H7.34473Z"
+                  fill="currentColor"
+                ></path>
+              </svg>
+              <span>Новый чат</span>
+            </button>
+          </div>
+        </div>
+        <!-- Chat history - занимает всё свободное пространство -->
+        <div class="relative flex-1 min-h-0 flex flex-col my-5">
+          <div
+            class="chat-history scrollbar-thin flex-1 overflow-y-auto space-y-5 px-1"
+          >
+            <!-- Today -->
+            <div>
+              <p class="text-gray-400 text-sm mb-3">Сегодня</p>
+              <ul class="text-gray-800 space-y-2">
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >How to be a better person?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >Hacking FBI server with linux?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >How to get rich from youtube as an influe?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >Help me with web development tasks fro</a
+                  >
+                </li>
+              </ul>
+            </div>
+            <!-- 7 Days -->
+            <div>
+              <p class="text-gray-400 text-sm mb-3">7 дней</p>
+              <ul class="text-gray-800 space-y-2">
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >How to be a better person?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >Hacking FBI server with linux?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >How to get rich from youtube as an influe?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >Help me with web development tasks fro</a
+                  >
+                </li>
+              </ul>
+            </div>
+            <!-- 30 Days -->
+            <div>
+              <p class="text-gray-400 text-sm mb-3">30 дней</p>
+              <ul class="text-gray-800 space-y-2">
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >How to get rich from youtube as an influe?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >Help me with web development tasks fro</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+          <!-- Градиент к прозрачному внизу -->
+          <div
+            class="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-linear-to-t from-gray-100 to-transparent"
+          ></div>
+        </div>
+        <!-- Footer - всегда внизу -->
+        <div class="chat-footer shrink-0 space-y-4">
+          <!-- Профиль -->
+          <div class="profile-card">
+            <div class="flex items-center gap-3">
+              <img
+                class="profile-img rounded-full size-10 shrink-0"
+                src="img/user-img.png"
+                alt=""
+              />
+              <div class="text-sm text-gray-800">
+                <p>James Broeng</p>
+                <p class="text-gray-500">test@aipilot.ru</p>
+              </div>
+            </div>
+            <div class="profile-setting flex flex-col justify-between">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-4 text-gray-500"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                />
+              </svg>
+
+              <button
+                type="button"
+                class="flex size-4 items-center justify-center rounded-xl text-[#666666] transition hover:bg-white/70"
+                title="Выйти"
+                aria-label="Выйти"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  class="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <path d="M16 17l5-5-5-5"></path>
+                  <path d="M21 12H9"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <!-- Setting -->
+          <div
+            class="flex items-center justify-between rounded-b-2xl bg-[#f4f4f6] px-5"
+          >
+            <div
+              class="grid h-[34px] w-[235px] grid-cols-2 rounded-xl bg-[#eeeeF1] p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]"
+              role="group"
+              aria-label="Color mode"
+            >
+              <button
+                type="button"
+                class="flex items-center justify-center rounded-[10px] bg-[#fafafa] text-[#666666] shadow-[0_1px_4px_rgba(0,0,0,0.18)] ring-1 ring-black/10"
+                title="Светлая"
+                aria-label="Color mode: Светлая"
+                aria-pressed="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <circle cx="12" cy="12" r="3.2"></circle>
+                  <path d="M12 3.5v2"></path>
+                  <path d="M12 18.5v2"></path>
+                  <path d="M4.5 12h2"></path>
+                  <path d="M17.5 12h2"></path>
+                  <path d="m6.7 6.7 1.4 1.4"></path>
+                  <path d="m15.9 15.9 1.4 1.4"></path>
+                  <path d="m17.3 6.7-1.4 1.4"></path>
+                  <path d="m8.1 15.9-1.4 1.4"></path>
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                class="flex items-center justify-center rounded-[10px] text-[#666666] transition hover:bg-white/60"
+                title="Тёмная"
+                aria-label="Color mode: Тёмная"
+                aria-pressed="false"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path
+                    d="M12 3.5a7 7 0 0 0 8.5 8.5A8.5 8.5 0 1 1 12 3.5Z"
+                  ></path>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </aside>
