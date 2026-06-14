@@ -5,3 +5,4 @@ dist/
 .DS_Store
 READ_ME.md
 auth-data/
+backups/
