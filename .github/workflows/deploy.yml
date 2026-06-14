@@ -22,17 +22,34 @@ jobs:
             set -e
             cd ~/ai-pilot-web-chat
 
-            # Сбрасываем локальные изменения
+            # === 1. Backup SQLite БД ===
+            echo "📦 Backing up auth database..."
+            BACKUP_DIR="/root/ai-pilot-web-chat/backups"
+            mkdir -p "$BACKUP_DIR"
+            cp /root/ai-pilot-web-chat/auth-data/aipilot.db "$BACKUP_DIR/pre-deploy-$(date +%Y%m%d-%H%M%S).db" 2>/dev/null || echo "⚠️  No existing DB to backup"
+            # Keep last 5 backups
+            ls -t "$BACKUP_DIR"/*.db 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true
+
+            # === 2. Graceful stop auth-api ===
+            echo "🛑 Graceful shutdown auth-api..."
+            docker stop -t 30 ai-pilot-auth 2>/dev/null || true
+            docker rm ai-pilot-auth 2>/dev/null || true
+
+            # === 3. Graceful stop web-chat ===
+            docker stop -t 10 ai-pilot-chat 2>/dev/null || true
+            docker rm ai-pilot-chat 2>/dev/null || true
+
+            # === 4. Pull changes ===
+            echo "📥 Pulling latest code..."
             git stash --include-untracked
-            git clean -fd
             git pull origin main
 
             # Docker сеть
             docker network create aipilot 2>/dev/null || true
 
-            # === Auth API ===
+            # === 5. Auth API ===
+            echo "🔧 Building auth-api..."
             docker build -t ai-pilot-auth auth-api/
-            docker rm -f ai-pilot-auth 2>/dev/null || true
             docker run -d \
               --name ai-pilot-auth \
               --restart unless-stopped \
@@ -47,9 +64,38 @@ jobs:
               -e APP_URL=https://pilotsite.ru \
               ai-pilot-auth
 
-            # === Веб-чат ===
+            # === 6. Healthcheck auth-api ===
+            echo "⏳ Waiting for auth-api healthcheck..."
+            for i in $(seq 1 10); do
+              sleep 2
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/stats 2>/dev/null || echo "000")
+              echo "   Attempt $i: HTTP $STATUS"
+              if [ "$STATUS" = "200" ]; then break; fi
+            done
+
+            # === 7. Проверка БД (не пустая ли?) ===
+            echo "🔍 Checking database integrity..."
+            USERS=$(curl -s http://localhost:3001/api/stats | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('users',0))" 2>/dev/null || echo "0")
+            echo "   Users in DB: $USERS"
+            if [ "$USERS" = "0" ]; then
+              echo "⚠️  WARNING: Database is empty! Attempting rollback..."
+              LATEST_BACKUP=$(ls -t "$BACKUP_DIR"/*.db 2>/dev/null | head -1)
+              if [ -n "$LATEST_BACKUP" ]; then
+                echo "   Restoring from $LATEST_BACKUP"
+                docker stop -t 5 ai-pilot-auth 2>/dev/null || true
+                cp "$LATEST_BACKUP" /root/ai-pilot-web-chat/auth-data/aipilot.db
+                docker start ai-pilot-auth 2>/dev/null || true
+                echo "✅ Rollback complete"
+              else
+                echo "⚠️  No backup found — database is clean (first deploy or manual wipe)"
+              fi
+            else
+              echo "✅ Database OK: $USERS users"
+            fi
+
+            # === 8. Веб-чат ===
+            echo "🔧 Building web-chat..."
             docker build -t ai-pilot-chat .
-            docker rm -f ai-pilot-chat 2>/dev/null || true
             docker run -d \
               --name ai-pilot-chat \
               --restart unless-stopped \
@@ -58,5 +104,10 @@ jobs:
               -p 127.0.0.1:3000:80 \
               ai-pilot-chat
 
+            # === 9. Cleanup ===
             docker image prune -f
             echo "✅ Deploy complete: $(date)"
+
+            # === 10. Deploy report ===
+            FINAL_USERS=$(curl -s http://localhost:3001/api/stats | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('users',0), d.get('sites',0), d.get('sessions',0))" 2>/dev/null || echo "? ? ?")
+            echo "📊 Report — DB: users sites sessions = $FINAL_USERS"
