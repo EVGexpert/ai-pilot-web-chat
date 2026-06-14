@@ -1,7 +1,10 @@
 /**
- * Gateway Client — теперь только через Auth API.
+ * Gateway Client (deprecated)
+ *
  * Прямых вызовов Gateway из фронта больше нет.
- * Все запросы идут через /api/chat/* в Auth API.
+ * Все запросы к Gateway идут через Auth API (/api/chat/*).
+ *
+ * @deprecated Удалить в следующей мажорной версии, когда все зависимости будут убраны.
  */
 
 export function createGatewayClient() {

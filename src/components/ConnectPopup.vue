@@ -156,19 +156,19 @@ async function handleSubmit() {
         console.warn('Scan request failed (CORS?), continuing:', e)
       }
     }
-  } catch (e) {
-    errorMsg.value = e.message
-  } finally {
-    isLoading.value = false
-  }
-}
-
+    // Успешное завершение: показываем success и редирект
     step.value = 'success'
     if (redirectUrl.value) {
       setTimeout(() => {
         window.location.href = decodeURIComponent(redirectUrl.value)
       }, 1500)
     }
+  } catch (e) {
+    errorMsg.value = e.message
+  } finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <template>

@@ -1,17 +1,11 @@
 <script setup>
-import { computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 
 const authStore = useAuthStore()
-const current = computed(() => authStore.theme)
 
 function set(mode) {
   authStore.setTheme(mode)
 }
-
-// Определяем системную тему для индикации
-const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
-const systemIsDark = computed(() => prefersDark.matches)
 
 const modes = [
   {
@@ -39,10 +33,10 @@ const modes = [
       :key="m.id"
       type="button"
       class="theme-btn"
-      :class="{ 'theme-btn--active': current === m.id }"
+      :class="{ 'theme-btn--active': authStore.theme === m.id }"
       :title="m.title"
       :aria-label="`Color mode: ${m.title}`"
-      :aria-pressed="current === m.id"
+      :aria-pressed="authStore.theme === m.id"
       @click="set(m.id)"
       v-html="m.icon"
     ></button>
