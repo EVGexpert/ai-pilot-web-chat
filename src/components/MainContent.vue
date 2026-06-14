@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
 import { useDevice } from '../composables/useDevice'

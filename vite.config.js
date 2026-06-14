@@ -13,6 +13,8 @@ export default defineConfig({
     globals: true,
     // Путь к тестам
     include: ["src/**/*.{test,spec}.{js,ts}"],
+    // Setup file
+    setupFiles: ["src/setupTests.js"],
     // Coverage
     coverage: {
       provider: "v8",
