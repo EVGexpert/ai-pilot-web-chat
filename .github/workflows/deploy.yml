@@ -18,8 +18,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           envs: JWT_SECRET,GATEWAY_TOKEN
-          script_stop: true
-          timeout: 120s
+          timeout: 120
           script: |
             set -e
             cd ~/ai-pilot-web-chat
