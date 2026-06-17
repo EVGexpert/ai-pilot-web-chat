@@ -18,7 +18,7 @@ function isAdmin(payload) {
 async function notifyGateway(url, apiToken, userId) {
   const gatewayUrl = process.env.GATEWAY_URL || 'http://host.docker.internal:18789'
   const envToken = process.env.GATEWAY_TOKEN || process.env.VITE_GATEWAY_TOKEN || ''
-  const gatewayToken = envToken === 'dev-gateway-token' ? 'f8186e8d77460feeb735a8dbc48e659c9b05c7f10b114fd554d6fd7a8f8e76e3' : envToken
+  const gatewayToken = envToken || ''
 
   try {
     const body = JSON.stringify({

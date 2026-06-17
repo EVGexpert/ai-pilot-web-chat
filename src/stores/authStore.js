@@ -7,8 +7,6 @@ export const useAuthStore = defineStore('auth', () => {
   const theme = ref(localStorage.getItem('aipilot_theme') || 'light')
   const siteUrl = ref(localStorage.getItem('aipilot_site_url') || '')
 
-
-
   const isAuthenticated = computed(() => !!token.value)
   const userName = computed(() => user.value?.name || '')
   const isAdmin = computed(() => user.value?.role === 'admin')

@@ -10,12 +10,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ✅ Используем GitHub Secrets
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: JWT_SECRET,GATEWAY_TOKEN
           script_stop: true
           timeout: 120s
           script: |
@@ -30,22 +32,8 @@ jobs:
             # Docker сеть
             docker network create aipilot 2>/dev/null || true
 
-            # === Auth API ===
-            docker build -t ai-pilot-auth auth-api/
-            docker rm -f ai-pilot-auth 2>/dev/null || true
-            docker run -d \
-              --name ai-pilot-auth \
-              --restart unless-stopped \
-              --network aipilot \
-              --add-host host.docker.internal:host-gateway \
-              -p 127.0.0.1:3001:3001 \
-              -v /root/ai-pilot-web-chat/auth-data:/app/data \
-              -e PORT=3001 \
-              -e JWT_SECRET=dev-jwt-secret-change-in-production \
-              -e GATEWAY_TOKEN=f8186e8d77460feeb735a8dbc48e659c9b05c7f10b114fd554d6fd7a8f8e76e3 \
-              -e GATEWAY_WS=ws://host.docker.internal:18789 \
-              -e APP_URL=https://pilotsite.ru \
-              ai-pilot-auth
+            # === Auth API (деплоится отдельно через ai-pilot-auth-api repo!) ===
+            echo "⏩ Auth API не деплоится отсюда — используйте EVGexpert/ai-pilot-auth-api"
 
             # === Веб-чат ===
             docker build -t ai-pilot-chat .

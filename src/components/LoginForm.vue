@@ -6,6 +6,7 @@ import { useSitesStore } from '../stores/sitesStore'
 const emit = defineEmits(['login'])
 const sitesStore = useSitesStore()
 const authStore = useAuthStore()
+const name = ref('')
 const email = ref('')
 const password = ref('')
 const error = ref('')
@@ -24,6 +25,7 @@ async function handleLogin() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        name: name.value.trim() || undefined,
         email: email.value.trim(),
         password: password.value
       })
@@ -36,15 +38,15 @@ async function handleLogin() {
       let siteUrl = ''
       if (data.sites && data.sites.length > 0) {
         siteUrl = data.sites[0].url || ''
-        sitesStore.sites.value = data.sites.map(s => ({
+        sitesStore.setSites(data.sites.map(s => ({
           id: s.url || s.id,
           name: s.name || s.url,
           status: 'online',
           url: s.url
-        }))
+        })))
       }
       authStore.login(data.token, {
-        name: userData.name || email.value.split('@')[0],
+        name: name.value.trim() || userData.name || email.value.split('@')[0],
         email: userData.email || email.value,
         role: userData.role || 'client'
       }, siteUrl)
@@ -72,6 +74,19 @@ async function handleLogin() {
       </div>
 
       <form class="login-form" @submit.prevent="handleLogin">
+        <div class="field">
+          <label class="field-label" for="name">Имя</label>
+          <input
+            id="name"
+            v-model="name"
+            type="text"
+            class="field-input"
+            placeholder="Как к вам обращаться?"
+            autocomplete="name"
+            :disabled="isLoading"
+          />
+        </div>
+
         <div class="field">
           <label class="field-label" for="email">Email</label>
           <input
@@ -131,6 +146,7 @@ async function handleLogin() {
 .login-card {
   width: 100%;
   max-width: 400px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 32px;

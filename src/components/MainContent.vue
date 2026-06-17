@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { onMounted } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
+import { useDevice } from '../composables/useDevice'
 import LoginForm from './LoginForm.vue'
 import AppSidebar from './AppSidebar.vue'
 import ChatWindow from './ChatWindow.vue'
@@ -9,37 +10,17 @@ import HistoryPanel from './HistoryPanel.vue'
 
 const authStore = useAuthStore()
 const sitesStore = useSitesStore()
-
-const sidebarOpen = ref(false)
-const isMobile = ref(window.innerWidth < 768)
-
-function onResize() {
-  isMobile.value = window.innerWidth < 768
-  if (!isMobile.value) sidebarOpen.value = false
-}
+const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useDevice()
 
 onMounted(() => {
   authStore.initTheme()
-  window.addEventListener('resize', onResize)
   if (authStore.isAuthenticated) {
     sitesStore.fetchSites()
   }
 })
 
-onUnmounted(() => {
-  window.removeEventListener('resize', onResize)
-})
-
 function handleLogin() {
   sitesStore.fetchSites()
-}
-
-function toggleSidebar() {
-  sidebarOpen.value = !sidebarOpen.value
-}
-
-function closeSidebar() {
-  sidebarOpen.value = false
 }
 </script>
 
@@ -125,7 +106,6 @@ function closeSidebar() {
   overflow: hidden;
   min-width: 0;
 }
-/* ============ Mobile Styles ============ */
 
 .sidebar-overlay {
   position: fixed;
@@ -140,7 +120,6 @@ function closeSidebar() {
   to { opacity: 1; }
 }
 
-/* Burger button */
 .burger-btn {
   position: fixed;
   top: 12px;
@@ -160,11 +139,7 @@ function closeSidebar() {
   cursor: pointer;
   transition: background 0.15s;
 }
-
-.burger-btn:hover {
-  background: var(--bg-hover);
-}
-
+.burger-btn:hover { background: var(--bg-hover); }
 .burger-line {
   display: block;
   width: 20px;
@@ -174,7 +149,6 @@ function closeSidebar() {
   transition: transform 0.2s;
 }
 
-/* Bottom navigation */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -189,7 +163,6 @@ function closeSidebar() {
   z-index: 20;
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
-
 .bottom-nav-item {
   display: flex;
   flex-direction: column;
@@ -204,26 +177,10 @@ function closeSidebar() {
   transition: color 0.12s;
   position: relative;
 }
-
-.bottom-nav-item--active {
-  color: var(--color-primary);
-}
-
-.bottom-nav-item:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.bottom-nav-icon {
-  font-size: 20px;
-  line-height: 1;
-}
-
-.bottom-nav-label {
-  font-size: 11px;
-  font-weight: 500;
-}
-
+.bottom-nav-item--active { color: var(--color-primary); }
+.bottom-nav-item:disabled { opacity: 0.4; cursor: not-allowed; }
+.bottom-nav-icon { font-size: 20px; line-height: 1; }
+.bottom-nav-label { font-size: 11px; font-weight: 500; }
 .bottom-nav-badge {
   position: absolute;
   top: 0;
@@ -237,20 +194,9 @@ function closeSidebar() {
   line-height: 1.4;
 }
 
-/* ============ Responsive Breakpoints ============ */
-
 @media (max-width: 767px) {
-  .app-container {
-    flex-direction: column;
-  }
-
-  .main-area {
-    padding-top: 0;
-    padding-bottom: 64px; /* bottom nav height */
-  }
-
-  .client-main {
-    padding-bottom: 0;
-  }
+  .app-container { flex-direction: column; }
+  .main-area { padding-top: 0; padding-bottom: 64px; }
+  .client-main { padding-bottom: 0; }
 }
 </style>
