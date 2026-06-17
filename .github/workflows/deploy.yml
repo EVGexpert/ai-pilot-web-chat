@@ -26,11 +26,7 @@ jobs:
         run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && git pull origin main"
 
       - name: Docker Build
-        run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && docker build --progress=plain -t ai-pilot-chat . 2>&1" || {
-            echo "❌ Docker build failed"
-            exit 1
-          }
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && docker build -t ai-pilot-chat ."
 
       - name: Docker Deploy
         run: |
