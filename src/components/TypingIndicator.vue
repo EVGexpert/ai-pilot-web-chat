@@ -3,13 +3,13 @@
 
 <template>
   <div class="typing">
-    <div class="typing-bubble">
-      <div class="bubble-avatar">🤖</div>
-      <div class="dots-wrapper">
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </div>
+    <div class="typing-avatar">
+      <img src="/img/logo-aipilot-v2.png" alt="" />
+    </div>
+    <div class="typing-dots">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
     </div>
   </div>
 </template>
@@ -18,51 +18,62 @@
 .typing {
   align-self: flex-start;
   display: flex;
-  gap: 8px;
-}
-
-.typing-bubble {
-  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
-.bubble-avatar {
-  width: 28px;
-  height: 28px;
+.typing-avatar {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-tertiary);
-  font-size: 14px;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
-.dots-wrapper {
+.typing-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.typing-dots {
   display: flex;
+  align-items: center;
   gap: 4px;
-  padding: 12px 16px;
-  background: var(--chat-assistant-bg);
-  border: 1px solid var(--chat-assistant-border);
-  border-radius: var(--border-radius-md);
-  border-bottom-left-radius: 4px;
+  height: 40px;
+  padding: 0 16px;
+  background: var(--color-accent);
+  border-radius: 16px;
+  border-top-right-radius: 6px;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-accent) 20%, transparent);
+  animation: slideInRight 0.25s ease-out;
 }
 
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--text-quaternary);
-  animation: bounce 1.4s infinite ease-in-out both;
+  background: #ffffff;
+  animation: pulse-dot 1.4s infinite ease-in-out both;
 }
 
-.dot:nth-child(1) { animation-delay: -0.32s; }
-.dot:nth-child(2) { animation-delay: -0.16s; }
-.dot:nth-child(3) { animation-delay: 0s; }
+.dot:nth-child(1) { animation-delay: 0s; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
 
-@keyframes bounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
+@keyframes pulse-dot {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 </style>

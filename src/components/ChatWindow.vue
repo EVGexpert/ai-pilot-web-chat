@@ -235,11 +235,13 @@ if (props.clientMode) {
 /* === Admin Chat === */
 .chat-window {
   height: 100%; display: flex; flex-direction: column;
-  background: var(--bg-primary); width: 100%;
+  background: var(--bg-chat); width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
 }
 .chat-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 24px; border-bottom: 1px solid var(--border-color);
+  padding: 12px 24px; border-bottom: 1px solid var(--border-color);
   flex-shrink: 0; background: var(--bg-primary);
 }
 .chat-header-left, .chat-header-right { display: flex; align-items: center; gap: 10px; }

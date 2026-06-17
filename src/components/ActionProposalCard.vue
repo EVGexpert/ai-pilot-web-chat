@@ -139,11 +139,18 @@ function cleanDiff(line) {
   transition: opacity 0.2s ease, border-color 0.2s ease;
 }
 
-/* Состояния: лёгкая визуальная маркировка */
-.ap-card--approved {
-  border-left: 3px solid var(--color-success, #3bc49b);
+/* Pending — amber border */
+.ap-card--pending {
+  border-left: 3px solid var(--color-warning, #f59e0b);
 }
 
+/* Approved — green border, reduced opacity */
+.ap-card--approved {
+  border-left: 3px solid var(--color-success, #3bc49b);
+  opacity: 0.85;
+}
+
+/* Rejected — red border, reduced opacity */
 .ap-card--rejected {
   border-left: 3px solid var(--color-error, #c43b3b);
   opacity: 0.75;
@@ -285,27 +292,27 @@ function cleanDiff(line) {
   outline-offset: 2px;
 }
 
-/* Primary (Подтвердить) */
+/* Primary (Подтвердить) — accent bg */
 .ap-card__btn--primary {
   flex: 1;
-  background: var(--color-primary, #7837df);
+  background: var(--color-accent, #7e4ce0);
   color: var(--text-inverse, #ffffff);
 }
 
 .ap-card__btn--primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #6a2ecc);
+  background: var(--color-accent-hover, #6a3dc0);
 }
 
 .ap-card__btn--primary:active:not(:disabled) {
   transform: scale(0.98);
 }
 
-/* Secondary (Отмена) */
+/* Secondary (Отмена) — subtle bg */
 .ap-card__btn--secondary {
   flex: 1;
-  background: transparent;
+  background: var(--bg-secondary, #f5f5f6);
   color: var(--text-secondary, #454646);
-  border: 1px solid var(--border-color, #d8d8d8);
+  border: none;
 }
 
 .ap-card__btn--secondary:hover:not(:disabled) {

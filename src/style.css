@@ -1,12 +1,30 @@
 /* ========================================
-   AI Pilot — Design System (по мотивам chad)
+   AI Pilot — Design System v2
+   Based on design/src/style.css + chat-layout.html
    ======================================== */
 
 /* Inter Variable */
 @import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap");
 
-/* Tailwind CSS */
+/* Tailwind CSS v4 */
 @import "tailwindcss";
+
+/* ─── Tailwind v4 Theme Tokens ─── */
+@theme {
+  --color-accent: #7e4ce0;
+  --color-accent-hover: #6a3dc0;
+  --color-chat-bg: #eae9ec;
+  --color-chat-surface: #1e293b;
+  --color-chat-sidebar: #0b1120;
+  --color-chat-border: #334155;
+  --color-chat-text: #e2e8f0;
+  --color-chat-text-muted: #94a3b8;
+  --color-chat-accent: #3b82f6;
+  --color-chat-success: #22c55e;
+  --color-chat-warning: #f59e0b;
+  --color-chat-danger: #ef4444;
+  --font-chat: "Inter", system-ui, -apple-system, sans-serif;
+}
 
 /* ============ CSS Variables (Light) ============ */
 :root {
@@ -34,10 +52,12 @@
   --space-xxl: 40px;
 
   /* Основная палитра */
-  --color-primary: #6c40dd;
-  --color-primary-hover: #6a2ecc;
+  --color-primary: #7e4ce0;
+  --color-primary-hover: #6a3dc0;
   --color-primary-light: #e7e6f0;
   --color-primary-content: #191919;
+  --color-accent: #7e4ce0;
+  --color-accent-hover: #6a3dc0;
 
   /* Фоны */
   --bg-primary: #ffffff;
@@ -47,6 +67,7 @@
   --bg-card: #ffffff;
   --bg-sidebar: #f5f5f6;
   --bg-hover: #e9eaeb;
+  --bg-chat: #eae9ec;
   --code-bg: #f1f1f4;
 
   /* Текст */
@@ -84,16 +105,17 @@
   --z-overlay: 1000;
   --z-dialog: 1500;
 
-  /* Chat-specific */
-  --chat-user-bg: #e7e6f0;
-  --chat-user-color: #191919;
+  /* Chat-specific — NEW accent-based design */
+  --chat-user-bg: #7e4ce0;
+  --chat-user-color: #ffffff;
   --chat-assistant-bg: #ffffff;
-  --chat-assistant-color: #191919;
-  --chat-assistant-border: #e8e8e8;
-  --chat-input-bg: #f5f5f6;
+  --chat-assistant-color: #1f2937;
+  --chat-assistant-border: rgba(0, 0, 0, 0.05);
+  --chat-input-bg: #ffffff;
 
   /* Sidebar */
-  --sidebar-width: 320px;
+  --sidebar-width: 288px;
+  --sidebar-collapsed-width: 64px;
   --sidebar-section-gap: 16px;
 
   /* Safe areas */
@@ -107,6 +129,8 @@
   --color-primary-hover: #b895e8;
   --color-primary-light: #453266;
   --color-primary-content: #ededed;
+  --color-accent: #a57de4;
+  --color-accent-hover: #b895e8;
 
   --bg-primary: #1c1c1c;
   --bg-secondary: #222222;
@@ -115,6 +139,7 @@
   --bg-card: #222222;
   --bg-sidebar: #191919;
   --bg-hover: #333333;
+  --bg-chat: #1a1a2e;
   --code-bg: #1a1a2e;
 
   --text-primary: #ededed;
@@ -131,12 +156,12 @@
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
 
-  --chat-user-bg: #453266;
-  --chat-user-color: #ededed;
+  --chat-user-bg: #a57de4;
+  --chat-user-color: #ffffff;
   --chat-assistant-bg: #222222;
   --chat-assistant-color: #ededed;
-  --chat-assistant-border: #333330;
-  --chat-input-bg: #2d2c29;
+  --chat-assistant-border: rgba(255, 255, 255, 0.08);
+  --chat-input-bg: #222222;
 
   --bg-sidebar: #191919;
 }
@@ -157,13 +182,13 @@ body,
   font-family: var(--font-family);
   font-size: var(--typography-body-size);
   color: var(--text-primary);
-  background: var(--bg-primary);
+  background: var(--bg-chat);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--bg-primary);
+  background: var(--bg-chat);
   transition: background 0.2s ease;
 }
 
@@ -202,6 +227,77 @@ body {
 .slide-fade-leave-to {
   transform: translateX(-10px);
   opacity: 0;
+}
+
+/* ============ Animations ============ */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideInRight 0.25s ease-out;
+}
+
+/* ============ Scrollbar Thin Utility ============ */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #bababa transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #bababa;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-button {
+  display: none;
+}
+
+.scrollbar-thin::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* ============ Mobile + Safe Area ============ */

@@ -4,10 +4,9 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import ActionProposalCard from './ActionProposalCard.vue'
 
-// Настройка marked
 marked.setOptions({
-  gfm: true,        // GitHub Flavored Markdown (таблицы, зачёркивание, ссылки)
-  breaks: true,     // перенос строки → <br>
+  gfm: true,
+  breaks: true,
 })
 
 const props = defineProps({
@@ -27,19 +26,26 @@ function isSystem(msg) {
 
 defineEmits(['approve-action', 'reject-action'])
 
-/** Рендерим содержимое сообщения как безопасный HTML из Markdown */
 const renderedContent = computed(() => {
   const raw = props.message.content || ''
   if (!raw) return ''
-  
-  // Сообщения пользователя и системы — plain text (не парсим маркдаун от пользователя)
   if (isUser(props.message) || isSystem(props.message)) {
     return DOMPurify.sanitize(raw)
   }
-  
-  // Сообщения ассистента — парсим маркдаун
   const html = marked.parse(raw)
   return DOMPurify.sanitize(html)
+})
+
+/** User initials from name */
+const userInitials = computed(() => {
+  const name = props.message.userName || ''
+  if (!name) return 'В'
+  return name.charAt(0).toUpperCase()
+})
+
+/** Format time */
+const formattedTime = computed(() => {
+  return props.message.time || ''
 })
 </script>
 
@@ -52,122 +58,245 @@ const renderedContent = computed(() => {
       'bubble-system': isSystem(message)
     }"
   >
-    <div class="bubble-header">
-      <span class="bubble-avatar" :class="{ 'avatar-user': isUser(message) }">
-        {{ isUser(message) ? 'Вы' : '🤖' }}
-      </span>
-      <span class="bubble-name">
-        {{ isUser(message) ? 'Вы' : isSystem(message) ? 'Система' : 'AI Pilot' }}
-      </span>
-      <span v-if="message.time" class="bubble-time">{{ message.time }}</span>
-    </div>
-    <div class="bubble-content" v-html="renderedContent"></div>
-    <!-- Action Proposal Card — для сообщений с действиями -->
-    <div v-if="message.actions && message.actions.length" class="bubble-actions">
-      <ActionProposalCard
-        v-for="action in message.actions"
-        :key="action.id"
-        :action="action"
-        @approve="(id) => $emit('approve-action', id)"
-        @reject="(id) => $emit('reject-action', id)"
+    <!-- Assistant message: avatar left, content right -->
+    <template v-if="!isUser(message) && !isSystem(message)">
+      <img
+        src="/img/logo-aipilot-v2.png"
+        alt="AI Pilot"
+        class="bubble-avatar-img"
       />
-    </div>
+      <div class="bubble-body">
+        <div class="bubble-content">
+          <div v-html="renderedContent"></div>
+          <div v-if="formattedTime" class="bubble-time">{{ formattedTime }}</div>
+        </div>
+        <!-- Action buttons for assistant messages -->
+        <div class="bubble-actions">
+          <button class="action-btn" aria-label="Listen" title="Прослушать">
+            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+              <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+            </svg>
+          </button>
+          <button class="action-btn" aria-label="Copy" title="Копировать" @click="navigator.clipboard?.writeText(message.content)">
+            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+              <path d="M4 16V6a2 2 0 0 1 2-2h10"></path>
+            </svg>
+          </button>
+          <button class="action-btn" aria-label="Regenerate" title="Перегенерировать">
+            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 0 1-15.5 6.3"></path>
+              <path d="M3 12A9 9 0 0 1 18.5 5.7"></path>
+              <path d="M18 3v4h4"></path>
+              <path d="M6 21v-4H2"></path>
+            </svg>
+          </button>
+          <button class="action-btn" aria-label="Dislike" title="Дизлайк">
+            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 14V2"></path>
+              <path d="M9 18.1 10 14H4.8a2 2 0 0 1-2-2.4l1.4-7A2 2 0 0 1 6.2 3H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3.4a2 2 0 0 0-1.7 1l-3 5a2 2 0 0 1-3.6-1.9Z"></path>
+            </svg>
+          </button>
+        </div>
+        <!-- Action Proposal Cards -->
+        <div v-if="message.actions && message.actions.length" class="bubble-proposals">
+          <ActionProposalCard
+            v-for="action in message.actions"
+            :key="action.id"
+            :action="action"
+            @approve="(id) => $emit('approve-action', id)"
+            @reject="(id) => $emit('reject-action', id)"
+          />
+        </div>
+      </div>
+    </template>
+
+    <!-- User message: content left, avatar right -->
+    <template v-else-if="isUser(message)">
+      <div class="bubble-body bubble-body--user">
+        <div class="bubble-content">
+          <div v-html="renderedContent"></div>
+          <div v-if="formattedTime" class="bubble-time">{{ formattedTime }}</div>
+        </div>
+      </div>
+      <div class="bubble-avatar-circle">
+        {{ userInitials }}
+      </div>
+    </template>
+
+    <!-- System message -->
+    <template v-else>
+      <div class="bubble-content bubble-content--system">
+        <div v-html="renderedContent"></div>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .bubble {
-  max-width: 85%;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  gap: 12px;
+  max-width: 85%;
   word-wrap: break-word;
   position: relative;
 }
 
-.bubble-user {
-  align-self: flex-end;
-}
-
+/* Assistant: left-aligned with fade-in */
 .bubble-assistant {
   align-self: flex-start;
+  animation: fadeIn 0.2s ease-out;
 }
 
+/* User: right-aligned with slide-in */
+.bubble-user {
+  align-self: flex-end;
+  animation: slideInRight 0.25s ease-out;
+}
+
+/* System: centered */
 .bubble-system {
   align-self: center;
   max-width: 70%;
   opacity: 0.7;
 }
 
-/* Header */
-.bubble-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* Avatar images */
+.bubble-avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.bubble-avatar {
-  width: 28px;
-  height: 28px;
+/* User avatar circle with initials */
+.bubble-avatar-circle {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.avatar-user {
-  background: var(--color-primary);
-  color: var(--text-inverse);
+/* Bubble body container */
+.bubble-body {
+  max-width: 560px;
+  min-width: 0;
 }
 
-.bubble-name {
-  font-size: var(--typography-body-small);
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.bubble-time {
-  font-size: 11px;
-  color: var(--text-quaternary);
+.bubble-body--user {
   margin-left: auto;
+  max-width: 420px;
 }
 
-/* Content */
+/* Content bubble */
 .bubble-content {
-  padding: 10px 14px;
-  border-radius: var(--border-radius-md);
-  font-size: var(--typography-body-size);
+  padding: 12px 16px;
+  font-size: 14px;
   line-height: 1.6;
   position: relative;
 }
 
-.bubble-user .bubble-content {
-  background: var(--chat-user-bg);
-  color: var(--chat-user-color);
-  border-bottom-right-radius: 4px;
-}
-
+/* Assistant content: white bg, rounded-2xl rounded-tl-md */
 .bubble-assistant .bubble-content {
   background: var(--chat-assistant-bg);
   color: var(--chat-assistant-color);
-  border: 1px solid var(--chat-assistant-border);
-  border-bottom-left-radius: 4px;
+  border-radius: 16px;
+  border-top-left-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  outline: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.bubble-system .bubble-content {
+/* User content: accent bg, rounded-2xl rounded-tr-md */
+.bubble-user .bubble-content {
+  background: var(--chat-user-bg);
+  color: var(--chat-user-color);
+  border-radius: 16px;
+  border-top-right-radius: 6px;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+
+/* System content */
+.bubble-content--system {
   background: transparent;
   color: var(--text-tertiary);
   text-align: center;
   padding: 4px 8px;
-  font-size: var(--typography-body-small);
+  font-size: 12px;
 }
 
-/* === Markdown styling (глубокие селекторы для v-html) === */
+/* Time */
+.bubble-time {
+  font-size: 12px;
+  color: var(--text-quaternary);
+  text-align: right;
+  margin-top: 4px;
+}
+
+.bubble-user .bubble-time {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Action buttons */
+.bubble-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 4px 0;
+  color: var(--text-quaternary);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  padding: 2px;
+  transition: color 0.15s;
+}
+
+.action-btn:hover {
+  color: var(--color-accent);
+}
+
+.action-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Proposals */
+.bubble-proposals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* === Animations === */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* === Markdown styling (deep selectors for v-html) === */
 :deep(.bubble-content h1),
 :deep(.bubble-content h2),
 :deep(.bubble-content h3),
@@ -206,9 +335,9 @@ const renderedContent = computed(() => {
 :deep(.bubble-content blockquote) {
   margin: 8px 0;
   padding: 6px 12px;
-  border-left: 3px solid var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+  border-left: 3px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border-radius: 0 8px 8px 0;
   color: var(--text-secondary);
 }
 
@@ -221,13 +350,18 @@ const renderedContent = computed(() => {
   color: var(--text-primary);
 }
 
+.bubble-user :deep(.bubble-content code) {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
 :deep(.bubble-content pre) {
   margin: 8px 0;
   padding: 12px 14px;
-  border-radius: var(--border-radius-md);
-  background: var(--code-bg, #1e1e2e);
+  border-radius: 8px;
+  background: var(--code-bg, #f1f1f4);
   overflow-x: auto;
-  font-size: var(--typography-body-small);
+  font-size: 12px;
   line-height: 1.5;
   border: 1px solid var(--border-color);
 }
@@ -243,7 +377,7 @@ const renderedContent = computed(() => {
   width: 100%;
   border-collapse: collapse;
   margin: 8px 0;
-  font-size: var(--typography-body-small);
+  font-size: 12px;
 }
 
 :deep(.bubble-content th),
@@ -254,7 +388,7 @@ const renderedContent = computed(() => {
 }
 
 :deep(.bubble-content th) {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
   font-weight: 600;
 }
 
@@ -265,7 +399,7 @@ const renderedContent = computed(() => {
 }
 
 :deep(.bubble-content a) {
-  color: var(--color-primary);
+  color: var(--color-accent);
   text-decoration: underline;
   word-break: break-all;
 }
@@ -276,7 +410,7 @@ const renderedContent = computed(() => {
 
 :deep(.bubble-content img) {
   max-width: 100%;
-  border-radius: var(--border-radius-sm);
+  border-radius: 8px;
   margin: 8px 0;
 }
 
@@ -293,51 +427,21 @@ const renderedContent = computed(() => {
   margin-right: 6px;
 }
 
-/* Task list items */
 :deep(.bubble-content li.task-list-item) {
   list-style: none;
   margin-left: -20px;
 }
 
-/* Actions */
-.bubble-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 4px;
-}
-
-.action-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: var(--typography-body-small);
-  font-weight: 500;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  cursor: default;
-}
-
-.action-pending {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.action-completed {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  border-color: var(--color-success);
-  color: var(--color-success);
-}
-
-.action-icon {
-  font-size: 12px;
-}
-
-.action-done {
-  font-weight: 700;
-  font-size: 12px;
+/* === Mobile === */
+@media (max-width: 767px) {
+  .bubble {
+    max-width: 95%;
+  }
+  .bubble-body {
+    max-width: 100%;
+  }
+  .bubble-body--user {
+    max-width: 100%;
+  }
 }
 </style>

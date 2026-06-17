@@ -1,7 +1,7 @@
 /**
  * Тесты для ThemeToggle.vue
  *
- * Компонент переключает тему (light / dark / system) через authStore.
+ * Компонент переключает тему (light / dark) через authStore.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -16,10 +16,10 @@ describe('ThemeToggle.vue', () => {
     localStorage.clear()
   })
 
-  it('рендерит три кнопки (system, light, dark)', () => {
+  it('рендерит две кнопки (light, dark)', () => {
     const wrapper = mount(ThemeToggle)
     const buttons = wrapper.findAll('button')
-    expect(buttons).toHaveLength(3)
+    expect(buttons).toHaveLength(2)
   })
 
   it('подсвечивает активную тему (light по умолчанию)', () => {
@@ -32,30 +32,30 @@ describe('ThemeToggle.vue', () => {
     const authStore = useAuthStore()
     const wrapper = mount(ThemeToggle)
 
-    const darkBtn = wrapper.findAll('button')[2] // third button = dark
+    const darkBtn = wrapper.findAll('button')[1] // second button = dark
     await darkBtn.trigger('click')
 
     expect(authStore.theme).toBe('dark')
     expect(localStorage.getItem('aipilot_theme')).toBe('dark')
   })
 
-  it('переключает тему при клике на system', async () => {
+  it('переключает тему при клике на light', async () => {
     const authStore = useAuthStore()
+    authStore.setTheme('dark') // start from dark
     const wrapper = mount(ThemeToggle)
 
-    const systemBtn = wrapper.findAll('button')[0] // first button = system
-    await systemBtn.trigger('click')
+    const lightBtn = wrapper.findAll('button')[0] // first button = light
+    await lightBtn.trigger('click')
 
-    expect(authStore.theme).toBe('system')
+    expect(authStore.theme).toBe('light')
   })
 
   it('имеет aria-label для доступности', () => {
     const wrapper = mount(ThemeToggle)
     const buttons = wrapper.findAll('button')
 
-    expect(buttons[0].attributes('aria-label')).toBe('Color mode: Системная')
-    expect(buttons[1].attributes('aria-label')).toBe('Color mode: Светлая')
-    expect(buttons[2].attributes('aria-label')).toBe('Color mode: Тёмная')
+    expect(buttons[0].attributes('aria-label')).toBe('Color mode: Светлая')
+    expect(buttons[1].attributes('aria-label')).toBe('Color mode: Тёмная')
   })
 
   it('имеет aria-pressed для активной кнопки', () => {

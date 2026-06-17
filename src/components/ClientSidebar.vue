@@ -39,8 +39,7 @@ const sitesStore = useSitesStore()
     <!-- Шапка -->
     <div class="cs-header">
       <div class="cs-brand">
-        <span class="cs-logo">🎯</span>
-        <span class="cs-title">AI Pilot</span>
+        <img src="/img/logo-aipilot-v3.png" alt="AI Pilot" class="cs-logo-img" />
       </div>
       <!-- Кнопка закрытия сайдбара на мобилке -->
       <button class="cs-close-btn" @click="$emit('close')" title="Закрыть">✕</button>
@@ -92,22 +91,22 @@ const sitesStore = useSitesStore()
 
 .cs-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 16px 12px; }
 .cs-brand { display: flex; align-items: center; gap: 8px; }
-.cs-logo { font-size: 22px; line-height: 1; }
+.cs-logo-img { width: 48px; height: 48px; object-fit: contain; }
 .cs-title { font-size: 16px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
 .cs-site { padding: 4px 16px; font-size: 12px; color: var(--text-tertiary); display: flex; align-items: center; gap: 4px; }
 .cs-site::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--color-success); }
 .cs-divider { height: 1px; background: var(--border-color); margin: 0 16px; }
 .cs-new-btn {
   margin: 8px 12px; padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px; background: transparent;
+  border: none;
+  border-radius: 12px; background: var(--bg-primary);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-accent) 10%, transparent);
   color: var(--text-secondary); font-family: var(--font-family);
   font-size: 13px; cursor: pointer; font-weight: 500;
   transition: all 0.2s; display: flex; align-items: center; gap: 6px;
 }
 .cs-new-btn:hover {
-  background: var(--color-primary); color: var(--text-inverse); border-color: var(--color-primary);
-  transform: translateY(-1px);
+  background: var(--color-accent); color: var(--text-inverse);
 }
 .cs-section-title {
   font-size: 10px; font-weight: 600; text-transform: uppercase;
@@ -123,8 +122,8 @@ const sitesStore = useSitesStore()
 }
 .cs-conv:hover { background: var(--bg-hover); border-color: var(--border-color); }
 .cs-conv--active {
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 20%, transparent);
 }
 .cs-conv-title { font-size: 13px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cs-conv-date { font-size: 10px; color: var(--text-quaternary); margin-top: 1px; }

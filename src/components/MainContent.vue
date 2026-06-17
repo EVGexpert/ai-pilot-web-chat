@@ -98,13 +98,14 @@ function handleLogin() {
   height: 100vh;
   display: flex;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: var(--bg-chat);
 }
 .main-area {
   flex: 1;
   display: flex;
   overflow: hidden;
   min-width: 0;
+  padding: 20px;
 }
 
 .sidebar-overlay {
@@ -177,7 +178,7 @@ function handleLogin() {
   transition: color 0.12s;
   position: relative;
 }
-.bottom-nav-item--active { color: var(--color-primary); }
+.bottom-nav-item--active { color: var(--color-accent); }
 .bottom-nav-item:disabled { opacity: 0.4; cursor: not-allowed; }
 .bottom-nav-icon { font-size: 20px; line-height: 1; }
 .bottom-nav-label { font-size: 11px; font-weight: 500; }
@@ -185,7 +186,7 @@ function handleLogin() {
   position: absolute;
   top: 0;
   right: 6px;
-  background: var(--color-primary);
+  background: var(--color-accent);
   color: var(--text-inverse);
   font-size: 10px;
   font-weight: 600;
@@ -196,7 +197,7 @@ function handleLogin() {
 
 @media (max-width: 767px) {
   .app-container { flex-direction: column; }
-  .main-area { padding-top: 0; padding-bottom: 64px; }
+  .main-area { padding: 0; padding-bottom: 64px; }
   .client-main { padding-bottom: 0; }
 }
 </style>

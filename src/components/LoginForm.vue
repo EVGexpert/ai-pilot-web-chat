@@ -68,7 +68,7 @@ async function handleLogin() {
   <div class="login-page">
     <div class="login-card">
       <div class="login-brand">
-        <span class="login-logo">🎯</span>
+        <img src="/img/logo-aipilot-v3.png" alt="AI Pilot" class="login-logo-img" />
         <h1 class="login-title">AI Pilot</h1>
         <p class="login-subtitle">Управление WordPress-сайтами через ИИ</p>
       </div>
@@ -158,6 +158,13 @@ async function handleLogin() {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+}
+
+.login-logo-img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 8px;
 }
 
 .login-logo {
