@@ -7,6 +7,10 @@
  *   - Системное сообщение по центру
  *   - Markdown рендеринг через marked + DOMPurify
  *   - Action proposal card
+ *
+ * Ассистент: bg-white, rounded-2xl rounded-tl-md, shadow-sm, ring-1 ring-black/5, px-4 py-3, text-sm text-gray-800
+ * Пользователь: bg-accent, rounded-2xl rounded-tr-md, text-white, shadow-lg shadow-accent/20, px-4 py-3
+ * Тёмная тема: ассистент bg var(--chat-assistant-bg) с border, пользователь bg var(--chat-user-bg)
  */
 import { computed } from 'vue'
 import { marked } from 'marked'
@@ -72,7 +76,7 @@ function copyContent() {
     <div class="bubble-body">
       <div class="bubble-content bubble-content--assistant">
         <div v-html="renderedContent"></div>
-        <div v-if="message.time" class="bubble-time-inline">{{ formatTime(message) }}</div>
+        <div v-if="message.time" class="bubble-time-assistant">{{ formatTime(message) }}</div>
       </div>
       <!-- Action buttons -->
       <div class="bubble-actions">
@@ -192,14 +196,14 @@ function copyContent() {
   max-width: 420px;
 }
 
-/* === Content bubbles === */
+/* === Content bubbles — design chat-layout.html === */
 .bubble-content {
   padding: 12px 16px;
   font-size: 14px;
   line-height: 1.6;
 }
 
-/* Assistant: white bg, rounded-2xl rounded-tl-md */
+/* Assistant: bg-white, rounded-2xl rounded-tl-md, shadow-sm, ring-1 ring-black/5 */
 .bubble-content--assistant {
   background: var(--chat-assistant-bg);
   color: var(--chat-assistant-color);
@@ -209,7 +213,7 @@ function copyContent() {
   outline: 1px solid var(--chat-assistant-border);
 }
 
-/* User: accent bg, rounded-2xl rounded-tr-md */
+/* User: bg-accent, rounded-2xl rounded-tr-md, text-white, shadow-lg shadow-accent/20 */
 .bubble-content--user {
   background: var(--chat-user-bg);
   color: var(--chat-user-color);
@@ -219,7 +223,7 @@ function copyContent() {
 }
 
 /* === Time === */
-.bubble-time-inline {
+.bubble-time-assistant {
   font-size: 12px;
   color: var(--text-quaternary);
   text-align: right;
@@ -232,7 +236,7 @@ function copyContent() {
   text-align: right;
 }
 
-/* === Action buttons === */
+/* === Action buttons — text-gray-400 hover:text-accent === */
 .bubble-actions {
   display: flex;
   align-items: center;

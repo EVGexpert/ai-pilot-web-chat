@@ -2,8 +2,8 @@
 /**
  * ChatWindow.vue
  * Основное окно чата. Работает в двух режимах:
- *   - admin: чат область (header + messages + input) — sidebar управляется MainContent
- *   - client: сайдбар сессий + чат область
+ *   - admin: чат область (messages + input) — sidebar управляется MainContent
+ *   - client: сайдбар сессий + хедер + чат область
  *
  * Дизайн из chat-layout.html. Все функциональные части сохранены.
  */
@@ -44,6 +44,19 @@ const wsStatus = computed(() => {
   return 'disconnected'
 })
 
+// Has a site selected?
+const hasSite = computed(() => {
+  return !!(authStore.siteUrl || sitesStore.currentSite?.url)
+})
+
+/** Handle send — check site first */
+function handleSend(text) {
+  if (!hasSite.value) {
+    error.value = 'Выберите сайт в боковой панели'
+    return
+  }
+  chatApi.sendMessage(text)
+}
 
 // Слушаем входящие WS сообщения и добавляем в чат
 ws.onMessage((data) => {
@@ -167,45 +180,28 @@ if (props.clientMode) {
 </script>
 
 <template>
-  <!-- АДМИН: chat section only (sidebar is in MainContent) -->
-  <div v-if="!clientMode" class="chat-window">
-    <section class="chat-section">
-      <!-- Header -->
-      <div class="chat-header">
-        <div class="chat-header-left">
-          <h2 class="chat-title">Мой чат</h2>
-          <span v-if="sitesStore.currentSite" class="site-badge">
-            <span class="site-badge-dot"></span>
-            {{ sitesStore.currentSite.name }}
-          </span>
-        </div>
-        <div class="chat-header-right">
-          <button v-if="error" class="btn-reconnect" @click="handleReconnect" title="Переподключиться">
-            <svg class="reconnect-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
+  <!-- АДМИН: chat section only (sidebar is in MainContent) — no header per design -->
+  <section v-if="!clientMode" class="chat-section">
+    <!-- Reconnect button (absolute, top-right) -->
+    <button v-if="error" class="btn-reconnect-floating" @click="handleReconnect" title="Переподключиться">
+      <svg class="reconnect-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+      </svg>
+    </button>
 
-      <!-- Messages -->
-      <MessageArea
-        ref="messagesContainer"
-        :messages :streamingContent :isLoading :isConnected :error
-        startTitle="Добро пожаловать в AI Pilot"
-        startHint="Напишите, что нужно сделать с сайтом"
-        @approve-action="chatApi.approveAction"
-        @reject-action="chatApi.rejectAction"
-      />
+    <!-- Messages -->
+    <MessageArea
+      ref="messagesContainer"
+      :messages :streamingContent :isLoading :isConnected :error :hasSite
+      startTitle="Добро пожаловать в AI Pilot"
+      startHint="Напишите, что нужно сделать с сайтом"
+      @approve-action="chatApi.approveAction"
+      @reject-action="chatApi.rejectAction"
+    />
 
-      <!-- Composer -->
-      <div class="chat-footer">
-        <div class="input-max-width">
-          <ChatInput :isConnected @send="chatApi.sendMessage" />
-        </div>
-      </div>
-    </section>
-  </div>
+    <!-- Composer — direct child of section, no footer wrapper -->
+    <ChatInput :isConnected @send="handleSend" />
+  </section>
 
   <!-- КЛИЕНТ: сайдбар + хедер + сообщения + ввод -->
   <div v-else class="client-layout">
@@ -246,7 +242,7 @@ if (props.clientMode) {
       </div>
       <MessageArea
         ref="messagesContainer"
-        :messages :streamingContent :isLoading :isConnected :error
+        :messages :streamingContent :isLoading :isConnected :error :hasSite
         clientMode
         startTitle="Чем могу помочь?"
         startHint="Я AI-ассистент вашего сайта."
@@ -255,7 +251,7 @@ if (props.clientMode) {
       />
       <div class="chat-footer">
         <div class="input-max-width">
-          <ChatInput :isConnected @send="chatApi.sendMessage" />
+          <ChatInput :isConnected @send="handleSend" />
         </div>
       </div>
     </div>
@@ -263,17 +259,9 @@ if (props.clientMode) {
 </template>
 
 <style scoped>
-/* === Admin Chat Window === */
-.chat-window {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  border-radius: 16px;
-  overflow: hidden;
-}
-
+/* === Admin Chat Section (matches chat-layout.html) === */
 .chat-section {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -283,7 +271,35 @@ if (props.clientMode) {
   background: var(--bg-chat);
 }
 
-/* === Chat Header === */
+/* Floating reconnect button for admin (no header) */
+.btn-reconnect-floating {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  border: none;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-reconnect-floating:hover {
+  background: var(--bg-hover);
+}
+
+.reconnect-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* === Client Header === */
 .chat-header {
   display: flex;
   align-items: center;
@@ -307,27 +323,6 @@ if (props.clientMode) {
   font-weight: 600;
 }
 
-
-
-.site-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--typography-body-small);
-  color: var(--text-secondary);
-  padding: 4px 12px;
-  background: var(--bg-tertiary);
-  border-radius: 16px;
-  font-weight: 500;
-}
-
-.site-badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-success);
-}
-
 .btn-reconnect {
   border: none;
   background: var(--bg-tertiary);
@@ -343,11 +338,6 @@ if (props.clientMode) {
 
 .btn-reconnect:hover {
   background: var(--bg-hover);
-}
-
-.reconnect-icon {
-  width: 16px;
-  height: 16px;
 }
 
 /* === Client Layout === */
@@ -367,7 +357,7 @@ if (props.clientMode) {
   position: relative;
 }
 
-/* Chat footer (composer wrapper) */
+/* Chat footer (composer wrapper) — client only */
 .chat-footer {
   padding: 12px 24px 16px;
   border-top: 1px solid var(--border-color);
@@ -378,10 +368,6 @@ if (props.clientMode) {
 .input-max-width {
   max-width: 768px;
   margin: 0 auto;
-}
-
-.connection-status {
-  display: none;
 }
 
 /* Mobile burger for client mode */
@@ -431,10 +417,6 @@ if (props.clientMode) {
     padding: 12px 16px;
   }
 
-  .chat-window .chat-header {
-    padding: 12px 16px 12px 56px;
-  }
-
   .client-layout {
     flex-direction: column;
     height: 100%;
@@ -454,6 +436,4 @@ if (props.clientMode) {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
-
 </style>

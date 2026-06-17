@@ -3,6 +3,7 @@
  * MessageArea.vue
  * Область сообщений по дизайну chat-layout.html.
  * Сообщения с аватарками, date divider, streaming, typing indicator.
+ * Padding: pt-2 (8px) pb-8 (32px) px-6 (24px) per design.
  */
 import MessageBubble from './MessageBubble.vue'
 import TypingIndicator from './TypingIndicator.vue'
@@ -14,12 +15,18 @@ const props = defineProps({
   isLoading: { type: Boolean, default: false },
   isConnected: { type: Boolean, default: false },
   error: { default: null },
+  hasSite: { type: Boolean, default: true },
   startTitle: { type: String, default: 'Добро пожаловать' },
   startHint: { type: String, default: '' },
   clientMode: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['approve-action', 'reject-action'])
+
+/** Show no-site message in admin mode when no site selected */
+const showNoSite = computed(() => {
+  return !props.hasSite && !props.clientMode && props.isConnected && props.messages.length === 0
+})
 
 /** Group messages by date for dividers */
 const messageGroups = computed(() => {
@@ -47,8 +54,17 @@ const messageGroups = computed(() => {
       <p>Подключаюсь к серверу...</p>
     </div>
 
-    <!-- Start screen -->
-    <div v-if="messages.length === 0 && isConnected" class="chat-start animate-fade-in">
+    <!-- No site message (admin mode only) -->
+    <div v-if="showNoSite" class="no-site-message animate-fade-in">
+      <svg class="no-site-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 0 1 9-9"></path>
+      </svg>
+      <p class="no-site-title">Для отправки сообщений подключите сайт</p>
+      <p class="no-site-hint">Установите WordPress плагин и добавьте сайт через боковую панель</p>
+    </div>
+
+    <!-- Start screen (has site, no messages, no error) -->
+    <div v-else-if="messages.length === 0 && isConnected && !error" class="chat-start animate-fade-in">
       <img src="/img/logo-aipilot-v3.png" alt="AI Pilot" class="start-logo" />
       <p class="start-title">{{ startTitle }}</p>
       <p class="start-hint" v-if="startHint">{{ startHint }}</p>
@@ -89,7 +105,7 @@ const messageGroups = computed(() => {
 .messages-area {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px 32px;
+  padding: 8px 24px 32px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -98,7 +114,7 @@ const messageGroups = computed(() => {
 .messages-container {
   margin: 0 auto;
   width: 100%;
-  max-width: 768px;
+  max-width: 1024px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -141,6 +157,39 @@ const messageGroups = computed(() => {
   font-size: 14px;
 }
 
+/* No site message */
+.no-site-message {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  gap: 12px;
+}
+
+.no-site-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--text-quaternary);
+  margin-bottom: 8px;
+}
+
+.no-site-title {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+
+.no-site-hint {
+  font-size: 14px;
+  color: var(--text-quaternary);
+  margin: 0;
+  line-height: 1.5;
+}
+
 /* Start screen */
 .chat-start {
   flex: 1;
@@ -180,7 +229,7 @@ const messageGroups = computed(() => {
   align-self: flex-start;
   max-width: 85%;
   margin: 0 auto;
-  margin-left: calc((100% - 768px) / 2);
+  margin-left: calc((100% - 1024px) / 2);
 }
 
 @media (max-width: 1024px) {

@@ -122,7 +122,16 @@ function handleLogin() {
   display: flex;
   overflow: hidden;
   min-width: 0;
+  min-height: 0;
   padding: 0;
+}
+
+/* Ensure ChatWindow fills the main area completely */
+.main-area > :deep(*) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-overlay {

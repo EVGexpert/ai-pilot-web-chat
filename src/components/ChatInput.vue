@@ -3,17 +3,22 @@
  * ChatInput.vue
  * Компонент ввода сообщения по дизайну chat-layout.html.
  * Attach + textarea + emoji + voice + send
+ * Форма: flex, min-h-112px, gap-12px, bg-white, rounded-2xl, shadow-sm, ring-1 ring-black/5
  */
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const emit = defineEmits(['send'])
 const props = defineProps({
   isConnected: { type: Boolean, default: false },
-  placeholder: { type: String, default: 'Спросите AIPilot' }
+  placeholder: { type: String, default: 'Спросите AIPilot' },
+  /** Padding wrapper — admin mode adds px/py padding around the form */
+  padded: { type: Boolean, default: true }
 })
 
 const messageInput = ref('')
 const textareaRef = ref(null)
+
+const hasText = computed(() => messageInput.value.trim().length > 0)
 
 function autoResize() {
   const el = textareaRef.value
@@ -42,7 +47,7 @@ defineExpose({ messageInput })
 </script>
 
 <template>
-  <div class="composer-wrapper">
+  <div class="composer-wrapper" :class="{ 'composer-wrapper--padded': padded }">
     <form class="composer" @submit.prevent="handleSend">
       <!-- Attach button -->
       <button
@@ -103,8 +108,8 @@ defineExpose({ messageInput })
         <button
           type="submit"
           class="send-btn"
-          :class="{ 'send-btn--active': messageInput.trim() && isConnected }"
-          :disabled="!isConnected || !messageInput.trim()"
+          :class="{ 'send-btn--active': hasText && isConnected }"
+          :disabled="!isConnected || !hasText"
         >
           <span class="send-text">Send</span>
           <svg viewBox="0 0 24 24" class="send-icon">
@@ -122,6 +127,11 @@ defineExpose({ messageInput })
   flex-shrink: 0;
 }
 
+/* Admin mode: add padding around the form per design */
+.composer-wrapper--padded {
+  padding: 12px 24px 16px;
+}
+
 .composer {
   display: flex;
   align-items: flex-start;
@@ -130,7 +140,7 @@ defineExpose({ messageInput })
   background: var(--chat-input-bg);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   outline: 1px solid var(--chat-assistant-border);
 }
 
@@ -256,6 +266,10 @@ defineExpose({ messageInput })
 
 /* Mobile */
 @media (max-width: 767px) {
+  .composer-wrapper--padded {
+    padding: 8px 12px 12px;
+  }
+
   .composer {
     min-height: auto;
     padding: 12px;
