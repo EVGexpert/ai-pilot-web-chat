@@ -1,4 +1,9 @@
 <script setup>
+/**
+ * MessageArea.vue
+ * Область сообщений по дизайну chat-layout.html.
+ * Сообщения с аватарками, date divider, streaming, typing indicator.
+ */
 import MessageBubble from './MessageBubble.vue'
 import TypingIndicator from './TypingIndicator.vue'
 import { computed } from 'vue'
@@ -42,15 +47,17 @@ const messageGroups = computed(() => {
       <p>Подключаюсь к серверу...</p>
     </div>
 
-    <div v-if="messages.length === 0 && isConnected" class="chat-start">
+    <!-- Start screen -->
+    <div v-if="messages.length === 0 && isConnected" class="chat-start animate-fade-in">
       <img src="/img/logo-aipilot-v3.png" alt="AI Pilot" class="start-logo" />
       <p class="start-title">{{ startTitle }}</p>
       <p class="start-hint" v-if="startHint">{{ startHint }}</p>
     </div>
 
-    <div class="messages-container">
-      <!-- Date groups with dividers -->
+    <!-- Messages -->
+    <div class="messages-container" v-if="messages.length > 0">
       <template v-for="(group, gi) in messageGroups" :key="gi">
+        <!-- Date divider -->
         <div v-if="group.date" class="date-divider">
           <span class="date-divider-text">{{ group.date }}</span>
         </div>
@@ -64,6 +71,7 @@ const messageGroups = computed(() => {
       </template>
     </div>
 
+    <!-- Streaming content -->
     <div v-if="streamingContent" class="streaming-bubble animate-fade-in">
       <img
         src="/img/logo-aipilot-v2.png"
@@ -133,6 +141,7 @@ const messageGroups = computed(() => {
   font-size: 14px;
 }
 
+/* Start screen */
 .chat-start {
   flex: 1;
   display: flex;
@@ -164,6 +173,7 @@ const messageGroups = computed(() => {
   margin: 0;
 }
 
+/* Streaming */
 .streaming-bubble {
   display: flex;
   gap: 12px;
@@ -193,8 +203,8 @@ const messageGroups = computed(() => {
   background: var(--chat-assistant-bg);
   border-radius: 16px;
   border-top-left-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  outline: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
+  outline: 1px solid var(--chat-assistant-border);
   color: var(--chat-assistant-color);
   font-size: 14px;
   line-height: 1.6;

@@ -66,11 +66,17 @@ async function handleLogin() {
 
 <template>
   <div class="login-page">
-    <div class="login-card">
+    <div class="login-card" :class="{ 'login-card--error': error, 'login-card--loading': isLoading }">
+      <!-- Brand header -->
       <div class="login-brand">
         <img src="/img/logo-aipilot-v3.png" alt="AI Pilot" class="login-logo-img" />
         <h1 class="login-title">AI Pilot</h1>
-        <p class="login-subtitle">Управление WordPress-сайтами через ИИ</p>
+        <p class="login-subtitle">{{ isLoading ? 'Выполняется вход…' : 'Войдите для управления сайтами' }}</p>
+      </div>
+
+      <!-- Error alert -->
+      <div v-if="error" class="login-alert">
+        <p>{{ error }}</p>
       </div>
 
       <form class="login-form" @submit.prevent="handleLogin">
@@ -81,6 +87,7 @@ async function handleLogin() {
             v-model="name"
             type="text"
             class="field-input"
+            :class="{ 'field-input--error': error }"
             placeholder="Как к вам обращаться?"
             autocomplete="name"
             :disabled="isLoading"
@@ -94,7 +101,8 @@ async function handleLogin() {
             v-model="email"
             type="email"
             class="field-input"
-            placeholder="your@email.com"
+            :class="{ 'field-input--error': error }"
+            placeholder="mail@example.com"
             autocomplete="email"
             :disabled="isLoading"
           />
@@ -107,20 +115,25 @@ async function handleLogin() {
             v-model="password"
             type="password"
             class="field-input"
+            :class="{ 'field-input--error': error }"
             placeholder="••••••••"
             autocomplete="current-password"
             :disabled="isLoading"
           />
         </div>
 
-        <div v-if="error" class="form-error">{{ error }}</div>
-
         <button
           type="submit"
           class="btn-primary"
+          :class="{ 'btn-primary--error': error }"
           :disabled="isLoading"
         >
-          <span v-if="isLoading" class="btn-loader"></span>
+          <span v-if="isLoading" class="btn-loading">
+            <svg class="btn-spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Вход…
+          </span>
           <span v-else>Войти</span>
         </button>
       </form>
@@ -140,24 +153,39 @@ async function handleLogin() {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
 }
 
 .login-card {
   width: 100%;
   max-width: 400px;
-  margin: 0 auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 32px 24px;
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
+  transition: border-color 0.2s ease, opacity 0.2s ease;
 }
 
+.login-card--error {
+  border-color: color-mix(in srgb, var(--color-error) 40%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+
+.login-card--loading {
+  opacity: 0.7;
+}
+
+/* Brand */
 .login-brand {
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .login-logo-img {
@@ -167,14 +195,9 @@ async function handleLogin() {
   margin-bottom: 8px;
 }
 
-.login-logo {
-  font-size: 48px;
-  line-height: 1;
-}
-
 .login-title {
   font-size: var(--typography-h2-size);
-  font-weight: var(--typography-h2-weight);
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0;
 }
@@ -186,10 +209,26 @@ async function handleLogin() {
   line-height: 1.5;
 }
 
+/* Error alert */
+.login-alert {
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--color-error) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-error) 20%, transparent);
+  border-radius: var(--border-radius-md);
+  font-size: var(--typography-body-small);
+  color: var(--color-error);
+  line-height: 1.4;
+}
+
+.login-alert p {
+  margin: 0;
+}
+
+/* Form */
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .field {
@@ -201,12 +240,12 @@ async function handleLogin() {
 .field-label {
   font-size: var(--typography-body-small);
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
 }
 
 .field-input {
   width: 100%;
-  height: 48px;
+  height: 46px;
   padding: 0 16px;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
@@ -219,7 +258,7 @@ async function handleLogin() {
 }
 
 .field-input:focus {
-  border-color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
 }
 
@@ -227,18 +266,24 @@ async function handleLogin() {
   color: var(--text-quaternary);
 }
 
-.form-error {
-  padding: 10px 14px;
-  background: color-mix(in srgb, var(--color-error) 10%, transparent);
-  color: var(--color-error);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--typography-body-small);
-  line-height: 1.4;
+.field-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
+.field-input--error {
+  border-color: color-mix(in srgb, var(--color-error) 40%, transparent);
+}
+
+.field-input--error:focus {
+  border-color: color-mix(in srgb, var(--color-error) 50%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 15%, transparent);
+}
+
+/* Button */
 .btn-primary {
   width: 100%;
-  height: 48px;
+  height: 46px;
   border: none;
   border-radius: var(--border-radius-md);
   background: var(--color-primary);
@@ -250,7 +295,7 @@ async function handleLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -262,12 +307,20 @@ async function handleLogin() {
   cursor: not-allowed;
 }
 
-.btn-loader {
-  width: 20px;
-  height: 20px;
-  border: 2px solid transparent;
-  border-top-color: var(--text-inverse);
-  border-radius: 50%;
+.btn-primary--error {
+  background: color-mix(in srgb, var(--color-error) 50%, transparent);
+  color: color-mix(in srgb, var(--text-inverse) 60%, transparent);
+}
+
+.btn-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
   animation: spin 0.6s linear infinite;
 }
 
@@ -275,11 +328,18 @@ async function handleLogin() {
   to { transform: rotate(360deg); }
 }
 
+/* Footer */
 .login-footer {
   text-align: center;
   font-size: var(--typography-body-small);
   color: var(--text-quaternary);
   line-height: 1.6;
   margin: 0;
+}
+
+@media (max-width: 767px) {
+  .login-card {
+    padding: 24px 18px;
+  }
 }
 </style>

@@ -1,5 +1,5 @@
 /* ========================================
-   AI Pilot — Design System v2
+   AI Pilot — Design System v3
    Based on design/src/style.css + chat-layout.html
    ======================================== */
 
@@ -105,7 +105,7 @@
   --z-overlay: 1000;
   --z-dialog: 1500;
 
-  /* Chat-specific — NEW accent-based design */
+  /* Chat-specific */
   --chat-user-bg: #7e4ce0;
   --chat-user-color: #ffffff;
   --chat-assistant-bg: #ffffff;
@@ -119,8 +119,20 @@
   --sidebar-section-gap: 16px;
 
   /* Safe areas */
-  --safe-area-inset-top: 0px;
-  --safe-area-inset-bottom: 0px;
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Theme toggle */
+  --toggle-bg: #eeeeF1;
+  --toggle-active-bg: #fafafa;
+  --toggle-text: #666666;
+  --toggle-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --toggle-shadow-active: 0 1px 4px rgba(0, 0, 0, 0.18);
+  --toggle-ring: rgba(0, 0, 0, 0.1);
+
+  /* Sidebar gradient */
+  --sidebar-gradient-from: #f5f5f6;
+  --sidebar-gradient-to: transparent;
 }
 
 /* ============ Dark Theme ============ */
@@ -139,7 +151,7 @@
   --bg-card: #222222;
   --bg-sidebar: #191919;
   --bg-hover: #333333;
-  --bg-chat: #1a1a2e;
+  --bg-chat: #141419;
   --code-bg: #1a1a2e;
 
   --text-primary: #ededed;
@@ -152,9 +164,9 @@
   --border-color: #333330;
   --border-light: #2a2b2d;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
 
   --chat-user-bg: #a57de4;
   --chat-user-color: #ffffff;
@@ -163,7 +175,17 @@
   --chat-assistant-border: rgba(255, 255, 255, 0.08);
   --chat-input-bg: #222222;
 
-  --bg-sidebar: #191919;
+  /* Theme toggle dark */
+  --toggle-bg: #2b2b2b;
+  --toggle-active-bg: #3a3a3a;
+  --toggle-text: #999999;
+  --toggle-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --toggle-shadow-active: 0 1px 4px rgba(0, 0, 0, 0.4);
+  --toggle-ring: rgba(255, 255, 255, 0.1);
+
+  /* Sidebar gradient dark */
+  --sidebar-gradient-from: #191919;
+  --sidebar-gradient-to: transparent;
 }
 
 /* ============ Reset & Base ============ */
@@ -276,7 +298,7 @@ body {
 /* ============ Scrollbar Thin Utility ============ */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #bababa transparent;
+  scrollbar-color: var(--text-muted) transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -288,7 +310,7 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: #bababa;
+  background-color: var(--text-muted);
   border-radius: 3px;
 }
 
@@ -301,12 +323,6 @@ body {
 }
 
 /* ============ Mobile + Safe Area ============ */
-
-:root {
-  --safe-area-inset-top: env(safe-area-inset-top, 0px);
-  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-}
-
 @media (max-width: 767px) {
   :root {
     --sidebar-width: min(85vw, 320px);

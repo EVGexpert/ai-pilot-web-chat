@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
 import { useDevice } from '../composables/useDevice'
@@ -11,6 +11,12 @@ import HistoryPanel from './HistoryPanel.vue'
 const authStore = useAuthStore()
 const sitesStore = useSitesStore()
 const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useDevice()
+
+const sidebarCollapsed = ref(false)
+
+function toggleCollapse() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
 
 onMounted(() => {
   authStore.initTheme()
@@ -36,10 +42,12 @@ function handleLogin() {
         @click="closeSidebar"
       ></div>
 
-      <!-- Sidebar with mobile drawer behavior -->
+      <!-- Sidebar with mobile drawer behavior + collapsible -->
       <AppSidebar
+        :collapsed="sidebarCollapsed"
         :class="{ 'sidebar--open': sidebarOpen, 'sidebar--mobile': isMobile }"
         @close="closeSidebar"
+        @toggle-collapse="toggleCollapse"
       />
 
       <main class="main-area">
@@ -62,7 +70,9 @@ function handleLogin() {
             :class="{ 'bottom-nav-item--active': sitesStore.activeView === 'chat' }"
             @click="sitesStore.setActiveView('chat')"
           >
-            <span class="bottom-nav-icon">💬</span>
+            <svg class="bottom-nav-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+            </svg>
             <span class="bottom-nav-label">Чат</span>
           </button>
           <button
@@ -71,14 +81,18 @@ function handleLogin() {
             @click="sitesStore.setActiveView('history')"
             :disabled="!sitesStore.currentSiteId"
           >
-            <span class="bottom-nav-icon">📋</span>
+            <svg class="bottom-nav-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
             <span class="bottom-nav-label">История</span>
             <span v-if="sitesStore.currentSiteConversations.length > 0" class="bottom-nav-badge">
               {{ sitesStore.currentSiteConversations.length }}
             </span>
           </button>
           <button class="bottom-nav-item" @click="toggleSidebar">
-            <span class="bottom-nav-icon">🌐</span>
+            <svg class="bottom-nav-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12l-6-6m6 6l-6 6m6-6H9"></path>
+            </svg>
             <span class="bottom-nav-label">Сайты</span>
           </button>
         </nav>
@@ -100,6 +114,7 @@ function handleLogin() {
   overflow: hidden;
   background: var(--bg-chat);
 }
+
 .main-area {
   flex: 1;
   display: flex;
@@ -121,6 +136,7 @@ function handleLogin() {
   to { opacity: 1; }
 }
 
+/* Burger button */
 .burger-btn {
   position: fixed;
   top: 12px;
@@ -140,7 +156,9 @@ function handleLogin() {
   cursor: pointer;
   transition: background 0.15s;
 }
+
 .burger-btn:hover { background: var(--bg-hover); }
+
 .burger-line {
   display: block;
   width: 20px;
@@ -150,6 +168,7 @@ function handleLogin() {
   transition: transform 0.2s;
 }
 
+/* Bottom nav */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -164,6 +183,7 @@ function handleLogin() {
   z-index: 20;
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
+
 .bottom-nav-item {
   display: flex;
   flex-direction: column;
@@ -178,10 +198,20 @@ function handleLogin() {
   transition: color 0.12s;
   position: relative;
 }
-.bottom-nav-item--active { color: var(--color-accent); }
+
+.bottom-nav-item--active { color: var(--color-primary); }
 .bottom-nav-item:disabled { opacity: 0.4; cursor: not-allowed; }
-.bottom-nav-icon { font-size: 20px; line-height: 1; }
-.bottom-nav-label { font-size: 11px; font-weight: 500; }
+
+.bottom-nav-icon-svg {
+  width: 22px;
+  height: 22px;
+}
+
+.bottom-nav-label {
+  font-size: 11px;
+  font-weight: 500;
+}
+
 .bottom-nav-badge {
   position: absolute;
   top: 0;

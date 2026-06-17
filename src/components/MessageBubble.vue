@@ -1,4 +1,13 @@
 <script setup>
+/**
+ * MessageBubble.vue
+ * Бабл сообщения по дизайну chat-layout.html:
+ *   - Ассистент: avatar слева + content + время + actions
+ *   - Пользователь: content + avatar справа
+ *   - Системное сообщение по центру
+ *   - Markdown рендеринг через marked + DOMPurify
+ *   - Action proposal card
+ */
 import { computed } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
@@ -36,106 +45,98 @@ const renderedContent = computed(() => {
   return DOMPurify.sanitize(html)
 })
 
-/** User initials from name */
-const userInitials = computed(() => {
-  const name = props.message.userName || ''
-  if (!name) return 'В'
-  return name.charAt(0).toUpperCase()
-})
+function formatTime(msg) {
+  if (!msg.time) return ''
+  return msg.time
+}
 
-/** Format time */
-const formattedTime = computed(() => {
-  return props.message.time || ''
-})
+/** Copy message content to clipboard */
+function copyContent() {
+  navigator.clipboard?.writeText(props.message.content || '')
+}
 </script>
 
 <template>
-  <div
-    class="bubble"
-    :class="{
-      'bubble-user': isUser(message),
-      'bubble-assistant': !isUser(message) && !isSystem(message),
-      'bubble-system': isSystem(message)
-    }"
-  >
-    <!-- Assistant message: avatar left, content right -->
-    <template v-if="!isUser(message) && !isSystem(message)">
-      <img
-        src="/img/logo-aipilot-v2.png"
-        alt="AI Pilot"
-        class="bubble-avatar-img"
-      />
-      <div class="bubble-body">
-        <div class="bubble-content">
-          <div v-html="renderedContent"></div>
-          <div v-if="formattedTime" class="bubble-time">{{ formattedTime }}</div>
-        </div>
-        <!-- Action buttons for assistant messages -->
-        <div class="bubble-actions">
-          <button class="action-btn" aria-label="Listen" title="Прослушать">
-            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
-              <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
-            </svg>
-          </button>
-          <button class="action-btn" aria-label="Copy" title="Копировать" @click="navigator.clipboard?.writeText(message.content)">
-            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="8" y="8" width="12" height="12" rx="2"></rect>
-              <path d="M4 16V6a2 2 0 0 1 2-2h10"></path>
-            </svg>
-          </button>
-          <button class="action-btn" aria-label="Regenerate" title="Перегенерировать">
-            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12a9 9 0 0 1-15.5 6.3"></path>
-              <path d="M3 12A9 9 0 0 1 18.5 5.7"></path>
-              <path d="M18 3v4h4"></path>
-              <path d="M6 21v-4H2"></path>
-            </svg>
-          </button>
-          <button class="action-btn" aria-label="Dislike" title="Дизлайк">
-            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 14V2"></path>
-              <path d="M9 18.1 10 14H4.8a2 2 0 0 1-2-2.4l1.4-7A2 2 0 0 1 6.2 3H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3.4a2 2 0 0 0-1.7 1l-3 5a2 2 0 0 1-3.6-1.9Z"></path>
-            </svg>
-          </button>
-        </div>
-        <!-- Action Proposal Cards -->
-        <div v-if="message.actions && message.actions.length" class="bubble-proposals">
-          <ActionProposalCard
-            v-for="action in message.actions"
-            :key="action.id"
-            :action="action"
-            @approve="(id) => $emit('approve-action', id)"
-            @reject="(id) => $emit('reject-action', id)"
-          />
-        </div>
-      </div>
-    </template>
+  <!-- System message -->
+  <div v-if="isSystem(message)" class="bubble-system animate-fade-in">
+    <div class="system-divider">{{ message.content }}</div>
+  </div>
 
-    <!-- User message: content left, avatar right -->
-    <template v-else-if="isUser(message)">
-      <div class="bubble-body bubble-body--user">
-        <div class="bubble-content">
-          <div v-html="renderedContent"></div>
-          <div v-if="formattedTime" class="bubble-time">{{ formattedTime }}</div>
-        </div>
+  <!-- Assistant message -->
+  <div v-else-if="!isUser(message)" class="bubble-assistant animate-fade-in">
+    <img
+      src="/img/logo-aipilot-v2.png"
+      alt="AI Pilot"
+      class="bubble-avatar"
+    />
+    <div class="bubble-body">
+      <div class="bubble-content bubble-content--assistant">
+        <div v-html="renderedContent"></div>
+        <div v-if="message.time" class="bubble-time-inline">{{ formatTime(message) }}</div>
       </div>
-      <div class="bubble-avatar-circle">
-        {{ userInitials }}
+      <!-- Action buttons -->
+      <div class="bubble-actions">
+        <button class="action-btn" aria-label="Listen" title="Прослушать">
+          <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+            <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+          </svg>
+        </button>
+        <button class="action-btn" aria-label="Copy" title="Копировать" @click="copyContent">
+          <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+            <path d="M4 16V6a2 2 0 0 1 2-2h10"></path>
+          </svg>
+        </button>
+        <button class="action-btn" aria-label="Regenerate" title="Перегенерировать">
+          <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12a9 9 0 0 1-15.5 6.3"></path>
+            <path d="M3 12A9 9 0 0 1 18.5 5.7"></path>
+            <path d="M18 3v4h4"></path>
+            <path d="M6 21v-4H2"></path>
+          </svg>
+        </button>
+        <button class="action-btn" aria-label="Dislike" title="Дизлайк">
+          <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 14V2"></path>
+            <path d="M9 18.1 10 14H4.8a2 2 0 0 1-2-2.4l1.4-7A2 2 0 0 1 6.2 3H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3.4a2 2 0 0 0-1.7 1l-3 5a2 2 0 0 1-3.6-1.9Z"></path>
+          </svg>
+        </button>
       </div>
-    </template>
+      <!-- Action Proposal Cards -->
+      <div v-if="message.actions && message.actions.length" class="bubble-proposals">
+        <ActionProposalCard
+          v-for="action in message.actions"
+          :key="action.id"
+          :action="action"
+          @approve="(id) => $emit('approve-action', id)"
+          @reject="(id) => $emit('reject-action', id)"
+        />
+      </div>
+    </div>
+  </div>
 
-    <!-- System message -->
-    <template v-else>
-      <div class="bubble-content bubble-content--system">
+  <!-- User message -->
+  <div v-else class="bubble-user animate-slide-in">
+    <div class="bubble-body">
+      <div class="bubble-content bubble-content--user">
         <div v-html="renderedContent"></div>
       </div>
-    </template>
+      <div v-if="message.time" class="bubble-time-user">{{ formatTime(message) }}</div>
+    </div>
+    <img
+      src="/img/user-img.png"
+      alt=""
+      class="bubble-avatar"
+    />
   </div>
 </template>
 
 <style scoped>
-.bubble {
+/* === Layout === */
+.bubble-assistant,
+.bubble-user,
+.bubble-system {
   display: flex;
   gap: 12px;
   max-width: 85%;
@@ -143,27 +144,21 @@ const formattedTime = computed(() => {
   position: relative;
 }
 
-/* Assistant: left-aligned with fade-in */
 .bubble-assistant {
   align-self: flex-start;
-  animation: fadeIn 0.2s ease-out;
 }
 
-/* User: right-aligned with slide-in */
 .bubble-user {
   align-self: flex-end;
-  animation: slideInRight 0.25s ease-out;
 }
 
-/* System: centered */
 .bubble-system {
   align-self: center;
   max-width: 70%;
-  opacity: 0.7;
 }
 
-/* Avatar images */
-.bubble-avatar-img {
+/* === Avatar === */
+.bubble-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -172,53 +167,50 @@ const formattedTime = computed(() => {
   margin-top: 2px;
 }
 
-/* User avatar circle with initials */
-.bubble-avatar-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  color: var(--text-inverse);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  flex-shrink: 0;
-  margin-top: 2px;
+/* === System === */
+.system-divider {
+  text-align: center;
+  font-size: var(--typography-body-small);
+  color: var(--text-quaternary);
+  background: color-mix(in srgb, var(--bg-tertiary) 80%, transparent);
+  border-radius: 20px;
+  padding: 4px 16px;
+  display: inline-block;
 }
 
-/* Bubble body container */
+/* === Body === */
 .bubble-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   max-width: 560px;
   min-width: 0;
 }
 
-.bubble-body--user {
-  margin-left: auto;
+.bubble-user .bubble-body {
+  align-items: flex-end;
   max-width: 420px;
 }
 
-/* Content bubble */
+/* === Content bubbles === */
 .bubble-content {
   padding: 12px 16px;
   font-size: 14px;
   line-height: 1.6;
-  position: relative;
 }
 
-/* Assistant content: white bg, rounded-2xl rounded-tl-md */
-.bubble-assistant .bubble-content {
+/* Assistant: white bg, rounded-2xl rounded-tl-md */
+.bubble-content--assistant {
   background: var(--chat-assistant-bg);
   color: var(--chat-assistant-color);
   border-radius: 16px;
   border-top-left-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  outline: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
+  outline: 1px solid var(--chat-assistant-border);
 }
 
-/* User content: accent bg, rounded-2xl rounded-tr-md */
-.bubble-user .bubble-content {
+/* User: accent bg, rounded-2xl rounded-tr-md */
+.bubble-content--user {
   background: var(--chat-user-bg);
   color: var(--chat-user-color);
   border-radius: 16px;
@@ -226,28 +218,21 @@ const formattedTime = computed(() => {
   box-shadow: 0 4px 16px color-mix(in srgb, var(--color-accent) 20%, transparent);
 }
 
-/* System content */
-.bubble-content--system {
-  background: transparent;
-  color: var(--text-tertiary);
-  text-align: center;
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
-/* Time */
-.bubble-time {
+/* === Time === */
+.bubble-time-inline {
   font-size: 12px;
   color: var(--text-quaternary);
   text-align: right;
   margin-top: 4px;
 }
 
-.bubble-user .bubble-time {
+.bubble-time-user {
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.6);
+  text-align: right;
 }
 
-/* Action buttons */
+/* === Action buttons === */
 .bubble-actions {
   display: flex;
   align-items: center;
@@ -277,23 +262,12 @@ const formattedTime = computed(() => {
   height: 20px;
 }
 
-/* Proposals */
+/* === Proposals === */
 .bubble-proposals {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
-}
-
-/* === Animations === */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: translateX(0); }
 }
 
 /* === Markdown styling (deep selectors for v-html) === */
@@ -432,15 +406,15 @@ const formattedTime = computed(() => {
   margin-left: -20px;
 }
 
-/* === Mobile === */
 @media (max-width: 767px) {
-  .bubble {
+  .bubble-assistant,
+  .bubble-user {
     max-width: 95%;
   }
   .bubble-body {
     max-width: 100%;
   }
-  .bubble-body--user {
+  .bubble-user .bubble-body {
     max-width: 100%;
   }
 }

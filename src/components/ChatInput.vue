@@ -1,4 +1,9 @@
 <script setup>
+/**
+ * ChatInput.vue
+ * Компонент ввода сообщения по дизайну chat-layout.html.
+ * Attach + textarea + emoji + voice + send
+ */
 import { ref } from 'vue'
 
 const emit = defineEmits(['send'])
@@ -126,8 +131,8 @@ defineExpose({ messageInput })
   background: var(--chat-input-bg);
   border-radius: 16px;
   padding: 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  outline: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
+  outline: 1px solid var(--chat-assistant-border);
 }
 
 /* Attach */

@@ -4,10 +4,8 @@ import { useAuthStore } from '../stores/authStore'
 
 const authStore = useAuthStore()
 
-const windowMatchDark = computed(() => {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
-})
+const isLight = computed(() => authStore.theme === 'light')
+const isDark = computed(() => authStore.theme === 'dark')
 
 function set(mode) {
   authStore.setTheme(mode)
@@ -15,41 +13,45 @@ function set(mode) {
 </script>
 
 <template>
-  <div class="theme-toggle" role="group" aria-label="Color mode">
+  <div
+    class="theme-toggle"
+    role="group"
+    aria-label="Color mode"
+  >
     <div class="theme-toggle-inner">
       <button
         type="button"
         class="theme-btn"
-        :class="{ 'theme-btn--active': authStore.theme === 'light' || (authStore.theme === 'system' && !windowMatchDark) }"
+        :class="{ 'theme-btn--active': isLight }"
         title="Светлая"
         aria-label="Color mode: Светлая"
-        :aria-pressed="authStore.theme === 'light' || (authStore.theme === 'system' && !windowMatchDark)"
+        :aria-pressed="isLight"
         @click="set('light')"
       >
-        <svg viewBox="0 0 24 24" class="theme-icon">
-          <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
-          <path d="M12 3.5v2" fill="none" stroke="currentColor" stroke-width="1.8"></path>
-          <path d="M12 18.5v2" fill="none" stroke="currentColor" stroke-width="1.8"></path>
-          <path d="M4.5 12h2" fill="none" stroke="currentColor" stroke-width="1.8"></path>
-          <path d="M17.5 12h2" fill="none" stroke="currentColor" stroke-width="1.8"></path>
-          <path d="m6.7 6.7 1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.8"></path>
-          <path d="m15.9 15.9 1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.8"></path>
-          <path d="m17.3 6.7-1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.8"></path>
-          <path d="m8.1 15.9-1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+        <svg viewBox="0 0 24 24" class="theme-icon" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="3.2"></circle>
+          <path d="M12 3.5v2"></path>
+          <path d="M12 18.5v2"></path>
+          <path d="M4.5 12h2"></path>
+          <path d="M17.5 12h2"></path>
+          <path d="m6.7 6.7 1.4 1.4"></path>
+          <path d="m15.9 15.9 1.4 1.4"></path>
+          <path d="m17.3 6.7-1.4 1.4"></path>
+          <path d="m8.1 15.9-1.4 1.4"></path>
         </svg>
       </button>
 
       <button
         type="button"
         class="theme-btn"
-        :class="{ 'theme-btn--active': authStore.theme === 'dark' || (authStore.theme === 'system' && windowMatchDark) }"
+        :class="{ 'theme-btn--active': isDark }"
         title="Тёмная"
         aria-label="Color mode: Тёмная"
-        :aria-pressed="authStore.theme === 'dark'"
+        :aria-pressed="isDark"
         @click="set('dark')"
       >
-        <svg viewBox="0 0 24 24" class="theme-icon">
-          <path d="M12 3.5a7 7 0 0 0 8.5 8.5A8.5 8.5 0 1 1 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+        <svg viewBox="0 0 24 24" class="theme-icon" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 3.5a7 7 0 0 0 8.5 8.5A8.5 8.5 0 1 1 12 3.5Z"></path>
         </svg>
       </button>
     </div>
@@ -68,11 +70,12 @@ function set(mode) {
   display: grid;
   grid-template-columns: 1fr 1fr;
   width: 100%;
+  max-width: 235px;
   height: 34px;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--text-muted) 15%, transparent);
+  background: var(--toggle-bg);
   padding: 2px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  box-shadow: var(--toggle-shadow-inset);
 }
 
 .theme-btn {
@@ -83,7 +86,7 @@ function set(mode) {
   border: none;
   background: transparent;
   cursor: pointer;
-  color: var(--text-quaternary);
+  color: var(--toggle-text);
   transition: all 0.2s ease;
   padding: 0;
 }
@@ -93,10 +96,10 @@ function set(mode) {
 }
 
 .theme-btn--active {
-  background: var(--bg-primary);
-  color: var(--text-quaternary);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
-  outline: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--toggle-active-bg);
+  color: var(--toggle-text);
+  box-shadow: var(--toggle-shadow-active);
+  outline: 1px solid var(--toggle-ring);
 }
 
 .theme-icon {
