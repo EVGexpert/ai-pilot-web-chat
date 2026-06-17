@@ -89,7 +89,7 @@ const messageGroups = computed(() => {
 .messages-area {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 24px 32px;
+  padding: 20px 24px 32px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -98,7 +98,7 @@ const messageGroups = computed(() => {
 .messages-container {
   margin: 0 auto;
   width: 100%;
-  max-width: 64rem;
+  max-width: 768px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -180,7 +180,7 @@ const messageGroups = computed(() => {
   align-self: flex-start;
   max-width: 85%;
   margin: 0 auto;
-  margin-left: calc((100% - 64rem) / 2);
+  margin-left: calc((100% - 768px) / 2);
 }
 
 @media (max-width: 1024px) {

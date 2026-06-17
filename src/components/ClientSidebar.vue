@@ -118,6 +118,7 @@ function getSessionDate(timestamp) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-radius: 16px;
   padding: 20px 16px;
 }
 

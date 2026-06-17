@@ -120,7 +120,6 @@ defineExpose({ messageInput })
 <style scoped>
 .composer-wrapper {
   flex-shrink: 0;
-  padding: 0;
 }
 
 .composer {

@@ -291,6 +291,7 @@ const userEmail = computed(() => authStore.user?.email || '')
   flex-direction: column;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-color);
+  border-radius: 16px;
   flex-shrink: 0;
   overflow: hidden;
   transition: width 0.25s ease, padding 0.25s ease;

@@ -113,6 +113,7 @@ function handleLogin() {
   display: flex;
   overflow: hidden;
   background: var(--bg-chat);
+  gap: 20px;
 }
 
 .main-area {

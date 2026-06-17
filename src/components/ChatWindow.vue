@@ -26,7 +26,7 @@ const chatApi = useChatApi(authStore, sitesStore)
 const { currentSessionId, sessionsList, messages, isLoading, error, streamingContent } = chatApi
 
 // WebSocket клиент с автореконнектом
-const gatewayUrl = import.meta.env.VITE_GATEWAY_WS_URL || `wss://pilotsite.ru/`
+const gatewayUrl = import.meta.env.VITE_GATEWAY_WS_URL || `wss://chat.pilotsite.ru/ws/`
 const ws = useGatewayClient(gatewayUrl, {
   token: authStore.token,
   maxReconnectAttempts: 10,
@@ -36,19 +36,13 @@ const ws = useGatewayClient(gatewayUrl, {
 })
 
 // Реактивный статус подключения
-const isConnected = computed(() => true) // REST всегда доступен
+const isConnected = computed(() => wsStatus.value === 'connected')
 const wsStatus = computed(() => {
   if (ws.connected.value) return 'connected'
   if (ws.reconnecting.value) return 'reconnecting'
   return 'disconnected'
 })
-const wsStatusText = computed(() => {
-  switch (wsStatus.value) {
-    case 'connected': return 'WS подключен'
-    case 'reconnecting': return `WS переподключение (${ws.reconnectAttempt.value})...`
-    case 'disconnected': return 'WS отключен'
-  }
-})
+
 
 // Слушаем входящие WS сообщения и добавляем в чат
 ws.onMessage((data) => {
@@ -62,9 +56,22 @@ ws.onMessage((data) => {
 // Автоподключение WS при монтировании
 onMounted(() => {
   ws.connect()
+  nextTick(() => {
+    const el = messagesContainer.value?.$el || messagesContainer.value
+    if (el) el.addEventListener('scroll', handleScroll)
+  })
 })
 
 const messagesContainer = ref(null)
+const userScrolledUp = ref(false)
+
+function handleScroll() {
+  const el = messagesContainer.value?.$el || messagesContainer.value
+  if (!el) return
+  const threshold = 100
+  userScrolledUp.value = el.scrollHeight - el.scrollTop - el.clientHeight > threshold
+}
+
 const csSidebarOpen = ref(false)
 
 function toggleCsSidebar() { csSidebarOpen.value = !csSidebarOpen.value }
@@ -87,13 +94,22 @@ function handleLogout() {
   authStore.logout()
 }
 
-onUnmounted(() => disconnect())
+onUnmounted(() => {
+  const el = messagesContainer.value?.$el || messagesContainer.value
+  if (el) el.removeEventListener('scroll', handleScroll)
+  disconnect()
+})
 
-// Авто-скролл вниз при новых сообщениях
+// Авто-скролл вниз при новых сообщениях (если пользователь не проскроллил вверх)
 watch([messages, streamingContent], async () => {
   await nextTick()
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+  if (!userScrolledUp.value && messagesContainer.value) {
+    const el = messagesContainer.value.$el || messagesContainer.value
+    if (el?.scrollTo) {
+      el.scrollTo(0, el.scrollHeight)
+    } else {
+      el.scrollTop = el.scrollHeight
+    }
   }
 }, { deep: true })
 
@@ -157,18 +173,12 @@ if (props.clientMode) {
       <div class="chat-header">
         <div class="chat-header-left">
           <h2 class="chat-title">Мой чат</h2>
-          <span class="status-dot" :class="{
-            'status-dot--online': wsStatus === 'connected',
-            'status-dot--reconnecting': wsStatus === 'reconnecting'
-          }"></span>
-          <span class="status-text">{{ wsStatusText }}</span>
-          <span v-if="ws.queueSize.value > 0" class="queue-badge" :title="'Сообщений в очереди: ' + ws.queueSize.value">⏳ {{ ws.queueSize.value }}</span>
-        </div>
-        <div class="chat-header-right">
           <span v-if="sitesStore.currentSite" class="site-badge">
             <span class="site-badge-dot"></span>
             {{ sitesStore.currentSite.name }}
           </span>
+        </div>
+        <div class="chat-header-right">
           <button v-if="error" class="btn-reconnect" @click="handleReconnect" title="Переподключиться">
             <svg class="reconnect-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -188,7 +198,11 @@ if (props.clientMode) {
       />
 
       <!-- Composer -->
-      <ChatInput :isConnected @send="chatApi.sendMessage" />
+      <div class="chat-footer">
+        <div class="input-max-width">
+          <ChatInput :isConnected @send="chatApi.sendMessage" />
+        </div>
+      </div>
     </section>
   </div>
 
@@ -218,19 +232,16 @@ if (props.clientMode) {
       </button>
 
       <div class="chat-header">
-        <div class="connection-status">
-          <span class="status-dot" :class="{
-            'status-dot--online': wsStatus === 'connected',
-            'status-dot--reconnecting': wsStatus === 'reconnecting'
-          }"></span>
-          <span class="status-text">{{ wsStatusText }}</span>
-          <span v-if="ws.queueSize.value > 0" class="queue-badge" :title="'Сообщений в очереди: ' + ws.queueSize.value">⏳ {{ ws.queueSize.value }}</span>
+        <div class="chat-header-left">
+          <h2 class="chat-title">{{ sitesStore.currentSite?.name || 'Чат' }}</h2>
         </div>
-        <button v-if="error" class="btn-reconnect" @click="handleReconnect" title="Переподключиться">
-          <svg class="reconnect-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
-        </button>
+        <div class="chat-header-right">
+          <button v-if="error" class="btn-reconnect" @click="handleReconnect" title="Переподключиться">
+            <svg class="reconnect-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+          </button>
+        </div>
       </div>
       <MessageArea
         ref="messagesContainer"
@@ -241,7 +252,11 @@ if (props.clientMode) {
         @approve-action="chatApi.approveAction"
         @reject-action="chatApi.rejectAction"
       />
-      <ChatInput :isConnected @send="chatApi.sendMessage" />
+      <div class="chat-footer">
+        <div class="input-max-width">
+          <ChatInput :isConnected @send="chatApi.sendMessage" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -291,37 +306,7 @@ if (props.clientMode) {
   font-weight: 600;
 }
 
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-error);
-  transition: background 0.3s, box-shadow 0.3s;
-}
 
-.status-dot--online {
-  background: var(--color-success);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--color-success) 60%, transparent);
-}
-
-.status-dot--reconnecting {
-  background: var(--color-warning, #f59e0b);
-  animation: pulse-dot 1.5s ease-in-out infinite;
-}
-
-.queue-badge {
-  font-size: 11px;
-  color: var(--color-warning, #f59e0b);
-  background: color-mix(in srgb, var(--color-warning, #f59e0b) 12%, transparent);
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 500;
-}
-
-.status-text {
-  font-size: var(--typography-body-small);
-  color: var(--text-quaternary);
-}
 
 .site-badge {
   display: inline-flex;
@@ -381,10 +366,21 @@ if (props.clientMode) {
   position: relative;
 }
 
+/* Chat footer (composer wrapper) */
+.chat-footer {
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  background: var(--bg-primary);
+}
+
+.input-max-width {
+  max-width: 768px;
+  margin: 0 auto;
+}
+
 .connection-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: none;
 }
 
 /* Mobile burger for client mode */
@@ -458,8 +454,5 @@ if (props.clientMode) {
   to { opacity: 1; }
 }
 
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.3); }
-}
+
 </style>
