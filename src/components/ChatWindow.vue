@@ -8,10 +8,11 @@
  * Props:
  *   clientMode (Boolean, default: false)
  */
-import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
 import { useChatApi } from '../composables/useChatApi'
+import { useGatewayClient } from '../composables/useGatewayClient'
 import MessageArea from './MessageArea.vue'
 import ChatInput from './ChatInput.vue'
 import ClientSidebar from './ClientSidebar.vue'
@@ -21,24 +22,62 @@ const props = defineProps({ clientMode: { type: Boolean, default: false } })
 const authStore = useAuthStore()
 const sitesStore = useSitesStore()
 
-// API слой через composable
+// API слой через composable (REST)
 const chatApi = useChatApi(authStore, sitesStore)
 const { currentSessionId, sessionsList, messages, isLoading, error, streamingContent } = chatApi
 
+// WebSocket клиент с автореконнектом
+const gatewayUrl = import.meta.env.VITE_GATEWAY_WS_URL || `wss://${window.location.host}/ws`
+const ws = useGatewayClient(gatewayUrl, {
+  token: authStore.token,
+  maxReconnectAttempts: 10,
+  baseDelay: 1000,
+  maxDelay: 30000,
+  ackTimeout: 10000
+})
+
+// Реактивный статус подключения: REST доступен всегда, WS — отдельно
+const isConnected = computed(() => true) // REST всегда доступен
+const wsStatus = computed(() => {
+  if (ws.connected.value) return 'connected'
+  if (ws.reconnecting.value) return 'reconnecting'
+  return 'disconnected'
+})
+const wsStatusText = computed(() => {
+  switch (wsStatus.value) {
+    case 'connected': return 'WS подключен'
+    case 'reconnecting': return `WS переподключение (${ws.reconnectAttempt.value})...`
+    case 'disconnected': return 'WS отключен'
+  }
+})
+
+// Слушаем входящие WS сообщения и добавляем в чат
+ws.onMessage((data) => {
+  if (data.type === 'assistant_message' && data.content) {
+    const newMsg = { id: `ws-${Date.now()}`, role: 'assistant', content: data.content }
+    if (data.actions) newMsg.actions = data.actions
+    messages.value = [...messages.value, newMsg]
+  }
+})
+
+// Автоподключение WS при монтировании
+onMounted(() => {
+  ws.connect()
+})
+
 const messagesContainer = ref(null)
-const isConnected = ref(false)
 const csSidebarOpen = ref(false)
 
 function toggleCsSidebar() { csSidebarOpen.value = !csSidebarOpen.value }
 function closeCsSidebar() { csSidebarOpen.value = false }
 
 function disconnect() {
-  // WebSocket не используется — всё через REST API
+  ws.disconnect()
 }
 
 function handleReconnect() {
   error.value = null
-  isConnected.value = true
+  ws.connect()
 }
 
 /** Очистить флаги приветствия при выходе */
@@ -49,7 +88,7 @@ function handleLogout() {
   authStore.logout()
 }
 
-isConnected.value = true
+// isConnected — computed ref, всегда true (REST доступен)
 onUnmounted(() => disconnect())
 
 // Авто-скролл вниз при новых сообщениях
@@ -68,7 +107,7 @@ watch([messages, streamingContent], async () => {
  */
 if (props.clientMode) {
   onMounted(async () => {
-    isConnected.value = true
+    // REST доступен всегда, WS подключается автоматически через useGatewayClient
     try {
       if (!authStore.siteUrl && authStore.token) {
         const meRes = await fetch('/api/auth/me', {
@@ -119,12 +158,16 @@ if (props.clientMode) {
     <div class="chat-header">
       <div class="chat-header-left">
         <h2 class="chat-title">Мой чат</h2>
-        <span class="status-dot" :class="{ 'status-dot--online': isConnected }"></span>
-        <span class="status-text">{{ isConnected ? 'Подключено' : 'Нет соединения' }}</span>
+        <span class="status-dot" :class="{
+          'status-dot--online': wsStatus === 'connected',
+          'status-dot--reconnecting': wsStatus === 'reconnecting'
+        }"></span>
+        <span class="status-text">{{ wsStatusText }}</span>
+        <span v-if="ws.queueSize.value > 0" class="queue-badge" :title="'Сообщений в очереди: ' + ws.queueSize.value">⏳ {{ ws.queueSize.value }}</span>
       </div>
       <div class="chat-header-right">
         <span v-if="sitesStore.currentSite" class="badge">🟢 {{ sitesStore.currentSite.name }}</span>
-        <button v-if="error" class="btn-reconnect" @click="handleReconnect" title="Переподключиться">🔁</button>
+        <button v-if="error || ws.lastError.value" class="btn-reconnect" @click="handleReconnect" title="Переподключиться">🔁</button>
       </div>
     </div>
     <MessageArea
@@ -165,10 +208,14 @@ if (props.clientMode) {
 
       <div class="chat-header">
         <div class="connection-status">
-          <span class="status-dot" :class="{ 'status-dot--online': isConnected }"></span>
-          <span class="status-text">{{ isConnected ? 'Подключено' : 'Нет соединения' }}</span>
+          <span class="status-dot" :class="{
+            'status-dot--online': wsStatus === 'connected',
+            'status-dot--reconnecting': wsStatus === 'reconnecting'
+          }"></span>
+          <span class="status-text">{{ wsStatusText }}</span>
+          <span v-if="ws.queueSize.value > 0" class="queue-badge" :title="'Сообщений в очереди: ' + ws.queueSize.value">⏳ {{ ws.queueSize.value }}</span>
         </div>
-        <button v-if="error" class="btn-reconnect" @click="handleReconnect" title="Переподключиться">🔁</button>
+        <button v-if="error || ws.lastError.value" class="btn-reconnect" @click="handleReconnect" title="Переподключиться">🔁</button>
       </div>
       <MessageArea
         ref="messagesContainer"
@@ -202,6 +249,12 @@ if (props.clientMode) {
   transition: background 0.3s, box-shadow 0.3s;
 }
 .status-dot--online { background: var(--color-success); box-shadow: 0 0 6px color-mix(in srgb, var(--color-success) 60%, transparent); }
+.status-dot--reconnecting { background: var(--color-warning, #f59e0b); animation: pulse-dot 1.5s ease-in-out infinite; }
+.queue-badge {
+  font-size: 11px; color: var(--color-warning, #f59e0b);
+  background: color-mix(in srgb, var(--color-warning, #f59e0b) 12%, transparent);
+  padding: 2px 8px; border-radius: 10px; font-weight: 500;
+}
 .status-text { font-size: var(--typography-body-small); color: var(--text-quaternary); }
 .badge {
   font-size: var(--typography-body-small); color: var(--text-secondary);
@@ -266,4 +319,8 @@ if (props.clientMode) {
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
 </style>
