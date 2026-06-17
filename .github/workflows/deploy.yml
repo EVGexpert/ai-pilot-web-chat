@@ -10,35 +10,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Test SSH Connection
-        uses: appleboy/ssh-action@v1.2.1
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: 22
-          timeout: 30
-          host_key_checking: false
-          script: |
-            echo "✅ SSH connection successful"
-            whoami
-            pwd
-
       - name: Deploy via SSH
-        if: success()
         uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: 22
-          timeout: 120
-          host_key_checking: false
+          timeout: 180s
           script: |
             set -e
             echo "🚀 Starting deployment..."
-            cd ~/ai-pilot-web-chat || exit 1
-            echo "📁 In directory: $(pwd)"
+            cd ~/ai-pilot-web-chat
 
             # Сбрасываем локальные изменения
             git stash --include-untracked || true
@@ -51,7 +33,7 @@ jobs:
 
             # === Веб-чат ===
             echo "🔨 Building Docker image..."
-            docker build -t ai-pilot-chat . || exit 1
+            docker build -t ai-pilot-chat .
             echo "✅ Image built"
 
             echo "🛑 Stopping old container..."
@@ -64,7 +46,7 @@ jobs:
               --network aipilot \
               --add-host host.docker.internal:host-gateway \
               -p 127.0.0.1:3000:80 \
-              ai-pilot-chat || exit 1
+              ai-pilot-chat
 
             docker image prune -f
             echo "✅ Deploy complete: $(date)"
