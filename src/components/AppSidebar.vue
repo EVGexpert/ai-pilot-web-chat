@@ -57,9 +57,6 @@ function handleLogout() {
 function handleToggleCollapse() {
   emit('toggle-collapse')
 }
-
-/** User email from auth store */
-const userEmail = computed(() => authStore.user?.email || '')
 </script>
 
 <template>

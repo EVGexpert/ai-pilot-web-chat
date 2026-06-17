@@ -14,7 +14,6 @@ import { useChatApi } from '../composables/useChatApi'
 import { useGatewayClient } from '../composables/useGatewayClient'
 import MessageArea from './MessageArea.vue'
 import ChatInput from './ChatInput.vue'
-import ClientSidebar from './ClientSidebar.vue'
 
 const props = defineProps({ clientMode: { type: Boolean, default: false } })
 
