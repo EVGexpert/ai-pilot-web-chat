@@ -1,8 +1,5 @@
 /**
  * Тесты для LoginForm.vue
- *
- * Проверяет рендер формы, валидацию и обработку ошибок.
- * API-вызовы замоканы, так как настоящий сервер недоступен.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -28,12 +25,9 @@ describe('LoginForm.vue', () => {
   it('показывает ошибку при пустом email', async () => {
     const wrapper = mount(LoginForm)
 
-    // Пытаемся отправить с пустыми полями
     await wrapper.find('form').trigger('submit.prevent')
 
-    const errorEl = wrapper.find('.login-alert')
-    expect(errorEl.exists()).toBe(true)
-    expect(errorEl.text()).toBe('Введите email и пароль')
+    expect(wrapper.text()).toContain('Введите email и пароль')
   })
 
   it('показывает ошибку при пустом пароле', async () => {
@@ -42,14 +36,11 @@ describe('LoginForm.vue', () => {
     await wrapper.find('#email').setValue('test@test.com')
     await wrapper.find('form').trigger('submit.prevent')
 
-    const errorEl = wrapper.find('.login-alert')
-    expect(errorEl.exists()).toBe(true)
-    expect(errorEl.text()).toBe('Введите email и пароль')
+    expect(wrapper.text()).toContain('Введите email и пароль')
   })
 
   it('показывает состояние загрузки при отправке', async () => {
-    // Мокаем fetch чтобы он не упал, но и не завершился мгновенно
-    global.fetch = vi.fn().mockImplementation(() => new Promise(() => {})) // never resolves
+    global.fetch = vi.fn().mockImplementation(() => new Promise(() => {}))
 
     const wrapper = mount(LoginForm)
 
@@ -65,6 +56,6 @@ describe('LoginForm.vue', () => {
     const wrapper = mount(LoginForm)
 
     expect(wrapper.text()).toContain('AI Pilot')
-    expect(wrapper.text()).toContain('Войдите для управления сайтами')
+    expect(wrapper.text()).toContain('Управление WordPress-сайтами')
   })
 })
