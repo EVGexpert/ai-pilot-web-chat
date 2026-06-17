@@ -27,7 +27,7 @@ const chatApi = useChatApi(authStore, sitesStore)
 const { currentSessionId, sessionsList, messages, isLoading, error, streamingContent } = chatApi
 
 // WebSocket клиент с автореконнектом
-const gatewayUrl = import.meta.env.VITE_GATEWAY_WS_URL || `wss://${window.location.host}/ws`
+const gatewayUrl = import.meta.env.VITE_GATEWAY_WS_URL || `wss://pilotsite.ru/`
 const ws = useGatewayClient(gatewayUrl, {
   token: authStore.token,
   maxReconnectAttempts: 10,
