@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
 import LoginForm from './LoginForm.vue'
@@ -12,6 +12,15 @@ const sitesStore = useSitesStore()
 
 const sidebarOpen = ref(false)
 const isMobile = ref(window.innerWidth < 768)
+
+const sidebarClass = computed(() => {
+  if (isMobile.value) {
+    return sidebarOpen.value
+      ? 'fixed left-0 top-0 h-full w-72 z-[100] light:bg-white bg-slate-950 border-r light:border-gray-200 border-slate-800 overflow-y-auto transition-transform duration-200'
+      : 'hidden'
+  }
+  return 'w-72 shrink-0 border-r light:border-gray-200 border-slate-800 overflow-y-auto'
+})
 
 function onResize() {
   isMobile.value = window.innerWidth < 768
@@ -44,29 +53,33 @@ function closeSidebar() {
 </script>
 
 <template>
-  <div class="app-container">
+  <div class="flex h-screen light:bg-white bg-slate-950 light:text-gray-900 text-slate-100">
     <LoginForm v-if="!authStore.isAuthenticated" @login="handleLogin" />
 
     <template v-else-if="authStore.isAdmin">
-      <!-- Mobile overlay -->
+      <!-- Overlay (mobile) -->
       <div
         v-if="isMobile && sidebarOpen"
-        class="sidebar-overlay"
+        class="fixed inset-0 bg-black/50 z-[99] md:hidden"
         @click="closeSidebar"
-      ></div>
-
-      <!-- Sidebar with mobile drawer behavior -->
-      <AppSidebar
-        :class="{ 'sidebar--open': sidebarOpen, 'sidebar--mobile': isMobile }"
-        @close="closeSidebar"
       />
 
-      <main class="main-area">
-        <!-- Mobile burger -->
-        <button v-if="isMobile" class="burger-btn" @click="toggleSidebar">
-          <span class="burger-line"></span>
-          <span class="burger-line"></span>
-          <span class="burger-line"></span>
+      <!-- Sidebar -->
+      <aside :class="sidebarClass">
+        <AppSidebar @close="closeSidebar" />
+      </aside>
+
+      <!-- Main chat area -->
+      <div :class="['flex-1 flex flex-col min-w-0 overflow-hidden', isMobile ? 'pb-16' : '']">
+        <!-- Burger for mobile -->
+        <button
+          v-if="isMobile"
+          class="fixed top-3 left-3 z-20 w-10 h-10 rounded-lg light:bg-gray-100 bg-slate-800 border light:border-gray-300 border-slate-700 flex items-center justify-center light:text-gray-600 text-slate-300 light:hover:bg-gray-200 hover:bg-slate-700 transition-colors md:hidden cursor-pointer"
+          @click="toggleSidebar"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
         </button>
 
         <Transition name="slide-fade" mode="out-in">
@@ -74,183 +87,50 @@ function closeSidebar() {
           <HistoryPanel v-else key="history" />
         </Transition>
 
-        <!-- Mobile bottom nav -->
-        <nav v-if="isMobile" class="bottom-nav">
+        <!-- Bottom nav (mobile) -->
+        <nav
+          v-if="isMobile"
+          class="fixed bottom-0 inset-x-0 h-16 light:bg-gray-50 bg-slate-900 border-t light:border-gray-200 border-slate-800 flex items-center justify-around z-20 md:hidden px-2"
+          style="padding-bottom: env(safe-area-inset-bottom, 0)"
+        >
           <button
-            class="bottom-nav-item"
-            :class="{ 'bottom-nav-item--active': sitesStore.activeView === 'chat' }"
+            class="relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors"
+            :class="sitesStore.activeView === 'chat' ? 'light:text-blue-600 text-blue-400' : 'light:text-gray-500 text-slate-400'"
             @click="sitesStore.setActiveView('chat')"
           >
-            <span class="bottom-nav-icon">💬</span>
-            <span class="bottom-nav-label">Чат</span>
+            <span class="text-xl leading-none">💬</span>
+            <span class="text-[10px] light:text-gray-500 text-slate-500">Чат</span>
           </button>
           <button
-            class="bottom-nav-item"
-            :class="{ 'bottom-nav-item--active': sitesStore.activeView === 'history' }"
+            class="relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            :class="sitesStore.activeView === 'history' ? 'light:text-blue-600 text-blue-400' : 'light:text-gray-500 text-slate-400'"
             @click="sitesStore.setActiveView('history')"
             :disabled="!sitesStore.currentSiteId"
           >
-            <span class="bottom-nav-icon">📋</span>
-            <span class="bottom-nav-label">История</span>
-            <span v-if="sitesStore.currentSiteConversations.length > 0" class="bottom-nav-badge">
+            <span class="text-xl leading-none">📋</span>
+            <span class="text-[10px] light:text-gray-500 text-slate-500">История</span>
+            <span
+              v-if="sitesStore.currentSiteConversations.length > 0"
+              class="absolute -top-1 right-0 bg-blue-600 text-white text-[10px] font-semibold px-1.5 rounded-full leading-4"
+            >
               {{ sitesStore.currentSiteConversations.length }}
             </span>
           </button>
-          <button class="bottom-nav-item" @click="toggleSidebar">
-            <span class="bottom-nav-icon">🌐</span>
-            <span class="bottom-nav-label">Сайты</span>
+          <button
+            class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors light:text-gray-500 text-slate-400"
+            @click="toggleSidebar"
+          >
+            <span class="text-xl leading-none">🌐</span>
+            <span class="text-[10px] light:text-gray-500 text-slate-500">Сайты</span>
           </button>
         </nav>
-      </main>
+      </div>
     </template>
 
     <template v-else>
-      <main class="main-area client-main">
+      <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
         <ChatWindow :clientMode="true" />
-      </main>
+      </div>
     </template>
   </div>
 </template>
-
-<style scoped>
-.app-container {
-  height: 100vh;
-  display: flex;
-  overflow: hidden;
-  background: var(--bg-primary);
-}
-.main-area {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-  min-width: 0;
-}
-/* ============ Mobile Styles ============ */
-
-.sidebar-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 99;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Burger button */
-.burger-btn {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 20;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  background: var(--bg-card);
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.burger-btn:hover {
-  background: var(--bg-hover);
-}
-
-.burger-line {
-  display: block;
-  width: 20px;
-  height: 2px;
-  background: var(--text-primary);
-  border-radius: 2px;
-  transition: transform 0.2s;
-}
-
-/* Bottom navigation */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 64px;
-  background: var(--bg-card);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  z-index: 20;
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-
-.bottom-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 16px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--text-tertiary);
-  font-family: var(--font-family);
-  transition: color 0.12s;
-  position: relative;
-}
-
-.bottom-nav-item--active {
-  color: var(--color-primary);
-}
-
-.bottom-nav-item:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.bottom-nav-icon {
-  font-size: 20px;
-  line-height: 1;
-}
-
-.bottom-nav-label {
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.bottom-nav-badge {
-  position: absolute;
-  top: 0;
-  right: 6px;
-  background: var(--color-primary);
-  color: var(--text-inverse);
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 10px;
-  line-height: 1.4;
-}
-
-/* ============ Responsive Breakpoints ============ */
-
-@media (max-width: 767px) {
-  .app-container {
-    flex-direction: column;
-  }
-
-  .main-area {
-    padding-top: 0;
-    padding-bottom: 64px; /* bottom nav height */
-  }
-
-  .client-main {
-    padding-bottom: 0;
-  }
-}
-</style>

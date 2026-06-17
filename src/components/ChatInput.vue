@@ -4,6 +4,7 @@ import { ref } from 'vue'
 const emit = defineEmits(['send'])
 const props = defineProps({
   isConnected: { type: Boolean, default: false },
+  isLoading: { type: Boolean, default: false },
   placeholder: { type: String, default: 'Напишите сообщение...' }
 })
 
@@ -37,70 +38,59 @@ defineExpose({ messageInput })
 </script>
 
 <template>
-  <div class="chat-footer">
-    <div class="input-wrapper">
+  <footer class="shrink-0 px-4 py-3 border-t light:border-gray-200 border-slate-800 light:bg-white/80 bg-slate-950/80 backdrop-blur-sm max-md:px-3 max-md:py-2 max-md:pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
+    <div
+      class="flex items-end gap-2 light:bg-gray-50 bg-slate-900 border light:border-gray-200/60 border-slate-700/60 rounded-2xl px-4 py-3 transition-all duration-200 max-w-3xl mx-auto"
+      :class="{
+        'light:border-blue-400/40 border-blue-500/40 light:ring-blue-200 ring-1 ring-blue-500/20': messageInput.trim() && isConnected && !isLoading,
+        'light:bg-gray-50/50 bg-slate-900/50 opacity-60 cursor-not-allowed': !isConnected,
+        'light:border-amber-400/40 border-amber-500/40 light:ring-amber-200/50 ring-1 ring-amber-500/10': isLoading
+      }"
+    >
       <textarea
         v-model="messageInput"
-        class="chat-input"
-        :placeholder="isConnected ? placeholder : 'Нет соединения с сервером...'"
-        @keydown="handleKeydown"
-        :disabled="!isConnected"
-        rows="1"
         ref="textareaRef"
+        rows="1"
+        :placeholder="isConnected ? (isLoading ? 'Ожидайте ответа…' : placeholder) : 'Нет соединения с сервером...'"
+        :disabled="!isConnected || isLoading"
+        class="flex-1 bg-transparent text-sm light:text-gray-900 text-slate-100 light:placeholder-gray-400 placeholder-slate-500 resize-none outline-none leading-relaxed max-h-32"
         @input="autoResize"
+        @keydown="handleKeydown"
       ></textarea>
+
+      <!-- Disabled: no text -->
       <button
-        class="send-btn"
-        :class="{ 'send-btn--active': messageInput.trim() && isConnected }"
-        :disabled="!isConnected || !messageInput.trim()"
+        v-if="!messageInput.trim() && !isLoading"
+        disabled
+        class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl light:bg-gray-200 bg-slate-800 light:text-gray-400 text-slate-600 cursor-not-allowed transition-colors"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+
+      <!-- Active: has text -->
+      <button
+        v-else-if="messageInput.trim() && !isLoading"
+        class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer"
         @click="handleSend"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+
+      <!-- Loading: spinner -->
+      <button
+        v-else
+        disabled
+        class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-blue-600/50 text-white/70 cursor-wait transition-colors"
+      >
+        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
         </svg>
       </button>
     </div>
-  </div>
+  </footer>
 </template>
-
-<style scoped>
-.chat-footer {
-  padding: 16px 24px 20px;
-  border-top: 1px solid var(--border-color);
-  flex-shrink: 0;
-  background: var(--bg-primary);
-}
-
-@media (max-width: 767px) {
-  .chat-footer {
-    padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
-  }
-}
-.input-wrapper {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  background: var(--chat-input-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-xl);
-  padding: 4px 4px 4px 16px;
-  transition: border-color 0.15s;
-}
-.input-wrapper:focus-within { border-color: var(--color-primary); }
-.chat-input {
-  flex: 1; border: none; background: transparent; color: var(--text-primary);
-  font-family: var(--font-family); font-size: var(--typography-body-size);
-  line-height: 1.5; padding: 8px 0; resize: none; outline: none; max-height: 120px;
-}
-.chat-input::placeholder { color: var(--text-quaternary); }
-.send-btn {
-  width: 40px; height: 40px; border: none; border-radius: 50%;
-  background: var(--bg-tertiary); color: var(--text-quaternary);
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: all 0.15s ease;
-}
-.send-btn--active { background: var(--color-primary); color: var(--text-inverse); }
-.send-btn--active:hover { background: var(--color-primary-hover); }
-.send-btn:disabled { cursor: not-allowed; }
-</style>

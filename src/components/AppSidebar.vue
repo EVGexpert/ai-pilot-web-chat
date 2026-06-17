@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
 import ThemeToggle from './ThemeToggle.vue'
@@ -7,12 +8,33 @@ const authStore = useAuthStore()
 const sitesStore = useSitesStore()
 const emit = defineEmits(['close'])
 
-const siteStatusIcon = (status) => {
+// User profile computed
+const userInitial = computed(() => {
+  const name = authStore.userName
+  if (name) return name.charAt(0).toUpperCase()
+  const email = authStore.user?.email
+  if (email) return email.charAt(0).toUpperCase()
+  return '?'
+})
+
+const userEmail = computed(() => {
+  return authStore.user?.email || authStore.userName || 'Пользователь'
+})
+
+const userRole = computed(() => {
+  const role = authStore.user?.role
+  if (role === 'admin') return 'Администратор'
+  if (role === 'client') return 'Клиент'
+  return role || ''
+})
+
+// Status dot color map (replaces emoji)
+const siteStatusDot = (status) => {
   switch (status) {
-    case 'online': return '🟢'
-    case 'offline': return '🔴'
-    case 'pending': return '⏳'
-    default: return '⚪'
+    case 'online': return 'bg-blue-400'
+    case 'syncing': return 'bg-green-500'
+    case 'offline': return 'light:bg-gray-400 bg-slate-600'
+    default: return 'light:bg-gray-400 bg-slate-600'
   }
 }
 
@@ -23,381 +45,131 @@ function handleLogout() {
 </script>
 
 <template>
-  <aside class="sidebar"
-      @click="$emit('close')">
-    <!-- Шапка сайдбара -->
-    <div class="sidebar-header">
-      <div class="sidebar-brand">
-        <span class="sidebar-logo">🎯</span>
-        <span class="sidebar-title">AI Pilot</span>
-      </div>
-      <div class="sidebar-header-actions">
-        <button class="sidebar-close-btn" @click="$emit('close')" title="Закрыть меню">✕</button>
-        <ThemeToggle />
+  <aside class="w-72 shrink-0 light:bg-white bg-slate-950 border-r light:border-gray-200 border-slate-800 flex flex-col overflow-hidden h-screen">
+    <!-- Шапка: AP бренд -->
+    <div class="px-4 py-5 border-b light:border-gray-200 border-slate-800">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-600/20">
+            AP
+          </div>
+          <div>
+            <h1 class="text-base font-bold light:text-gray-900 text-slate-100">AI Pilot</h1>
+            <p class="text-xs light:text-gray-500 text-slate-500">Управление сайтами</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1">
+          <ThemeToggle />
+          <!-- Кнопка закрытия (мобильная) -->
+          <button
+            class="md:hidden p-1.5 rounded-lg light:hover:bg-gray-100 hover:bg-slate-800 light:text-gray-400 text-slate-500 light:hover:text-gray-600 hover:text-slate-300 transition-colors"
+            @click.stop="$emit('close')"
+            title="Закрыть меню"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Список сайтов -->
-    <div class="sidebar-section">
-      <div class="section-label">Сайты</div>
-      <div class="sites-list">
-        <div
+    <!-- Поиск -->
+    <div class="px-4 pt-4 pb-2">
+      <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 light:text-gray-400 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input
+          type="text"
+          placeholder="Поиск..."
+          class="w-full light:bg-gray-50 bg-slate-900 border light:border-gray-200 border-slate-800 text-sm light:text-gray-900 text-slate-100 light:placeholder-gray-400 placeholder-slate-500 rounded-xl pl-10 pr-4 py-2 outline-none focus:border-blue-500/40 transition-colors"
+        />
+      </div>
+    </div>
+
+    <!-- Прокручиваемая область -->
+    <div class="flex-1 overflow-y-auto px-4 py-3">
+      <!-- Секция: Мои сайты -->
+      <h2 class="text-[11px] font-semibold light:text-gray-500 text-slate-500 uppercase tracking-wider mb-2">Мои сайты</h2>
+      <nav class="space-y-1 mb-6">
+        <button
           v-for="site in sitesStore.sites"
           :key="site.id"
-          class="site-item"
-          :class="{ 'site-item--active': sitesStore.currentSiteId === site.id }"
+          class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors cursor-pointer"
+          :class="sitesStore.currentSiteId === site.id
+            ? 'light:bg-blue-50 bg-blue-500/10 light:text-blue-600 text-blue-400 font-medium'
+            : 'light:hover:bg-gray-100 hover:bg-slate-800/50 light:text-gray-600 text-slate-300'"
           @click="sitesStore.selectSite(site.id)"
         >
-          <span class="site-status">{{ siteStatusIcon(site.status) }}</span>
-          <span class="site-name">{{ site.name }}</span>
+          <span
+            class="w-2 h-2 rounded-full shrink-0"
+            :class="siteStatusDot(site.status)"
+          ></span>
+          <span class="truncate">{{ site.name }}</span>
+        </button>
+
+        <div v-if="sitesStore.sites.length === 0" class="py-6 text-center">
+          <p class="text-sm light:text-gray-500 text-slate-500">Нет подключённых сайтов</p>
+          <p class="text-xs light:text-gray-400 text-slate-600 mt-1">Установите плагин AI Pilot на WordPress</p>
         </div>
-        <div v-if="sitesStore.sites.length === 0" class="sites-empty">
-          <p>Нет подключённых сайтов</p>
-          <p class="sites-hint">Установите плагин AI Pilot на WordPress</p>
+      </nav>
+
+      <!-- Секция: Недавние диалоги -->
+      <template v-if="sitesStore.currentSiteConversations.length > 0">
+        <h2 class="text-[11px] font-semibold light:text-gray-500 text-slate-500 uppercase tracking-wider mb-2">Недавние диалоги</h2>
+        <div class="space-y-1">
+          <div
+            v-for="conv in sitesStore.currentSiteConversations"
+            :key="conv.id"
+            class="px-3 py-1.5 rounded-xl light:hover:bg-gray-100 hover:bg-slate-800/50 transition-colors cursor-pointer"
+          >
+            <span class="block text-sm light:text-gray-600 text-slate-300 truncate">{{ conv.title || conv.preview || 'Диалог' }}</span>
+            <span class="block text-xs light:text-gray-400 text-slate-600">{{ conv.lastMessage || '' }}</span>
+          </div>
         </div>
-      </div>
+      </template>
     </div>
 
-    <!-- Навигация -->
-    <div class="sidebar-section">
-      <div class="section-label">Навигация</div>
-      <button
-        class="nav-item"
-        :class="{ 'nav-item--active': sitesStore.activeView === 'chat' }"
-        @click="sitesStore.setActiveView('chat')"
-      >
-        <span class="nav-icon">💬</span>
-        <span class="nav-label">Мой чат</span>
-      </button>
-      <button
-        class="nav-item"
-        :class="{ 'nav-item--active': sitesStore.activeView === 'history' }"
-        @click="sitesStore.setActiveView('history')"
-        :disabled="!sitesStore.currentSiteId"
-      >
-        <span class="nav-icon">📋</span>
-        <span class="nav-label">История клиентов</span>
-        <span v-if="sitesStore.currentSiteConversations.length > 0" class="nav-count">
-          {{ sitesStore.currentSiteConversations.length }}
-        </span>
-      </button>
-    </div>
-
-    <!-- Профиль / Выход -->
-    <div class="sidebar-footer">
-      <div class="user-info" v-if="authStore.userName">
-        <span class="user-avatar">{{ authStore.userName.charAt(0).toUpperCase() }}</span>
-        <span class="user-name">{{ authStore.userName }}</span>
+    <!-- Профиль в футере -->
+    <div class="px-4 py-4 border-t light:border-gray-200 border-slate-800 mt-auto">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 h-8 rounded-full light:bg-gray-300 bg-slate-700 flex items-center justify-center text-xs font-bold light:text-gray-600 text-slate-300 shrink-0">
+            {{ userInitial }}
+          </div>
+          <div class="min-w-0">
+            <span class="block text-sm light:text-gray-800 text-slate-200 font-medium truncate">{{ userEmail }}</span>
+            <span class="block text-xs light:text-gray-500 text-slate-500">{{ userRole }}</span>
+          </div>
+        </div>
+        <button
+          class="shrink-0 p-2 rounded-lg light:hover:bg-gray-100 hover:bg-slate-800 light:text-gray-400 text-slate-500 light:hover:text-gray-600 hover:text-slate-300 transition-colors"
+          @click="handleLogout"
+          title="Выйти"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
       </div>
-      <button class="sidebar-icon-btn logout-btn" @click="handleLogout" title="Выйти">
-        <span class="logout-icon">←</span>
-      </button>
     </div>
   </aside>
 </template>
 
 <style scoped>
-.sidebar {
-  width: var(--sidebar-width);
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
-  padding: 0;
-  flex-shrink: 0;
-  overflow: hidden;
+/* Custom scrollbar for sidebar */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
 }
-
-/* Шапка */
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 16px 12px;
-  flex-shrink: 0;
-}
-
-.sidebar-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.sidebar-close-btn {
-  display: none;
-  width: 32px;
-  height: 32px;
-  border: none;
+.overflow-y-auto::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  transition: all 0.15s;
 }
-
-.sidebar-close-btn:hover {
-  background: color-mix(in srgb, var(--color-error) 10%, transparent);
-  color: var(--color-error);
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
 }
-
-@media (max-width: 767px) {
-  .sidebar-close-btn {
-    display: flex;
-  }
-}
-
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sidebar-logo {
-  font-size: 24px;
-  line-height: 1;
-}
-
-.sidebar-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.sidebar-icon-btn {
-  width: 36px; height: 36px;
-  border: none; background: transparent;
-  border-radius: var(--border-radius-sm); cursor: pointer;
-  font-size: 16px; display: flex;
-  align-items: center; justify-content: center;
-  transition: background 0.15s;
-  color: var(--text-secondary);
-}
-.sidebar-icon-btn:hover { background: var(--bg-hover); }
-
-
-
-/* Секции */
-.sidebar-section {
-  padding: 8px 12px;
-  flex-shrink: 0;
-}
-
-.section-label {
-  font-size: var(--typography-caps-size);
-  font-weight: var(--typography-caps-weight);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-quaternary);
-  padding: 0 4px;
-  margin-bottom: 6px;
-}
-
-/* Список сайтов */
-.sites-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.site-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: background 0.12s ease;
-  user-select: none;
-  position: relative;
-}
-
-.site-item:hover {
-  background: var(--bg-hover);
-}
-
-.site-item--active {
-  background: var(--bg-tertiary);
-}
-
-.site-item--active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  background: var(--color-primary);
-  border-radius: 0 3px 3px 0;
-}
-
-.site-status {
-  font-size: 10px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.site-name {
-  font-size: var(--typography-body-size);
-  color: var(--text-primary);
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sites-empty {
-  padding: 16px 12px;
-  text-align: center;
-}
-
-.sites-empty p {
-  font-size: var(--typography-body-small);
-  color: var(--text-tertiary);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.sites-hint {
-  color: var(--text-quaternary) !important;
-  margin-top: 4px !important;
-}
-
-/* Навигация */
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 12px;
-  border: none;
-  background: transparent;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: background 0.12s ease;
-  font-family: var(--font-family);
-  font-size: var(--typography-body-size);
-  color: var(--text-secondary);
-  text-align: left;
-  margin-bottom: 2px;
-  position: relative;
-}
-
-.nav-item:hover:not(:disabled) {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.nav-item--active {
-  background: var(--bg-tertiary);
-  color: var(--color-primary);
-  font-weight: 500;
-}
-
-.nav-item--active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 20px;
-  background: var(--color-primary);
-  border-radius: 0 3px 3px 0;
-}
-
-.nav-item:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.nav-icon {
-  font-size: 16px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.nav-label {
-  flex: 1;
-}
-
-.nav-count {
-  background: var(--color-primary);
-  color: var(--text-inverse);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 10px;
-  line-height: 1.5;
-}
-
-/* Футер */
-.sidebar-footer {
-  margin-top: auto;
-  padding: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow: hidden;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  color: var(--text-inverse);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.user-name {
-  font-size: var(--typography-body-size);
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.logout-btn {
-  flex-shrink: 0;
-}
-
-.logout-icon {
-  font-size: 18px;
-}
-
-/* ============ Mobile Styles ============ */
-
-@media (max-width: 767px) {
-  .sidebar--mobile {
-    position: fixed;
-    left: -100%;
-    top: 0;
-    bottom: 0;
-    z-index: 100;
-    transition: left 0.25s ease;
-    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
-  }
-
-  .sidebar--mobile.sidebar--open {
-    left: 0;
-  }
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 </style>

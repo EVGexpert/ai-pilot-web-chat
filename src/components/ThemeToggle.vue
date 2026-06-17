@@ -9,16 +9,7 @@ function set(mode) {
   authStore.setTheme(mode)
 }
 
-// Определяем системную тему для индикации
-const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
-const systemIsDark = computed(() => prefersDark.matches)
-
 const modes = [
-  {
-    id: 'system',
-    title: 'Системная',
-    icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"></rect><line x1="8" x2="16" y1="21" y2="21"></line><line x1="12" x2="12" y1="17" y2="21"></line></svg>'
-  },
   {
     id: 'light',
     title: 'Светлая',
@@ -33,13 +24,13 @@ const modes = [
 </script>
 
 <template>
-  <div class="theme-toggle" role="group" aria-label="Color mode">
+  <div class="flex gap-0.5 p-0.5 light:bg-gray-200/50 bg-slate-800/50 rounded-lg" role="group" aria-label="Color mode">
     <button
       v-for="m in modes"
       :key="m.id"
       type="button"
-      class="theme-btn"
-      :class="{ 'theme-btn--active': current === m.id }"
+      class="w-7 h-7 border border-transparent bg-transparent rounded-md cursor-pointer flex items-center justify-center light:text-gray-500 text-slate-600 transition-all p-0"
+      :class="{ 'light:text-blue-600 light:!border-blue-400/50 light:!bg-blue-50 text-blue-400 !border-blue-500/50 !bg-blue-500/10': current === m.id }"
       :title="m.title"
       :aria-label="`Color mode: ${m.title}`"
       :aria-pressed="current === m.id"
@@ -48,39 +39,3 @@ const modes = [
     ></button>
   </div>
 </template>
-
-<style scoped>
-.theme-toggle {
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  background: var(--bg-tertiary);
-  border-radius: 8px;
-}
-.theme-btn {
-  width: 28px;
-  height: 28px;
-  border: 1px solid transparent;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-quaternary);
-  transition: all 0.15s;
-  padding: 0;
-}
-.theme-btn:hover {
-  color: var(--text-secondary);
-  background: var(--bg-hover);
-}
-.theme-btn--active {
-  color: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-}
-.theme-btn svg {
-  display: block;
-}
-</style>

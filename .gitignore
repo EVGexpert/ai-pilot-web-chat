@@ -3,3 +3,12 @@ dist/
 .env
 *.local
 .DS_Store
+
+# MCP artifacts
+.mcp/
+.mcp-index/
+mcp_server.log
+test2.db
+var-dark-worker.json
+migration-*.md
+migration-step-*.md

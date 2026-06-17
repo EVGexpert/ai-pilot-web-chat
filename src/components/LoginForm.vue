@@ -6,6 +6,7 @@ import { useSitesStore } from '../stores/sitesStore'
 const emit = defineEmits(['login'])
 const sitesStore = useSitesStore()
 const authStore = useAuthStore()
+const name = ref('')
 const email = ref('')
 const password = ref('')
 const error = ref('')
@@ -24,6 +25,7 @@ async function handleLogin() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        name: name.value.trim() || undefined,
         email: email.value.trim(),
         password: password.value
       })
@@ -44,7 +46,7 @@ async function handleLogin() {
         }))
       }
       authStore.login(data.token, {
-        name: userData.name || email.value.split('@')[0],
+        name: name.value.trim() || userData.name || email.value.split('@')[0],
         email: userData.email || email.value,
         role: userData.role || 'client'
       }, siteUrl)
@@ -63,200 +65,87 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="login-page">
-    <div class="login-card">
-      <div class="login-brand">
-        <span class="login-logo">🎯</span>
-        <h1 class="login-title">AI Pilot</h1>
-        <p class="login-subtitle">Управление WordPress-сайтами через ИИ</p>
+  <div class="light:bg-white bg-slate-950 min-h-screen flex items-center justify-center p-4">
+    <div class="light:bg-gray-50 bg-slate-900 border light:border-gray-200 border-slate-800 rounded-2xl p-6 w-full max-w-[400px] shadow-xl flex flex-col gap-8"
+         :class="{'border-red-500/30 ring-1 ring-red-500/10': error}">
+      <!-- Brand -->
+      <div class="text-center flex flex-col items-center gap-2">
+        <div class="w-14 h-14 rounded-2xl light:bg-blue-50 bg-blue-500/15 flex items-center justify-center mx-auto mb-1">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="light:text-blue-600 text-blue-400">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold light:text-gray-900 text-slate-100 m-0">AI Pilot</h1>
+        <p class="text-sm light:text-gray-500 text-slate-500 m-0 leading-relaxed">Управление WordPress-сайтами через ИИ</p>
       </div>
 
-      <form class="login-form" @submit.prevent="handleLogin">
-        <div class="field">
-          <label class="field-label" for="email">Email</label>
+      <!-- Form -->
+      <form class="flex flex-col gap-5" @submit.prevent="handleLogin">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium light:text-gray-500 text-slate-400" for="name">Имя</label>
+          <input
+            id="name"
+            v-model="name"
+            type="text"
+            class="w-full light:bg-gray-100/80 bg-slate-800/50 border light:border-gray-200/60 border-slate-700/60 rounded-xl px-4 py-2.5 text-sm light:text-gray-900 text-slate-100 light:placeholder-gray-400 placeholder-slate-500 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 light:focus:ring-blue-200 focus:ring-blue-500/20"
+            placeholder="Как к вам обращаться?"
+            autocomplete="name"
+            :disabled="isLoading"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium light:text-gray-500 text-slate-400" for="email">Email</label>
           <input
             id="email"
             v-model="email"
             type="email"
-            class="field-input"
+            class="w-full light:bg-gray-100/80 bg-slate-800/50 border light:border-gray-200/60 border-slate-700/60 rounded-xl px-4 py-2.5 text-sm light:text-gray-900 text-slate-100 light:placeholder-gray-400 placeholder-slate-500 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 light:focus:ring-blue-200 focus:ring-blue-500/20"
             placeholder="your@email.com"
             autocomplete="email"
             :disabled="isLoading"
           />
         </div>
 
-        <div class="field">
-          <label class="field-label" for="password">Пароль</label>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-medium light:text-gray-500 text-slate-400" for="password">Пароль</label>
           <input
             id="password"
             v-model="password"
             type="password"
-            class="field-input"
+            class="w-full light:bg-gray-100/80 bg-slate-800/50 border light:border-gray-200/60 border-slate-700/60 rounded-xl px-4 py-2.5 text-sm light:text-gray-900 text-slate-100 light:placeholder-gray-400 placeholder-slate-500 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 light:focus:ring-blue-200 focus:ring-blue-500/20"
             placeholder="••••••••"
             autocomplete="current-password"
             :disabled="isLoading"
           />
         </div>
 
-        <div v-if="error" class="form-error">{{ error }}</div>
+        <!-- Error -->
+        <div v-if="error"
+          class="light:bg-red-50 bg-red-500/10 border light:border-red-300 border-red-500/30 light:text-red-600 text-red-300 text-sm rounded-xl px-4 py-2.5 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ error }}
+        </div>
 
+        <!-- Submit -->
         <button
           type="submit"
-          class="btn-primary"
           :disabled="isLoading"
+          class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span v-if="isLoading" class="btn-loader"></span>
+          <span v-if="isLoading" class="flex items-center justify-center gap-2">
+            <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            Вход...
+          </span>
           <span v-else>Войти</span>
         </button>
       </form>
 
-      <p class="login-footer">
+      <!-- Footer -->
+      <p class="text-center text-xs light:text-gray-400 text-slate-600 leading-relaxed m-0">
         Установите плагин AI Pilot на ваш WordPress-сайт,<br />
         чтобы он появился в панели управления.
       </p>
     </div>
   </div>
 </template>
-
-<style scoped>
-.login-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: var(--bg-primary);
-}
-
-.login-card {
-  width: 100%;
-  max-width: 400px;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.login-brand {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.login-logo {
-  font-size: 48px;
-  line-height: 1;
-}
-
-.login-title {
-  font-size: var(--typography-h2-size);
-  font-weight: var(--typography-h2-weight);
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.login-subtitle {
-  font-size: var(--typography-body-size);
-  color: var(--text-tertiary);
-  margin: 0;
-  line-height: 1.5;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field-label {
-  font-size: var(--typography-body-small);
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.field-input {
-  width: 100%;
-  height: 48px;
-  padding: 0 16px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  background: var(--bg-input);
-  color: var(--text-primary);
-  font-family: var(--font-family);
-  font-size: var(--typography-body-size);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.field-input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
-}
-
-.field-input::placeholder {
-  color: var(--text-quaternary);
-}
-
-.form-error {
-  padding: 10px 14px;
-  background: color-mix(in srgb, var(--color-error) 10%, transparent);
-  color: var(--color-error);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--typography-body-small);
-  line-height: 1.4;
-}
-
-.btn-primary {
-  width: 100%;
-  height: 48px;
-  border: none;
-  border-radius: var(--border-radius-md);
-  background: var(--color-primary);
-  color: var(--text-inverse);
-  font-family: var(--font-family);
-  font-size: var(--typography-button-size);
-  font-weight: var(--typography-button-weight);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s ease;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-loader {
-  width: 20px;
-  height: 20px;
-  border: 2px solid transparent;
-  border-top-color: var(--text-inverse);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.login-footer {
-  text-align: center;
-  font-size: var(--typography-body-small);
-  color: var(--text-quaternary);
-  line-height: 1.6;
-  margin: 0;
-}
-</style>

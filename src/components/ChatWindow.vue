@@ -261,285 +261,142 @@ watch([messages, streamingContent], async () => {
 
 <template>
   <!-- АДМИН: хедер + сообщения + ввод -->
-  <div v-if="!clientMode" class="chat-window">
-    <div class="chat-header">
-      <div class="chat-header-left">
-        <h2 class="chat-title">Мой чат</h2>
-        <span class="status-dot" :class="{ 'status-dot--online': isConnected }"></span>
-        <span class="status-text">{{ isConnected ? 'Подключено' : 'Нет соединения' }}</span>
+  <div v-if="!clientMode" class="h-full flex flex-col light:bg-white bg-slate-950 w-full">
+    <header class="shrink-0 px-6 py-3 border-b light:border-gray-200 border-slate-800 light:bg-white/80 bg-slate-950/80 backdrop-blur-sm flex items-center gap-3">
+      <div class="flex items-center gap-2">
+        <h2 class="text-sm font-semibold light:text-gray-900 text-slate-100">{{ sitesStore.currentSite?.name || 'Чат' }}</h2>
       </div>
-      <div class="chat-header-right">
-        <span v-if="sitesStore.currentSite" class="badge">🟢 {{ sitesStore.currentSite.name }}</span>
-        <button v-if="error" class="btn-reconnect" @click="handleReconnect">🔁</button>
-      </div>
-    </div>
+      <p class="text-xs light:text-gray-500 text-slate-500 ml-auto">Активный сайт · {{ sessionsList.length || '0' }} задач ожидают</p>
+      <button v-if="error" class="p-1.5 rounded-lg light:hover:bg-gray-100 hover:bg-slate-800 light:text-gray-400 text-slate-500 light:hover:text-gray-600 hover:text-slate-300 transition-colors" @click="handleReconnect">🔁</button>
+    </header>
     <MessageArea ref="messagesContainer"
       :messages="messages" :streamingContent :isLoading :isConnected :error
       startTitle="Добро пожаловать в AI Pilot"
       startHint="Напишите, что нужно сделать с сайтом"
       @approve-action="handleApproveAction"
       @reject-action="handleRejectAction" />
-    <ChatInput :isConnected @send="handleSend" />
+    <ChatInput :isConnected :isLoading @send="handleSend" />
   </div>
 
   <!-- КЛИЕНТ: сайдбар + хедер + сообщения + ввод -->
-  <div v-else class="client-layout">
+  <div v-else class="flex flex-1 w-full min-h-0">
     <!-- Мобильный оверлей для клиента -->
-    <div v-if="csSidebarOpen" class="cs-overlay" @click="closeCsSidebar"></div>
+    <div v-if="csSidebarOpen" class="fixed inset-0 bg-black/50 z-[99] animate-[fadeIn_0.2s_ease]" @click="closeCsSidebar"></div>
 
-    <aside class="client-sidebar" :class="{ 'cs-sidebar--open': csSidebarOpen }">
-      <div class="cs-header">
-        <div class="cs-brand"><span class="cs-logo">🎯</span><span class="cs-title">AI Pilot</span></div>
-        <!-- Кнопка закрытия сайдбара на мобилке -->
-        <button class="cs-close-btn" @click="closeCsSidebar" title="Закрыть">✕</button>
-        <button class="cs-theme-btn" @click="authStore.setTheme(authStore.theme === 'dark' ? 'light' : 'dark')" :title="authStore.theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'">
-          <svg v-if="authStore.theme === 'dark'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </button>
-      </div>
-      <div v-if="sitesStore.currentSite" class="cs-site">🟢 {{ sitesStore.currentSite.name }}</div>
-      <div class="cs-divider"></div>
-      <button class="cs-new-btn" @click="startNewChat">✏️ Новый чат</button>
-      <div class="cs-section-title">История</div>
-      <div class="cs-history">
-        <div v-if="sessionsList.length === 0" class="cs-empty">Нет обращений</div>
-        <div v-for="s in sessionsList" :key="s.id" 
-             class="cs-conv" 
-             :class="{ 'cs-conv--active': s.id === currentSessionId }"
-             @click="selectSession(s.id)">
-          <div class="cs-conv-title">{{ s.title || 'Чат' }}</div>
-          <div class="cs-conv-date">{{ s.date }}</div>
-          <div class="cs-conv-preview">{{ s.preview || s.messageCount + ' сообщений' }}</div>
+    <aside class="client-sidebar w-72 border-r light:border-gray-200 border-slate-800 light:bg-white bg-slate-950 flex flex-col shrink-0 hidden md:flex" :class="{ 'cs-sidebar--open': csSidebarOpen }">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-4 pt-6 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-[22px] leading-none">🎯</span>
+          <span class="text-base font-bold light:text-gray-900 text-slate-100 tracking-tight">AI Pilot</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <button class="cs-close-btn w-8 h-8 border-none bg-transparent rounded-lg cursor-pointer text-base items-center justify-center light:text-gray-500 text-slate-400 transition-colors hover:bg-red-500/10 light:hover:text-red-600 hover:text-red-400" @click="closeCsSidebar" title="Закрыть">✕</button>
+          <button class="w-8 h-8 border-none bg-transparent rounded-lg cursor-pointer flex items-center justify-center light:text-gray-500 text-slate-400 transition-colors light:hover:bg-gray-100 hover:bg-slate-800 light:hover:text-gray-800 hover:text-slate-200" @click="authStore.setTheme(authStore.theme === 'dark' ? 'light' : 'dark')" :title="authStore.theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'">
+            <svg v-if="authStore.theme === 'dark'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
         </div>
       </div>
-      <div class="cs-footer">
+
+      <!-- Site indicator -->
+      <div v-if="sitesStore.currentSite" class="px-4 py-1 text-xs light:text-gray-500 text-slate-500 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span>
+        {{ sitesStore.currentSite.name }}
+      </div>
+
+      <!-- Divider -->
+      <div class="mx-4 my-2 border-t light:border-gray-200 border-slate-800"></div>
+
+      <!-- New chat button -->
+      <button class="w-full border border-dashed light:border-gray-300 border-slate-700 bg-transparent light:text-gray-500 text-slate-400 rounded-xl px-3 py-2 text-sm text-left hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors" @click="startNewChat">✏️ Новый чат</button>
+
+      <!-- History section -->
+      <div class="text-[10px] font-semibold uppercase tracking-widest light:text-gray-400 text-slate-600 px-4 pt-3 pb-1.5">История</div>
+      <div class="flex-1 overflow-y-auto px-2 pb-2 scrollbar-thin">
+        <div v-if="sessionsList.length === 0" class="text-xs light:text-gray-400 text-slate-600 text-center py-6 px-4">Нет обращений</div>
+        <div v-for="s in sessionsList" :key="s.id"
+          class="px-3 py-2.5 rounded-xl cursor-pointer transition-colors"
+          :class="s.id === currentSessionId
+            ? 'light:bg-blue-50 bg-blue-500/10 border light:border-blue-200 border-blue-500/20'
+            : 'light:hover:bg-gray-100 hover:bg-slate-800/50'"
+          @click="selectSession(s.id)">
+          <div class="flex items-baseline justify-between gap-2 mb-0.5">
+            <span class="text-[13px] font-semibold truncate"
+              :class="s.id === currentSessionId ? 'light:text-blue-600 text-blue-400' : 'light:text-gray-900 text-slate-100'">
+              {{ s.title || 'Чат' }}
+            </span>
+            <span v-if="s.date" class="text-[10px] light:text-gray-400 text-slate-600 shrink-0">{{ s.date }}</span>
+          </div>
+          <p class="text-[11px] truncate m-0"
+            :class="s.id === currentSessionId ? 'light:text-blue-500/60 text-blue-300/60' : 'light:text-gray-500 text-slate-500'">
+            {{ s.preview || s.messageCount + ' сообщений' }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-4 py-3 border-t light:border-gray-200 border-slate-800">
         <ThemeToggle />
-        <button class="cs-logout-btn" @click="handleLogout">← Выйти</button>
+        <button class="px-4 py-2 text-sm font-medium light:text-gray-500 text-slate-400 light:hover:text-gray-800 hover:text-slate-200 transition-colors" @click="handleLogout">← Выйти</button>
       </div>
     </aside>
-    <div class="client-main">
+
+    <!-- Main content -->
+    <div class="flex-1 flex flex-col min-w-0 min-h-0 relative">
       <!-- Мобильная кнопка для открытия сайдбара у клиента -->
-      <button class="cs-mobile-burger" @click="toggleCsSidebar">
-        <span class="burger-line"></span>
-        <span class="burger-line"></span>
-        <span class="burger-line"></span>
+      <button class="cs-mobile-burger fixed top-3 left-3 z-20 w-10 h-10 border-none rounded-lg light:bg-gray-50 bg-slate-900 shadow-md flex-col items-center justify-center gap-[5px] cursor-pointer transition-colors light:hover:bg-gray-100 hover:bg-slate-800" @click="toggleCsSidebar">
+        <span class="block w-5 h-0.5 light:bg-gray-800 bg-slate-100 rounded-sm"></span>
+        <span class="block w-5 h-0.5 light:bg-gray-800 bg-slate-100 rounded-sm"></span>
+        <span class="block w-5 h-0.5 light:bg-gray-800 bg-slate-100 rounded-sm"></span>
       </button>
 
-      <div class="chat-header">
-        <div class="connection-status">
-          <span class="status-dot" :class="{ 'status-dot--online': isConnected }"></span>
-          <span class="status-text">{{ isConnected ? 'Подключено' : 'Нет соединения' }}</span>
+      <header class="shrink-0 px-6 py-3 border-b light:border-gray-200 border-slate-800 light:bg-white/80 bg-slate-950/80 backdrop-blur-sm flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold light:text-gray-900 text-slate-100">{{ sitesStore.currentSite?.name || 'Чат' }}</h2>
         </div>
-        <button v-if="error" class="btn-reconnect" @click="handleReconnect">🔁</button>
-      </div>
+        <p class="text-xs light:text-gray-500 text-slate-500 ml-auto">Активный сайт · {{ sessionsList.length || '0' }} задач ожидают</p>
+        <button v-if="error" class="p-1.5 rounded-lg light:hover:bg-gray-100 hover:bg-slate-800 light:text-gray-400 text-slate-500 light:hover:text-gray-600 hover:text-slate-300 transition-colors" @click="handleReconnect">🔁</button>
+      </header>
       <MessageArea ref="messagesContainer"
         :messages :streamingContent :isLoading :isConnected :error
         clientMode startTitle="Чем могу помочь?"
         startHint="Я AI-ассистент вашего сайта."
         @approve-action="handleApproveAction"
         @reject-action="handleRejectAction" />
-      <ChatInput :isConnected @send="handleSend" />
+      <ChatInput :isConnected :isLoading @send="handleSend" />
     </div>
   </div>
 </template>
 
 <style scoped>
-/* === Admin Chat === */
-.chat-window {
-  height: 100%; display: flex; flex-direction: column;
-  background: var(--bg-primary); width: 100%;
-}
-.chat-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 24px; border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0; background: var(--bg-primary);
-}
-.chat-header-left, .chat-header-right { display: flex; align-items: center; gap: 10px; }
-.chat-title { font-size: var(--typography-h3-size); color: var(--text-primary); margin: 0; font-weight: 600; }
-.status-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--color-error);
-  transition: background 0.3s, box-shadow 0.3s;
-}
-.status-dot--online { background: var(--color-success); box-shadow: 0 0 6px color-mix(in srgb, var(--color-success) 60%, transparent); }
-.status-text { font-size: var(--typography-body-small); color: var(--text-quaternary); }
-.badge {
-  font-size: var(--typography-body-small); color: var(--text-secondary);
-  padding: 4px 12px; background: var(--bg-tertiary); border-radius: 16px; font-weight: 500;
-}
-.btn-reconnect {
-  border: none; background: var(--bg-tertiary); color: var(--text-secondary);
-  padding: 6px 12px; border-radius: var(--border-radius-sm); cursor: pointer;
-  font-size: 14px; transition: background 0.12s;
-}
-.btn-reconnect:hover { background: var(--bg-hover); }
-
-/* === Client Layout === */
-.client-layout { flex: 1; display: flex; width: 100%; min-height: 0; }
-.client-sidebar {
-  width: 240px; flex-shrink: 0; position: relative;
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
-  display: flex; flex-direction: column;
-  overflow-y: auto;
-}
-.cs-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 16px 12px; }
-.cs-brand { display: flex; align-items: center; gap: 8px; }
-.cs-logo { font-size: 22px; line-height: 1; }
-.cs-title { font-size: 16px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
-.cs-site { padding: 4px 16px; font-size: 12px; color: var(--text-tertiary); display: flex; align-items: center; gap: 4px; }
-.cs-site::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--color-success); }
-
-.cs-new-btn {
-  margin: 8px 12px; padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px; background: transparent;
-  color: var(--text-secondary); font-family: var(--font-family);
-  font-size: 13px; cursor: pointer; font-weight: 500;
-  transition: all 0.2s; display: flex; align-items: center; gap: 6px;
-}
-.cs-new-btn:hover {
-  background: var(--color-primary); color: var(--text-inverse); border-color: var(--color-primary);
-  transform: translateY(-1px);
-}
-
-.cs-section-title {
-  font-size: 10px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.08em; color: var(--text-quaternary);
-  padding: 12px 16px 6px;
-}
-.cs-history { flex: 1; overflow-y: auto; padding: 0 8px 8px; scrollbar-width: thin; }
-.cs-empty { font-size: var(--typography-body-small); color: var(--text-quaternary); text-align: center; padding: 24px 16px; }
-.cs-conv {
-  padding: 10px 10px; margin: 2px 0;
-  border-radius: 10px; cursor: pointer;
-  transition: all 0.15s; border: 1px solid transparent;
-}
-.cs-conv:hover { background: var(--bg-hover); border-color: var(--border-color); }
-.cs-conv--active {
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
-}
-.cs-conv-title { font-size: 13px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cs-conv-date { font-size: 10px; color: var(--text-quaternary); margin-top: 1px; }
-.cs-conv-preview { font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
-
-.cs-footer { padding: 12px; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
-.cs-theme-btn { width: 32px; height: 32px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); transition: all 0.15s; }
-.cs-theme-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-
-/* Close button for mobile client sidebar */
+/* Mobile close button: hidden on desktop, flex on mobile */
 .cs-close-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
   display: none;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  transition: all 0.15s;
 }
 
-.cs-close-btn:hover {
-  background: color-mix(in srgb, var(--color-error) 10%, transparent);
-  color: var(--color-error);
-}
-
+/* Mobile sidebar: hidden by default, slides in on open */
 @media (max-width: 767px) {
   .cs-close-btn {
     display: flex;
   }
-}
-.cs-logout-btn { border: none; background: transparent; color: var(--text-tertiary); cursor: pointer; font-size: 13px; padding: 6px 10px; border-radius: 8px; transition: all 0.15s; font-weight: 500; }
-.cs-logout-btn:hover { background: color-mix(in srgb, var(--color-error) 10%, transparent); color: var(--color-error); }
-
-.client-main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
-
-/* Mobile burger for client mode */
-.cs-mobile-burger {
-  display: none;
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 20;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  background: var(--bg-card);
-  box-shadow: var(--shadow-sm);
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.cs-mobile-burger:hover {
-  background: var(--bg-hover);
-}
-
-.cs-mobile-burger .burger-line {
-  display: block;
-  width: 20px;
-  height: 2px;
-  background: var(--text-primary);
-  border-radius: 2px;
-}
-.connection-status { display: flex; align-items: center; gap: 8px; }
-
-/* ============ Mobile ============ */
-@media (max-width: 767px) {
-  .chat-header { padding: 12px 16px; }
-
-  /* У админа — отступ для бургер-кнопки */
-  .chat-window .chat-header { padding: 12px 16px 12px 56px; }
-
-  .bubble { max-width: 90%; }
-
-  .messages-area { padding: 12px 16px; }
-
-  /* === Клиентский режим на мобилке === */
-  .client-layout {
-    flex-direction: column;
-    height: 100%;
-  }
 
   .client-sidebar {
-    position: fixed;
+    position: fixed !important;
+    display: flex !important;
     left: -100%;
     top: 0;
     bottom: 0;
-    width: min(85vw, 320px);
+    width: min(85vw, 320px) !important;
     z-index: 100;
-    display: flex !important;
     transition: left 0.25s ease;
-    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
   }
 
   .client-sidebar.cs-sidebar--open {
     left: 0;
   }
 
-  .client-main {
-    height: 100%;
-    overflow: hidden;
-  }
-
-  /* Оверлей для клиентского сайдбара */
-  .cs-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 99;
-    animation: fadeIn 0.2s ease;
-  }
-
-  /* Кнопка открытия сайдбара у клиента */
   .cs-mobile-burger {
     display: flex !important;
   }

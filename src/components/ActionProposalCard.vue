@@ -2,18 +2,20 @@
 /**
  * ActionProposalCard.vue
  * Карточка предложения действия внутри MessageBubble.
- * Использует CSS-переменные дизайн-системы AI Pilot.
+ * Tailwind CSS v4 — горизонтальный layout, amber/green/red цветовые схемы.
  *
  * Состояния: pending → approved / rejected → completed
  *
  * Props:
  *   action { id, title, description, diff[], status }
- *   diff[] — массив строк с префиксами +/-
+ *   diff[] — массив строк с префиксами +/- или объектов { text, added, removed }
  *
  * Emits:
  *   approve(actionId)
  *   reject(actionId)
  */
+
+import { computed } from 'vue'
 
 const props = defineProps({
   action: {
@@ -37,425 +39,177 @@ function handleReject() {
 
 /** Определяем, является ли строка diff добавлением (+) */
 function isAddition(line) {
+  if (typeof line === 'object') return !!(line.added || line.isAddition)
   return line.startsWith('+')
 }
 
 /** Определяем, является ли строка diff удалением (-) */
 function isDeletion(line) {
+  if (typeof line === 'object') return !!(line.removed || line.isDeletion)
   return line.startsWith('-')
 }
 
 /** Чистим префикс для отображения */
 function cleanDiff(line) {
+  if (typeof line === 'object') return line.text || ''
   return line.replace(/^[+-]\s*/, '')
 }
+
+/** Класс для строки diff */
+function diffLineClass(line) {
+  if (isAddition(line)) return 'light:text-green-700 text-green-300'
+  if (isDeletion(line)) return 'light:text-red-600 text-red-300 line-through'
+  return 'light:text-gray-500 text-slate-400'
+}
+
+/** Динамические классы по статусу */
+const statusKey = computed(() => props.action.status || 'pending')
+
+const cardClass = computed(() => {
+  const map = {
+    pending: 'light:bg-gray-50 bg-slate-900 border light:border-amber-400/30 border-amber-500/30 light:ring-amber-200/50 ring-amber-500/5',
+    approved: 'light:bg-gray-50 bg-slate-900 border light:border-green-400/30 border-green-500/20 opacity-70 light:ring-green-200/50 ring-green-500/5',
+    rejected: 'light:bg-gray-50 bg-slate-900 border light:border-red-400/30 border-red-500/20 opacity-70 light:ring-red-200/50 ring-red-500/5',
+    completed: 'light:bg-gray-50 bg-slate-900 border light:border-green-400/30 border-green-500/20 opacity-70 light:ring-green-200/50 ring-green-500/5'
+  }
+  return map[statusKey.value] || map.pending
+})
+
+const iconClass = computed(() => {
+  const map = {
+    pending: 'light:bg-amber-50 bg-amber-500/15 light:text-amber-600 text-amber-400',
+    approved: 'light:bg-green-50 bg-green-500/15 light:text-green-600 text-green-400',
+    rejected: 'light:bg-red-50 bg-red-500/15 light:text-red-600 text-red-400',
+    completed: 'light:bg-green-50 bg-green-500/15 light:text-green-600 text-green-400'
+  }
+  return map[statusKey.value] || map.pending
+})
+
+const statusTextClass = computed(() => {
+  const map = {
+    pending: 'light:text-amber-600 text-amber-400',
+    approved: 'light:text-green-600 text-green-400',
+    rejected: 'light:text-red-600 text-red-400',
+    completed: 'light:text-green-600 text-green-400'
+  }
+  return map[statusKey.value] || map.pending
+})
+
+const statusBadgeClass = computed(() => {
+  const map = {
+    pending: 'light:bg-amber-50 bg-amber-500/10 light:text-amber-600 text-amber-400',
+    approved: 'light:bg-green-50 bg-green-500/10 light:text-green-600 text-green-400',
+    rejected: 'light:bg-red-50 bg-red-500/10 light:text-red-600 text-red-400',
+    completed: 'light:bg-green-50 bg-green-500/10 light:text-green-600 text-green-400'
+  }
+  return map[statusKey.value] || map.pending
+})
+
+const statusLabel = computed(() => {
+  const map = {
+    pending: 'Ожидает подтверждения',
+    approved: 'Выполнено',
+    rejected: 'Отклонено',
+    completed: 'Выполнено'
+  }
+  return map[statusKey.value] || 'Ожидает подтверждения'
+})
 </script>
 
 <template>
   <div
-    class="ap-card"
-    :class="[`ap-card--${action.status || 'pending'}`]"
+    class="flex items-start gap-3 p-4 rounded-2xl shadow-lg ring-1 animate-fade-in"
+    :class="cardClass"
     role="region"
     :aria-label="`Предложение: ${action.title}`"
   >
-    <!-- Заголовок -->
-    <h4 class="ap-card__title">{{ action.title }}</h4>
+    <!-- Status icon -->
+    <div class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center" :class="iconClass">
+      <!-- Pending: warning triangle -->
+      <svg v-if="statusKey === 'pending'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <!-- Approved / Completed: check circle -->
+      <svg v-else-if="statusKey === 'approved' || statusKey === 'completed'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <!-- Rejected: x circle -->
+      <svg v-else-if="statusKey === 'rejected'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+    </div>
 
-    <!-- Описание -->
-    <p v-if="action.description" class="ap-card__desc">{{ action.description }}</p>
+    <!-- Content -->
+    <div class="flex-1 min-w-0">
+      <!-- Status badge + title -->
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-sm font-medium" :class="statusTextClass">{{ statusLabel }}</span>
+        <span class="px-2 py-0.5 text-[10px] font-medium rounded-full" :class="statusBadgeClass">{{ action.status }}</span>
+      </div>
 
-    <!-- Diff-блок -->
-    <div v-if="action.diff && action.diff.length" class="ap-card__diff">
-      <div class="ap-card__diff-label">Изменения</div>
-      <div class="ap-card__diff-body">
+      <!-- Action description -->
+      <p class="text-sm light:text-gray-800 text-slate-200 mb-3">
+        <strong class="light:text-gray-600 text-slate-300">Действие:</strong> {{ action.title }}
+      </p>
+
+      <!-- Optional description text -->
+      <p v-if="action.description" class="text-sm light:text-gray-500 text-slate-400 mb-3">{{ action.description }}</p>
+
+      <!-- Diff block -->
+      <div v-if="action.diff && action.diff.length" class="light:bg-gray-100/80 bg-slate-950/60 rounded-xl p-3 mb-3 font-mono text-xs space-y-1 max-h-48 overflow-y-auto">
         <div
           v-for="(line, i) in action.diff"
           :key="i"
-          class="ap-card__diff-line"
-          :class="{
-            'ap-card__diff-line--add': isAddition(line),
-            'ap-card__diff-line--del': isDeletion(line)
-          }"
-        >
-          <span class="ap-card__diff-sign">{{ isAddition(line) ? '+' : isDeletion(line) ? '−' : ' ' }}</span>
-          <code class="ap-card__diff-text">{{ cleanDiff(line) }}</code>
-        </div>
+          :class="diffLineClass(line)"
+        >{{ cleanDiff(line) }}</div>
       </div>
-    </div>
 
-    <!-- Кнопки (только в pending) -->
-    <div v-if="action.status === 'pending'" class="ap-card__actions">
-      <button
-        class="ap-card__btn ap-card__btn--secondary"
-        @click="handleReject"
-        aria-label="Отменить действие"
-      >
-        Отмена
-      </button>
-      <button
-        class="ap-card__btn ap-card__btn--primary"
-        @click="handleApprove"
-        aria-label="Подтвердить действие"
-      >
-        Подтвердить
-      </button>
-    </div>
+      <!-- Buttons (pending only) -->
+      <div v-if="action.status === 'pending'" class="flex gap-2">
+        <button
+          class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+          @click="handleApprove"
+          aria-label="Подтвердить действие"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Подтвердить
+        </button>
+        <button
+          class="px-4 py-2 light:bg-gray-200 bg-slate-800 light:hover:bg-gray-300 hover:bg-slate-700 light:text-gray-700 text-slate-300 text-sm rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+          @click="handleReject"
+          aria-label="Отклонить действие"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          Отклонить
+        </button>
+      </div>
 
-    <!-- Статус-чип (approved / rejected / completed) -->
-    <div v-else class="ap-card__status">
-      <span v-if="action.status === 'approved'" class="ap-card__chip ap-card__chip--approved">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        Подтверждено
-      </span>
-      <span v-else-if="action.status === 'rejected'" class="ap-card__chip ap-card__chip--rejected">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        Отменено
-      </span>
-      <span v-else-if="action.status === 'completed'" class="ap-card__chip ap-card__chip--completed">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        Выполнено
-      </span>
+      <!-- Status footer (approved / rejected / completed) -->
+      <div v-else-if="action.status !== 'pending'" class="flex items-center gap-2 text-xs light:text-gray-400 text-slate-600">
+        <span v-if="action.status === 'approved' || action.status === 'completed'">Подтверждено вами</span>
+        <span v-else-if="action.status === 'rejected'">Отклонено вами</span>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* ========================================
-   Action Proposal Card
-   ======================================== */
-
-.ap-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 520px;
-  width: 100%;
-  padding: 16px;
-  border-radius: var(--border-radius-md, 12px);
-  background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #e8e8e8);
-  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.04));
-  margin: 8px 0;
-  transition: opacity 0.2s ease, border-color 0.2s ease;
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
 }
 
-/* Состояния: лёгкая визуальная маркировка */
-.ap-card--approved {
-  border-left: 3px solid var(--color-success, #3bc49b);
-}
-
-.ap-card--rejected {
-  border-left: 3px solid var(--color-error, #c43b3b);
-  opacity: 0.75;
-}
-
-.ap-card--completed {
-  border-left: 3px solid var(--color-success, #3bc49b);
-}
-
-/* Заголовок */
-.ap-card__title {
-  margin: 0;
-  font-family: var(--font-family, 'Inter', sans-serif);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary, #191919);
-  line-height: 1.3;
-}
-
-/* Описание */
-.ap-card__desc {
-  margin: 0;
-  font-family: var(--font-family, 'Inter', sans-serif);
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text-secondary, #454646);
-}
-
-/* Diff-блок */
-.ap-card__diff {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.ap-card__diff-label {
-  font-family: var(--font-family, 'Inter', sans-serif);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-quaternary, #858686);
-}
-
-.ap-card__diff-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 8px 10px;
-  border-radius: var(--border-radius-sm, 8px);
-  background: var(--bg-tertiary, #f1f1f1);
-  overflow-x: auto;
-  font-size: 12px;
-  line-height: 1.5;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-}
-
-.ap-card__diff-line {
-  display: flex;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 1px 0;
-  border-radius: 2px;
-}
-
-.ap-card__diff-line--add {
-  background: color-mix(in srgb, var(--color-success, #3bc49b) 10%, transparent);
-}
-
-.ap-card__diff-line--del {
-  background: color-mix(in srgb, var(--color-error, #c43b3b) 10%, transparent);
-}
-
-.ap-card__diff-sign {
-  display: inline-block;
-  width: 12px;
-  flex-shrink: 0;
-  text-align: center;
-  font-weight: 700;
-}
-
-.ap-card__diff-line--add .ap-card__diff-sign {
-  color: var(--color-success, #3bc49b);
-}
-
-.ap-card__diff-line--del .ap-card__diff-sign {
-  color: var(--color-error, #c43b3b);
-}
-
-.ap-card__diff-line:not(.ap-card__diff-line--add):not(.ap-card__diff-line--del) .ap-card__diff-sign {
-  color: var(--text-quaternary, #858686);
-}
-
-.ap-card__diff-text {
-  font-family: inherit;
-  font-size: inherit;
-  color: var(--text-secondary, #454646);
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.ap-card__diff-line--add .ap-card__diff-text {
-  color: var(--color-success, #3bc49b);
-}
-
-.ap-card__diff-line--del .ap-card__diff-text {
-  color: var(--color-error, #c43b3b);
-  text-decoration: line-through;
-}
-
-/* Кнопки */
-.ap-card__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.ap-card__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border-radius: var(--border-radius-sm, 8px);
-  font-family: var(--font-family, 'Inter', sans-serif);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: none;
-  white-space: nowrap;
-  user-select: none;
-}
-
-.ap-card__btn:focus-visible {
-  outline: 2px solid var(--color-primary, #7837df);
-  outline-offset: 2px;
-}
-
-/* Primary (Подтвердить) */
-.ap-card__btn--primary {
-  flex: 1;
-  background: var(--color-primary, #7837df);
-  color: var(--text-inverse, #ffffff);
-}
-
-.ap-card__btn--primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #6a2ecc);
-}
-
-.ap-card__btn--primary:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-/* Secondary (Отмена) */
-.ap-card__btn--secondary {
-  flex: 1;
-  background: transparent;
-  color: var(--text-secondary, #454646);
-  border: 1px solid var(--border-color, #d8d8d8);
-}
-
-.ap-card__btn--secondary:hover:not(:disabled) {
-  background: var(--bg-hover, #e9eaeb);
-}
-
-.ap-card__btn--secondary:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-/* Статус-чип */
-.ap-card__status {
-  display: flex;
-  align-items: center;
-  margin-top: 4px;
-}
-
-.ap-card__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-family: var(--font-family, 'Inter', sans-serif);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1;
-}
-
-.ap-card__chip svg {
-  flex-shrink: 0;
-}
-
-.ap-card__chip--approved {
-  background: color-mix(in srgb, var(--color-success, #3bc49b) 12%, transparent);
-  color: var(--color-success, #3bc49b);
-}
-
-.ap-card__chip--rejected {
-  background: color-mix(in srgb, var(--color-error, #c43b3b) 12%, transparent);
-  color: var(--color-error, #c43b3b);
-}
-
-.ap-card__chip--completed {
-  background: color-mix(in srgb, var(--color-success, #3bc49b) 8%, transparent);
-  color: var(--color-success, #3bc49b);
-}
-
-/* ========================================
-   Responsive: мобильные
-   ======================================== */
-@media (max-width: 767px) {
-  .ap-card {
-    padding: 14px;
-    gap: 10px;
-    max-width: 100%;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
-
-  .ap-card__title {
-    font-size: 14px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-
-  .ap-card__desc {
-    font-size: 13px;
-  }
-
-  .ap-card__diff-body {
-    font-size: 11px;
-    padding: 6px 8px;
-  }
-
-  .ap-card__btn {
-    padding: 10px 14px;
-    font-size: 14px;
-    flex: 1;
-  }
-
-  .ap-card__actions {
-    flex-direction: column;
-  }
-
-  .ap-card__btn {
-    width: 100%;
-  }
-}
-
-/* ========================================
-   Dark Theme
-   ======================================== */
-[data-theme="dark"] .ap-card {
-  background: var(--bg-card, #222222);
-  border-color: var(--border-color, #333330);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="dark"] .ap-card__title {
-  color: var(--text-primary, #ededed);
-}
-
-[data-theme="dark"] .ap-card__desc {
-  color: var(--text-secondary, #bfbfbf);
-}
-
-[data-theme="dark"] .ap-card__diff-body {
-  background: var(--bg-tertiary, #2b2b2b);
-}
-
-[data-theme="dark"] .ap-card__diff-text {
-  color: var(--text-secondary, #bfbfbf);
-}
-
-[data-theme="dark"] .ap-card__diff-line:not(.ap-card__diff-line--add):not(.ap-card__diff-line--del) .ap-card__diff-text {
-  color: var(--text-tertiary, #858686);
-}
-
-[data-theme="dark"] .ap-card__diff-line--add .ap-card__diff-text {
-  color: #5ddbaf;
-}
-
-[data-theme="dark"] .ap-card__diff-line--del .ap-card__diff-text {
-  color: #e06060;
-}
-
-[data-theme="dark"] .ap-card__btn--primary {
-  background: var(--color-primary, #a57de4);
-  color: var(--text-inverse, #191919);
-}
-
-[data-theme="dark"] .ap-card__btn--primary:hover:not(:disabled) {
-  background: var(--color-primary-hover, #b895e8);
-}
-
-[data-theme="dark"] .ap-card__btn--secondary {
-  color: var(--text-secondary, #bfbfbf);
-  border-color: var(--border-color, #333330);
-}
-
-[data-theme="dark"] .ap-card__btn--secondary:hover:not(:disabled) {
-  background: var(--bg-hover, #333333);
-}
-
-[data-theme="dark"] .ap-card--approved {
-  border-left-color: #5ddbaf;
-}
-
-[data-theme="dark"] .ap-card--rejected {
-  border-left-color: #e06060;
-}
-
-[data-theme="dark"] .ap-card--completed {
-  border-left-color: #5ddbaf;
 }
 </style>

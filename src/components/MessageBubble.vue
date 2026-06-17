@@ -25,6 +25,10 @@ function isSystem(msg) {
   return msg.role === 'system'
 }
 
+function isAction(msg) {
+  return msg.actions && msg.actions.length > 0
+}
+
 defineEmits(['approve-action', 'reject-action'])
 
 /** Рендерим содержимое сообщения как безопасный HTML из Markdown */
@@ -44,300 +48,188 @@ const renderedContent = computed(() => {
 </script>
 
 <template>
-  <div
-    class="bubble"
-    :class="{
-      'bubble-user': isUser(message),
-      'bubble-assistant': !isUser(message) && !isSystem(message),
-      'bubble-system': isSystem(message)
-    }"
-  >
-    <div class="bubble-header">
-      <span class="bubble-avatar" :class="{ 'avatar-user': isUser(message) }">
-        {{ isUser(message) ? 'Вы' : '🤖' }}
-      </span>
-      <span class="bubble-name">
-        {{ isUser(message) ? 'Вы' : isSystem(message) ? 'Система' : 'AI Pilot' }}
-      </span>
-      <span v-if="message.time" class="bubble-time">{{ message.time }}</span>
+  <!-- System message → date separator / pill -->
+  <div v-if="isSystem(message)" class="flex justify-center py-2 animate-fade-in">
+    <span class="text-xs light:text-gray-500 text-slate-500 light:bg-gray-100/80 bg-slate-800/50 rounded-full px-4 py-1">
+      {{ message.content }}
+    </span>
+  </div>
+
+  <!-- User bubble -->
+  <div v-else-if="isUser(message)" class="flex justify-end animate-fade-in">
+    <div class="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
+      <div v-html="renderedContent" class="msg-content"></div>
+      <span v-if="message.time" class="block text-[10px] text-blue-200 mt-1 text-right">{{ message.time }}</span>
     </div>
-    <div class="bubble-content" v-html="renderedContent"></div>
-    <!-- Action Proposal Card — для сообщений с действиями -->
-    <div v-if="message.actions && message.actions.length" class="bubble-actions">
-      <ActionProposalCard
-        v-for="action in message.actions"
-        :key="action.id"
-        :action="action"
-        @approve="(id) => $emit('approve-action', id)"
-        @reject="(id) => $emit('reject-action', id)"
-      />
+  </div>
+
+  <!-- Assistant bubble with action proposal -->
+  <div v-else-if="isAction(message)" class="flex justify-start animate-fade-in">
+    <div class="max-w-[85%] light:bg-gray-100 bg-slate-800/80 border light:border-gray-200/60 border-slate-700/60 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed shadow-lg">
+      <div class="flex items-center gap-2 mb-2 light:text-gray-600 text-slate-300">
+        <span class="flex items-center justify-center w-6 h-6 rounded-full light:bg-amber-50 bg-amber-500/20 light:text-amber-600 text-amber-400 text-xs font-bold">!</span>
+        <span class="font-medium">Предлагаю действие</span>
+      </div>
+      <div v-html="renderedContent" class="msg-content light:text-gray-600 text-slate-300"></div>
+      <div v-if="message.actions && message.actions.length" class="mt-3 space-y-2">
+        <ActionProposalCard
+          v-for="action in message.actions"
+          :key="action.id"
+          :action="action"
+          @approve="(id) => $emit('approve-action', id)"
+          @reject="(id) => $emit('reject-action', id)"
+        />
+      </div>
+      <span v-if="message.time" class="block text-[10px] light:text-gray-400 text-slate-600 mt-2">{{ message.time }}</span>
+    </div>
+  </div>
+
+  <!-- Assistant bubble (regular) -->
+  <div v-else class="flex justify-start animate-fade-in">
+    <div class="max-w-[75%] light:bg-gray-100 bg-slate-800 light:text-gray-900 text-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
+      <div v-html="renderedContent" class="msg-content"></div>
+      <span v-if="message.time" class="block text-[10px] light:text-gray-500 text-slate-500 mt-1">{{ message.time }}</span>
     </div>
   </div>
 </template>
 
 <style scoped>
-.bubble {
-  max-width: 85%;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  word-wrap: break-word;
-  position: relative;
-}
+/* === Markdown deep-styles for dark bubbles === */
 
-.bubble-user {
-  align-self: flex-end;
-}
-
-.bubble-assistant {
-  align-self: flex-start;
-}
-
-.bubble-system {
-  align-self: center;
-  max-width: 70%;
-  opacity: 0.7;
-}
-
-/* Header */
-.bubble-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.bubble-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.avatar-user {
-  background: var(--color-primary);
-  color: var(--text-inverse);
-}
-
-.bubble-name {
-  font-size: var(--typography-body-small);
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.bubble-time {
-  font-size: 11px;
-  color: var(--text-quaternary);
-  margin-left: auto;
-}
-
-/* Content */
-.bubble-content {
-  padding: 10px 14px;
-  border-radius: var(--border-radius-md);
-  font-size: var(--typography-body-size);
-  line-height: 1.6;
-  position: relative;
-}
-
-.bubble-user .bubble-content {
-  background: var(--chat-user-bg);
-  color: var(--chat-user-color);
-  border-bottom-right-radius: 4px;
-}
-
-.bubble-assistant .bubble-content {
-  background: var(--chat-assistant-bg);
-  color: var(--chat-assistant-color);
-  border: 1px solid var(--chat-assistant-border);
-  border-bottom-left-radius: 4px;
-}
-
-.bubble-system .bubble-content {
-  background: transparent;
-  color: var(--text-tertiary);
-  text-align: center;
-  padding: 4px 8px;
-  font-size: var(--typography-body-small);
-}
-
-/* === Markdown styling (глубокие селекторы для v-html) === */
-:deep(.bubble-content h1),
-:deep(.bubble-content h2),
-:deep(.bubble-content h3),
-:deep(.bubble-content h4) {
+/* Headings */
+:deep(.msg-content h1),
+:deep(.msg-content h2),
+:deep(.msg-content h3),
+:deep(.msg-content h4),
+:deep(.msg-content h5),
+:deep(.msg-content h6) {
+  color: #f1f5f9;
   margin: 12px 0 6px;
   font-weight: 600;
   line-height: 1.3;
 }
+:deep(.msg-content h1) { font-size: 1.3em; }
+:deep(.msg-content h2) { font-size: 1.15em; }
+:deep(.msg-content h3) { font-size: 1.05em; }
 
-:deep(.bubble-content h1) { font-size: 1.3em; }
-:deep(.bubble-content h2) { font-size: 1.15em; }
-:deep(.bubble-content h3) { font-size: 1.05em; }
-
-:deep(.bubble-content p) {
+/* Paragraphs */
+:deep(.msg-content p) {
   margin: 0 0 8px;
 }
-
-:deep(.bubble-content p:last-child) {
+:deep(.msg-content p:last-child) {
   margin-bottom: 0;
 }
 
-:deep(.bubble-content ul),
-:deep(.bubble-content ol) {
+/* Lists */
+:deep(.msg-content ul),
+:deep(.msg-content ol) {
+  padding-left: 1.5rem;
   margin: 4px 0 8px;
-  padding-left: 20px;
 }
-
-:deep(.bubble-content li) {
-  margin-bottom: 3px;
+:deep(.msg-content li) {
+  margin-bottom: 0.25rem;
 }
-
-:deep(.bubble-content li:last-child) {
+:deep(.msg-content li:last-child) {
   margin-bottom: 0;
 }
 
-:deep(.bubble-content blockquote) {
+/* Blockquote */
+:deep(.msg-content blockquote) {
+  border-left: 3px solid rgba(59, 130, 246, 0.4);
+  padding-left: 1rem;
+  background: rgba(59, 130, 246, 0.05);
   margin: 8px 0;
-  padding: 6px 12px;
-  border-left: 3px solid var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
-  color: var(--text-secondary);
+  border-radius: 0 0.375rem 0.375rem 0;
+  color: #cbd5e1;
 }
 
-:deep(.bubble-content code) {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 0.85em;
+/* Inline code */
+:deep(.msg-content code) {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 0.75rem;
   padding: 1px 5px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
-  color: var(--text-primary);
+  background: rgba(15, 23, 42, 0.6);
+  color: #e2e8f0;
 }
 
-:deep(.bubble-content pre) {
-  margin: 8px 0;
-  padding: 12px 14px;
-  border-radius: var(--border-radius-md);
-  background: var(--code-bg, #1e1e2e);
+/* Code blocks */
+:deep(.msg-content pre) {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
   overflow-x: auto;
-  font-size: var(--typography-body-small);
+  margin: 8px 0;
   line-height: 1.5;
-  border: 1px solid var(--border-color);
 }
-
-:deep(.bubble-content pre code) {
+:deep(.msg-content pre code) {
   padding: 0;
   background: none;
   color: inherit;
   font-size: inherit;
+  border-radius: 0;
 }
 
-:deep(.bubble-content table) {
-  width: 100%;
+/* Tables */
+:deep(.msg-content table) {
   border-collapse: collapse;
+  width: 100%;
   margin: 8px 0;
-  font-size: var(--typography-body-small);
+  font-size: 0.75rem;
 }
-
-:deep(.bubble-content th),
-:deep(.bubble-content td) {
-  padding: 6px 10px;
-  border: 1px solid var(--border-color);
+:deep(.msg-content th) {
+  background: rgba(15, 23, 42, 0.6);
+  color: #60a5fa;
+  font-weight: 600;
+}
+:deep(.msg-content td),
+:deep(.msg-content th) {
+  padding: 0.5rem;
+  border: 1px solid rgba(51, 65, 85, 0.5);
   text-align: left;
 }
 
-:deep(.bubble-content th) {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  font-weight: 600;
-}
-
-:deep(.bubble-content hr) {
-  margin: 12px 0;
-  border: none;
-  border-top: 1px solid var(--border-color);
-}
-
-:deep(.bubble-content a) {
-  color: var(--color-primary);
+/* Links */
+:deep(.msg-content a) {
+  color: #60a5fa;
   text-decoration: underline;
   word-break: break-all;
 }
-
-:deep(.bubble-content a:hover) {
-  opacity: 0.8;
+:deep(.msg-content a:hover) {
+  color: #93c5fd;
 }
 
-:deep(.bubble-content img) {
+/* HR */
+:deep(.msg-content hr) {
+  margin: 12px 0;
+  border: none;
+  border-top: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+/* Images */
+:deep(.msg-content img) {
   max-width: 100%;
-  border-radius: var(--border-radius-sm);
+  border-radius: 0.375rem;
   margin: 8px 0;
 }
 
-:deep(.bubble-content strong) {
+/* Strong */
+:deep(.msg-content strong) {
   font-weight: 700;
 }
 
-:deep(.bubble-content del) {
+/* Strikethrough */
+:deep(.msg-content del) {
   text-decoration: line-through;
   opacity: 0.6;
 }
 
-:deep(.bubble-content input[type="checkbox"]) {
-  margin-right: 6px;
-}
-
-/* Task list items */
-:deep(.bubble-content li.task-list-item) {
+/* Task list */
+:deep(.msg-content li.task-list-item) {
   list-style: none;
-  margin-left: -20px;
+  margin-left: -1.5rem;
 }
-
-/* Actions */
-.bubble-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 4px;
-}
-
-.action-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: var(--typography-body-small);
-  font-weight: 500;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  cursor: default;
-}
-
-.action-pending {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.action-completed {
-  background: color-mix(in srgb, var(--color-success) 10%, transparent);
-  border-color: var(--color-success);
-  color: var(--color-success);
-}
-
-.action-icon {
-  font-size: 12px;
-}
-
-.action-done {
-  font-weight: 700;
-  font-size: 12px;
+:deep(.msg-content input[type="checkbox"]) {
+  margin-right: 6px;
 }
 </style>
