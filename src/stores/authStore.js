@@ -4,7 +4,7 @@ import { ref, computed } from 'vue'
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('aipilot_token') || '')
   const user = ref(JSON.parse(localStorage.getItem('aipilot_user') || 'null'))
-  const theme = ref(localStorage.getItem('aipilot_theme') || 'dark')
+  const theme = ref(localStorage.getItem('aipilot_theme') || 'light')
   const siteUrl = ref(localStorage.getItem('aipilot_site_url') || '')
 
   const isAuthenticated = computed(() => !!token.value)
