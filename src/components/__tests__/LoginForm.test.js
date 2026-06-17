@@ -31,7 +31,7 @@ describe('LoginForm.vue', () => {
     // Пытаемся отправить с пустыми полями
     await wrapper.find('form').trigger('submit.prevent')
 
-    const errorEl = wrapper.find('.form-error')
+    const errorEl = wrapper.find('.login-alert')
     expect(errorEl.exists()).toBe(true)
     expect(errorEl.text()).toBe('Введите email и пароль')
   })
@@ -42,7 +42,7 @@ describe('LoginForm.vue', () => {
     await wrapper.find('#email').setValue('test@test.com')
     await wrapper.find('form').trigger('submit.prevent')
 
-    const errorEl = wrapper.find('.form-error')
+    const errorEl = wrapper.find('.login-alert')
     expect(errorEl.exists()).toBe(true)
     expect(errorEl.text()).toBe('Введите email и пароль')
   })
@@ -65,6 +65,6 @@ describe('LoginForm.vue', () => {
     const wrapper = mount(LoginForm)
 
     expect(wrapper.text()).toContain('AI Pilot')
-    expect(wrapper.text()).toContain('Управление WordPress-сайтами через ИИ')
+    expect(wrapper.text()).toContain('Войдите для управления сайтами')
   })
 })

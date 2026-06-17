@@ -10,33 +10,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ✅ Используем GitHub Secrets
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.1
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: JWT_SECRET,GATEWAY_TOKEN
-          script_stop: true
-          timeout: 120s
-          script: |
-            set -e
-            cd ~/ai-pilot-web-chat
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          log-public-key: false
 
-            # Сбрасываем локальные изменения
-            git stash --include-untracked
-            git clean -fd
-            git pull origin main
+      - name: Add host to known_hosts
+        run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-            # Docker сеть
+      - name: Test SSH
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "echo 'SSH works!'"
+
+      - name: Git Pull
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && git pull origin main"
+
+      - name: Docker Build
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && docker build -t ai-pilot-chat ."
+
+      - name: Docker Deploy
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
             docker network create aipilot 2>/dev/null || true
-
-            # === Auth API (деплоится отдельно через ai-pilot-auth-api repo!) ===
-            echo "⏩ Auth API не деплоится отсюда — используйте EVGexpert/ai-pilot-auth-api"
-
-            # === Веб-чат ===
-            docker build -t ai-pilot-chat .
             docker rm -f ai-pilot-chat 2>/dev/null || true
             docker run -d \
               --name ai-pilot-chat \
@@ -45,6 +40,6 @@ jobs:
               --add-host host.docker.internal:host-gateway \
               -p 127.0.0.1:3000:80 \
               ai-pilot-chat
-
             docker image prune -f
-            echo "✅ Deploy complete: $(date)"
+            echo "✅ Deployed!"
+          EOF

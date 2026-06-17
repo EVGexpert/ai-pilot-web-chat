@@ -4,7 +4,7 @@ import { ref, computed } from 'vue'
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('aipilot_token') || '')
   const user = ref(JSON.parse(localStorage.getItem('aipilot_user') || 'null'))
-  const theme = ref(localStorage.getItem('aipilot_theme') || 'light')
+  const theme = ref(localStorage.getItem('aipilot_theme') || 'dark')
   const siteUrl = ref(localStorage.getItem('aipilot_site_url') || '')
 
   const isAuthenticated = computed(() => !!token.value)
@@ -42,15 +42,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   function applyTheme(mode) {
     if (mode === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
-      document.documentElement.setAttribute('data-theme', prefersDark.matches ? 'dark' : 'light')
-      // Слушаем изменения системной темы
-      prefersDark.addEventListener('change', (e) => {
-        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light')
-      }, { once: true })
-    } else {
-      document.documentElement.setAttribute('data-theme', mode)
+      mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     }
+    document.documentElement.setAttribute('data-theme', mode)
   }
 
   function initTheme() {

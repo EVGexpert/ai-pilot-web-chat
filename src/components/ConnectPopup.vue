@@ -172,282 +172,114 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="connect-page">
-    <div class="connect-card">
-      <div class="connect-logo">🎯</div>
-      <h1 class="page-title">{{ pageTitle }}</h1>
+  <div class="bg-slate-950 bg-slate-950 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-slate-900 bg-slate-900 border border-slate-800 border-slate-800 rounded-2xl p-8 w-full max-w-[380px] shadow-xl text-center"
+         :class="{'border-red-500/30 border-red-500/30 ring-red-500/10 ring-1 ring-red-500/10': errorMsg && step === 'login'}">
+      <!-- Logo -->
+      <div class="w-14 h-14 rounded-2xl bg-blue-500/15 bg-blue-500/15 flex items-center justify-center mx-auto mb-3">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400 text-blue-400">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <h1 class="text-lg font-semibold text-slate-100 text-slate-100 m-0 mb-5">{{ pageTitle }}</h1>
 
       <!-- Форма входа / регистрации -->
-      <form v-if="step === 'login'" class="auth-form" @submit.prevent="handleSubmit">
-        <div class="site-badge" v-if="siteName">{{ siteName }}</div>
-
-        <div class="field">
-          <label class="field-label">Email</label>
-          <input v-model="email" type="email" class="field-input" placeholder="your@email.com" :disabled="isLoading" />
+      <form v-if="step === 'login'" class="flex flex-col gap-3.5 text-left" @submit.prevent="handleSubmit">
+        <div v-if="siteName" class="inline-block bg-slate-800 bg-slate-800 text-slate-500 text-slate-400 px-3 py-1 rounded-full text-xs self-center mb-1">
+          {{ siteName }}
         </div>
 
-        <div v-if="isRegister" class="field">
-          <label class="field-label">Имя (необязательно)</label>
-          <input v-model="name" type="text" class="field-input" placeholder="Ваше имя" :disabled="isLoading" />
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-slate-500 text-slate-400">Email</label>
+          <input v-model="email" type="email"
+            class="w-full bg-slate-800/50 bg-slate-800/50 border border-slate-700/60 border-slate-700/60 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 text-slate-100 placeholder-slate-500 placeholder-slate-500 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 focus:ring-blue-500/20"
+            placeholder="your@email.com" :disabled="isLoading" />
         </div>
 
-        <div class="field">
-          <label class="field-label">Пароль</label>
-          <input v-model="password" type="password" class="field-input" placeholder="••••••••" :disabled="isLoading" />
+        <div v-if="isRegister" class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-slate-500 text-slate-400">Имя (необязательно)</label>
+          <input v-model="name" type="text"
+            class="w-full bg-slate-800/50 bg-slate-800/50 border border-slate-700/60 border-slate-700/60 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 text-slate-100 placeholder-slate-500 placeholder-slate-500 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 focus:ring-blue-500/20"
+            placeholder="Ваше имя" :disabled="isLoading" />
         </div>
 
-        <div v-if="errorMsg" class="form-error">{{ errorMsg }}</div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-slate-500 text-slate-400">Пароль</label>
+          <input v-model="password" type="password"
+            class="w-full bg-slate-800/50 bg-slate-800/50 border border-slate-700/60 border-slate-700/60 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 text-slate-100 placeholder-slate-500 placeholder-slate-500 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 focus:ring-blue-500/20"
+            placeholder="••••••••" :disabled="isLoading" />
+        </div>
 
-        <button type="submit" class="btn-primary" :disabled="isLoading">
-          <span v-if="isLoading" class="btn-loader"></span>
+        <!-- Error -->
+        <div v-if="errorMsg"
+          class="bg-red-500/10 bg-red-500/10 border border-red-500/30 border-red-500/30 text-red-300 text-red-300 text-sm rounded-xl px-3 py-2 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ errorMsg }}
+        </div>
+
+        <button type="submit" :disabled="isLoading"
+          class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+          <span v-if="isLoading" class="flex items-center gap-2">
+            <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            {{ isRegister ? 'Регистрация...' : 'Вход...' }}
+          </span>
           <span v-else>{{ isRegister ? 'Зарегистрироваться' : 'Войти' }}</span>
         </button>
 
-        <button type="button" class="btn-link" @click="isRegister = !isRegister; errorMsg = ''">
+        <button type="button"
+          class="bg-transparent border-none text-blue-400 text-blue-400 cursor-pointer text-xs text-center py-1 hover:underline"
+          @click="isRegister = !isRegister; errorMsg = ''">
           {{ isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться' }}
         </button>
       </form>
 
       <!-- Сканирование -->
-      <div v-if="step === 'scanning'" class="status-body">
-        <div class="spinner"></div>
-        <p class="status-desc">AI-помощник изучает структуру сайта, контент и настройки</p>
-        <div class="scan-steps">
-          <div class="scan-step"><span class="scan-dot"></span> Посты и страницы</div>
-          <div class="scan-step"><span class="scan-dot"></span> Плагины и тема</div>
-          <div class="scan-step"><span class="scan-dot"></span> Меню и навигация</div>
-          <div class="scan-step"><span class="scan-dot"></span> Tone of Voice</div>
+      <div v-if="step === 'scanning'" class="flex flex-col items-center gap-3 py-3">
+        <div class="w-9 h-9 border-[3px] border-slate-700 border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
+        <p class="text-sm text-slate-500 text-slate-500 m-0 leading-relaxed">AI-помощник изучает структуру сайта, контент и настройки</p>
+        <div class="flex flex-col gap-2 w-full text-left py-2">
+          <div class="bg-slate-800/50 bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-500 text-slate-400 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:0.1s]">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0"></span> Посты и страницы
+          </div>
+          <div class="bg-slate-800/50 bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-500 text-slate-400 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:0.4s]">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0"></span> Плагины и тема
+          </div>
+          <div class="bg-slate-800/50 bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-500 text-slate-400 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:0.7s]">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0"></span> Меню и навигация
+          </div>
+          <div class="bg-slate-800/50 bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-500 text-slate-400 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:1s]">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0"></span> Tone of Voice
+          </div>
         </div>
       </div>
 
       <!-- Успех -->
-      <div v-if="step === 'success'" class="status-body">
-        <div class="success-icon">✅</div>
-        <p class="status-desc" v-if="siteName">Сайт {{ siteName }} подключён к AI Pilot</p>
-        <p class="status-desc" v-else>AI Pilot готов к работе</p>
-        <p class="status-redirect">Перенаправляю обратно в WordPress...</p>
+      <div v-if="step === 'success'" class="flex flex-col items-center gap-3 py-3">
+        <div class="w-14 h-14 rounded-2xl bg-green-500/15 bg-green-500/15 flex items-center justify-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400 text-green-400">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <p class="text-sm text-slate-500 text-slate-500 m-0" v-if="siteName">Сайт {{ siteName }} подключён к AI Pilot</p>
+        <p class="text-sm text-slate-500 text-slate-500 m-0" v-else>AI Pilot готов к работе</p>
+        <p class="text-xs text-slate-600 text-slate-600 m-0">Перенаправляю обратно в WordPress...</p>
       </div>
 
       <!-- Ошибка -->
-      <div v-if="step === 'error'" class="status-body">
-        <div class="error-icon">❌</div>
-        <p class="error-text">{{ errorMsg }}</p>
-        <button class="btn-primary" @click="step = 'login'; errorMsg = ''">Попробовать снова</button>
+      <div v-if="step === 'error'" class="flex flex-col items-center gap-3 py-3">
+        <div class="text-4xl leading-none">❌</div>
+        <p class="text-xs text-red-300 text-red-400 m-0 leading-relaxed">{{ errorMsg }}</p>
+        <button
+          class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
+          @click="step = 'login'; errorMsg = ''">Попробовать снова</button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.connect-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-primary);
-  padding: 20px;
-}
-.connect-card {
-  width: 100%;
-  max-width: 380px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
-  padding: 36px 28px;
-  text-align: center;
-  box-shadow: var(--shadow-lg);
-}
-.connect-logo {
-  font-size: 48px;
-  margin-bottom: 12px;
-  line-height: 1;
-}
-.page-title {
-  font-size: var(--typography-h3-size);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 20px;
-}
-.site-badge {
-  display: inline-block;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  padding: 4px 14px;
-  border-radius: 16px;
-  font-size: var(--typography-body-small);
-  margin-bottom: 16px;
-}
-
-/* Form */
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  text-align: left;
-}
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.field-label {
-  font-size: var(--typography-body-small);
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-.field-input {
-  height: 44px;
-  padding: 0 14px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  background: var(--bg-input);
-  color: var(--text-primary);
-  font-family: var(--font-family);
-  font-size: var(--typography-body-size);
-  outline: none;
-  transition: border-color 0.15s;
-}
-.field-input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
-}
-.form-error {
-  padding: 8px 12px;
-  background: color-mix(in srgb, var(--color-error) 10%, transparent);
-  color: var(--color-error);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--typography-body-small);
-  line-height: 1.4;
-}
-.btn-primary {
-  width: 100%;
-  height: 44px;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  background: var(--color-primary);
-  color: var(--text-inverse);
-  font-family: var(--font-family);
-  font-size: var(--typography-button-size);
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-}
-.btn-primary:hover:not(:disabled) { background: var(--color-primary-hover); }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-link {
-  background: none;
-  border: none;
-  color: var(--color-primary);
-  cursor: pointer;
-  font-family: var(--font-family);
-  font-size: var(--typography-body-small);
-  text-align: center;
-  padding: 4px;
-}
-.btn-link:hover { text-decoration: underline; }
-.btn-loader {
-  width: 18px; height: 18px;
-  border: 2px solid transparent;
-  border-top-color: var(--text-inverse);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Statuses */
-.status-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-}
-.status-desc {
-  font-size: var(--typography-body-size);
-  color: var(--text-tertiary);
-  margin: 0;
-  line-height: 1.5;
-}
-.status-redirect {
-  font-size: var(--typography-body-small);
-  color: var(--text-quaternary);
-  margin: 0;
-}
-.spinner {
-  width: 36px; height: 36px;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-.progress-bar {
-  width: 100%;
-  height: 4px;
-  background: var(--bg-tertiary);
-  border-radius: 2px;
-  overflow: hidden;
-  margin-top: 4px;
-}
-.progress-fill {
-  height: 100%;
-  width: 30%;
-  background: var(--color-primary);
-  border-radius: 2px;
-  animation: progress 2s ease-in-out infinite;
-}
-@keyframes progress {
-  0% { width: 10%; margin-left: 0; }
-  50% { width: 50%; margin-left: 30%; }
-  100% { width: 10%; margin-left: 90%; }
-}
-
-/* Scan steps */
-.scan-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  text-align: left;
-  padding: 8px 0;
-}
-.scan-step {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: var(--typography-body-small);
-  color: var(--text-tertiary);
-  animation: fadeIn 0.3s ease forwards;
-  opacity: 0;
-}
-.scan-step:nth-child(1) { animation-delay: 0.1s; }
-.scan-step:nth-child(2) { animation-delay: 0.4s; }
-.scan-step:nth-child(3) { animation-delay: 0.7s; }
-.scan-step:nth-child(4) { animation-delay: 1.0s; }
-.scan-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  animation: pulse 1.5s ease-in-out infinite;
-}
 @keyframes fadeIn {
+  from { opacity: 0; }
   to { opacity: 1; }
-}
-@keyframes pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
-}
-.success-icon, .error-icon {
-  font-size: 40px;
-  line-height: 1;
-}
-.error-text {
-  font-size: var(--typography-body-small);
-  color: var(--color-error);
-  margin: 0;
-  line-height: 1.5;
 }
 </style>

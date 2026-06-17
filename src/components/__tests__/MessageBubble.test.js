@@ -67,23 +67,13 @@ describe('MessageBubble.vue', () => {
     expect(content.html()).not.toContain('<strong>')
   })
 
-  it('отображает инициал пользователя', () => {
+  it('рендерит пользовательское сообщение в стилизованном пузыре', () => {
     const userMsg = { id: '6', role: 'user', content: 'Тест' }
     const wrapper = mount(MessageBubble, {
       props: { message: userMsg }
     })
 
-    // Default avatar shows 'В' (first letter of 'Вы')
-    expect(wrapper.find('.bubble-avatar-circle').exists()).toBe(true)
-    expect(wrapper.text()).toContain('В')
-  })
-
-  it('отображает инициал из userName', () => {
-    const userMsg = { id: '7', role: 'user', content: 'Тест', userName: 'Иван' }
-    const wrapper = mount(MessageBubble, {
-      props: { message: userMsg }
-    })
-
-    expect(wrapper.find('.bubble-avatar-circle').text()).toBe('И')
+    expect(wrapper.find('.bubble-user').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Тест')
   })
 })

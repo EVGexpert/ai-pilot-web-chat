@@ -1,28 +1,22 @@
 <script setup>
+/**
+ * MessageBubble.vue
+ * Дизайн из chat-layout.html (slate-950 dark theme).
+ */
 import { computed } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import ActionProposalCard from './ActionProposalCard.vue'
 
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-})
+marked.setOptions({ gfm: true, breaks: true })
 
 const props = defineProps({
-  message: {
-    type: Object,
-    required: true
-  }
+  message: { type: Object, required: true }
 })
 
-function isUser(msg) {
-  return msg.role === 'user'
-}
-
-function isSystem(msg) {
-  return msg.role === 'system'
-}
+function isUser(msg) { return msg.role === 'user' }
+function isSystem(msg) { return msg.role === 'system' }
+function isAction(msg) { return msg.actions && msg.actions.length > 0 }
 
 defineEmits(['approve-action', 'reject-action'])
 
@@ -36,412 +30,168 @@ const renderedContent = computed(() => {
   return DOMPurify.sanitize(html)
 })
 
-/** User initials from name */
-const userInitials = computed(() => {
-  const name = props.message.userName || ''
-  if (!name) return 'В'
-  return name.charAt(0).toUpperCase()
-})
-
-/** Format time */
-const formattedTime = computed(() => {
-  return props.message.time || ''
-})
+function formatTime(msg) {
+  if (!msg.time) return ''
+  return msg.time
+}
 </script>
 
 <template>
-  <div
-    class="bubble"
-    :class="{
-      'bubble-user': isUser(message),
-      'bubble-assistant': !isUser(message) && !isSystem(message),
-      'bubble-system': isSystem(message)
-    }"
-  >
-    <!-- Assistant message: avatar left, content right -->
-    <template v-if="!isUser(message) && !isSystem(message)">
-      <img
-        src="/img/logo-aipilot-v2.png"
-        alt="AI Pilot"
-        class="bubble-avatar-img"
-      />
-      <div class="bubble-body">
-        <div class="bubble-content">
-          <div v-html="renderedContent"></div>
-          <div v-if="formattedTime" class="bubble-time">{{ formattedTime }}</div>
-        </div>
-        <!-- Action buttons for assistant messages -->
-        <div class="bubble-actions">
-          <button class="action-btn" aria-label="Listen" title="Прослушать">
-            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
-              <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
-            </svg>
-          </button>
-          <button class="action-btn" aria-label="Copy" title="Копировать" @click="navigator.clipboard?.writeText(message.content)">
-            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="8" y="8" width="12" height="12" rx="2"></rect>
-              <path d="M4 16V6a2 2 0 0 1 2-2h10"></path>
-            </svg>
-          </button>
-          <button class="action-btn" aria-label="Regenerate" title="Перегенерировать">
-            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12a9 9 0 0 1-15.5 6.3"></path>
-              <path d="M3 12A9 9 0 0 1 18.5 5.7"></path>
-              <path d="M18 3v4h4"></path>
-              <path d="M6 21v-4H2"></path>
-            </svg>
-          </button>
-          <button class="action-btn" aria-label="Dislike" title="Дизлайк">
-            <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 14V2"></path>
-              <path d="M9 18.1 10 14H4.8a2 2 0 0 1-2-2.4l1.4-7A2 2 0 0 1 6.2 3H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3.4a2 2 0 0 0-1.7 1l-3 5a2 2 0 0 1-3.6-1.9Z"></path>
-            </svg>
-          </button>
-        </div>
-        <!-- Action Proposal Cards -->
-        <div v-if="message.actions && message.actions.length" class="bubble-proposals">
-          <ActionProposalCard
-            v-for="action in message.actions"
-            :key="action.id"
-            :action="action"
-            @approve="(id) => $emit('approve-action', id)"
-            @reject="(id) => $emit('reject-action', id)"
-          />
-        </div>
-      </div>
-    </template>
+  <!-- System / date separator -->
+  <div v-if="isSystem(message)" class="flex justify-center animate-fade-in">
+    <span class="text-xs text-slate-600 bg-slate-800/50 rounded-full px-4 py-1">
+      {{ message.content }}
+    </span>
+  </div>
 
-    <!-- User message: content left, avatar right -->
-    <template v-else-if="isUser(message)">
-      <div class="bubble-body bubble-body--user">
-        <div class="bubble-content">
-          <div v-html="renderedContent"></div>
-          <div v-if="formattedTime" class="bubble-time">{{ formattedTime }}</div>
-        </div>
-      </div>
-      <div class="bubble-avatar-circle">
-        {{ userInitials }}
-      </div>
-    </template>
+  <!-- User bubble -->
+  <div v-else-if="isUser(message)" class="flex justify-end animate-fade-in">
+    <div class="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
+      <div v-html="renderedContent" class="msg-content"></div>
+      <span v-if="message.time" class="block text-[10px] text-blue-200 mt-1 text-right">{{ message.time }}</span>
+    </div>
+  </div>
 
-    <!-- System message -->
-    <template v-else>
-      <div class="bubble-content bubble-content--system">
-        <div v-html="renderedContent"></div>
+  <!-- Assistant with action proposal -->
+  <div v-else-if="isAction(message)" class="flex justify-start animate-fade-in">
+    <div class="max-w-[85%] bg-slate-800/80 border border-amber-500/20 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed shadow-lg">
+      <div class="flex items-center gap-2 mb-2 text-slate-300">
+        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">!</span>
+        <span class="font-medium">Предлагаю действие</span>
       </div>
-    </template>
+      <div v-html="renderedContent" class="msg-content text-slate-300"></div>
+      <div v-if="message.actions && message.actions.length" class="mt-3 space-y-2">
+        <ActionProposalCard
+          v-for="action in message.actions"
+          :key="action.id"
+          :action="action"
+          @approve="(id) => $emit('approve-action', id)"
+          @reject="(id) => $emit('reject-action', id)"
+        />
+      </div>
+      <span v-if="message.time" class="block text-[10px] text-slate-600 mt-2">{{ message.time }}</span>
+    </div>
+  </div>
+
+  <!-- Assistant bubble (regular) -->
+  <div v-else class="flex justify-start animate-fade-in">
+    <div class="max-w-[75%] bg-slate-800/80 text-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
+      <div v-html="renderedContent" class="msg-content"></div>
+      <span v-if="message.time" class="block text-[10px] text-slate-500 mt-1">{{ message.time }}</span>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.bubble {
-  display: flex;
-  gap: 12px;
-  max-width: 85%;
-  word-wrap: break-word;
-  position: relative;
-}
-
-/* Assistant: left-aligned with fade-in */
-.bubble-assistant {
-  align-self: flex-start;
-  animation: fadeIn 0.2s ease-out;
-}
-
-/* User: right-aligned with slide-in */
-.bubble-user {
-  align-self: flex-end;
-  animation: slideInRight 0.25s ease-out;
-}
-
-/* System: centered */
-.bubble-system {
-  align-self: center;
-  max-width: 70%;
-  opacity: 0.7;
-}
-
-/* Avatar images */
-.bubble-avatar-img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-/* User avatar circle with initials */
-.bubble-avatar-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  color: var(--text-inverse);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-/* Bubble body container */
-.bubble-body {
-  max-width: 560px;
-  min-width: 0;
-}
-
-.bubble-body--user {
-  margin-left: auto;
-  max-width: 420px;
-}
-
-/* Content bubble */
-.bubble-content {
-  padding: 12px 16px;
-  font-size: 14px;
-  line-height: 1.6;
-  position: relative;
-}
-
-/* Assistant content: white bg, rounded-2xl rounded-tl-md */
-.bubble-assistant .bubble-content {
-  background: var(--chat-assistant-bg);
-  color: var(--chat-assistant-color);
-  border-radius: 16px;
-  border-top-left-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  outline: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* User content: accent bg, rounded-2xl rounded-tr-md */
-.bubble-user .bubble-content {
-  background: var(--chat-user-bg);
-  color: var(--chat-user-color);
-  border-radius: 16px;
-  border-top-right-radius: 6px;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-accent) 20%, transparent);
-}
-
-/* System content */
-.bubble-content--system {
-  background: transparent;
-  color: var(--text-tertiary);
-  text-align: center;
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
-/* Time */
-.bubble-time {
-  font-size: 12px;
-  color: var(--text-quaternary);
-  text-align: right;
-  margin-top: 4px;
-}
-
-.bubble-user .bubble-time {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-/* Action buttons */
-.bubble-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 4px 0;
-  color: var(--text-quaternary);
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: inherit;
-  padding: 2px;
-  transition: color 0.15s;
-}
-
-.action-btn:hover {
-  color: var(--color-accent);
-}
-
-.action-icon {
-  width: 20px;
-  height: 20px;
-}
-
-/* Proposals */
-.bubble-proposals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-/* === Animations === */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-/* === Markdown styling (deep selectors for v-html) === */
-:deep(.bubble-content h1),
-:deep(.bubble-content h2),
-:deep(.bubble-content h3),
-:deep(.bubble-content h4) {
+:deep(.msg-content h1),
+:deep(.msg-content h2),
+:deep(.msg-content h3),
+:deep(.msg-content h4),
+:deep(.msg-content h5),
+:deep(.msg-content h6) {
+  color: #f1f5f9;
   margin: 12px 0 6px;
   font-weight: 600;
   line-height: 1.3;
 }
+:deep(.msg-content h1) { font-size: 1.3em; }
+:deep(.msg-content h2) { font-size: 1.15em; }
+:deep(.msg-content h3) { font-size: 1.05em; }
 
-:deep(.bubble-content h1) { font-size: 1.3em; }
-:deep(.bubble-content h2) { font-size: 1.15em; }
-:deep(.bubble-content h3) { font-size: 1.05em; }
+:deep(.msg-content p) { margin: 0 0 8px; }
+:deep(.msg-content p:last-child) { margin-bottom: 0; }
 
-:deep(.bubble-content p) {
-  margin: 0 0 8px;
-}
-
-:deep(.bubble-content p:last-child) {
-  margin-bottom: 0;
-}
-
-:deep(.bubble-content ul),
-:deep(.bubble-content ol) {
+:deep(.msg-content ul),
+:deep(.msg-content ol) {
+  padding-left: 1.5rem;
   margin: 4px 0 8px;
-  padding-left: 20px;
 }
+:deep(.msg-content li) { margin-bottom: 0.25rem; }
+:deep(.msg-content li:last-child) { margin-bottom: 0; }
 
-:deep(.bubble-content li) {
-  margin-bottom: 3px;
-}
-
-:deep(.bubble-content li:last-child) {
-  margin-bottom: 0;
-}
-
-:deep(.bubble-content blockquote) {
+:deep(.msg-content blockquote) {
+  border-left: 3px solid rgba(59, 130, 246, 0.4);
+  padding-left: 1rem;
+  background: rgba(59, 130, 246, 0.05);
   margin: 8px 0;
-  padding: 6px 12px;
-  border-left: 3px solid var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
-  border-radius: 0 8px 8px 0;
-  color: var(--text-secondary);
+  border-radius: 0 0.375rem 0.375rem 0;
+  color: #cbd5e1;
 }
 
-:deep(.bubble-content code) {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 0.85em;
+:deep(.msg-content code) {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 0.75rem;
   padding: 1px 5px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
-  color: var(--text-primary);
+  background: rgba(15, 23, 42, 0.6);
+  color: #e2e8f0;
 }
 
-.bubble-user :deep(.bubble-content code) {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-}
-
-:deep(.bubble-content pre) {
-  margin: 8px 0;
-  padding: 12px 14px;
-  border-radius: 8px;
-  background: var(--code-bg, #f1f1f4);
+:deep(.msg-content pre) {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
   overflow-x: auto;
-  font-size: 12px;
+  margin: 8px 0;
   line-height: 1.5;
-  border: 1px solid var(--border-color);
 }
-
-:deep(.bubble-content pre code) {
+:deep(.msg-content pre code) {
   padding: 0;
   background: none;
   color: inherit;
   font-size: inherit;
+  border-radius: 0;
 }
 
-:deep(.bubble-content table) {
-  width: 100%;
+:deep(.msg-content table) {
   border-collapse: collapse;
+  width: 100%;
   margin: 8px 0;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
-
-:deep(.bubble-content th),
-:deep(.bubble-content td) {
-  padding: 6px 10px;
-  border: 1px solid var(--border-color);
+:deep(.msg-content th) {
+  background: rgba(15, 23, 42, 0.6);
+  color: #60a5fa;
+  font-weight: 600;
+}
+:deep(.msg-content td),
+:deep(.msg-content th) {
+  padding: 0.5rem;
+  border: 1px solid rgba(51, 65, 85, 0.5);
   text-align: left;
 }
 
-:deep(.bubble-content th) {
-  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
-  font-weight: 600;
-}
-
-:deep(.bubble-content hr) {
-  margin: 12px 0;
-  border: none;
-  border-top: 1px solid var(--border-color);
-}
-
-:deep(.bubble-content a) {
-  color: var(--color-accent);
+:deep(.msg-content a) {
+  color: #60a5fa;
   text-decoration: underline;
   word-break: break-all;
 }
+:deep(.msg-content a:hover) { color: #93c5fd; }
 
-:deep(.bubble-content a:hover) {
-  opacity: 0.8;
+:deep(.msg-content hr) {
+  margin: 12px 0;
+  border: none;
+  border-top: 1px solid rgba(51, 65, 85, 0.5);
 }
 
-:deep(.bubble-content img) {
+:deep(.msg-content img) {
   max-width: 100%;
-  border-radius: 8px;
+  border-radius: 0.375rem;
   margin: 8px 0;
 }
 
-:deep(.bubble-content strong) {
-  font-weight: 700;
-}
+:deep(.msg-content strong) { font-weight: 700; }
 
-:deep(.bubble-content del) {
+:deep(.msg-content del) {
   text-decoration: line-through;
   opacity: 0.6;
 }
 
-:deep(.bubble-content input[type="checkbox"]) {
-  margin-right: 6px;
-}
-
-:deep(.bubble-content li.task-list-item) {
+:deep(.msg-content li.task-list-item) {
   list-style: none;
-  margin-left: -20px;
+  margin-left: -1.5rem;
 }
-
-/* === Mobile === */
-@media (max-width: 767px) {
-  .bubble {
-    max-width: 95%;
-  }
-  .bubble-body {
-    max-width: 100%;
-  }
-  .bubble-body--user {
-    max-width: 100%;
-  }
+:deep(.msg-content input[type="checkbox"]) {
+  margin-right: 6px;
 }
 </style>

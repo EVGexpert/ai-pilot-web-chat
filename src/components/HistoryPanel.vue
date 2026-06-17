@@ -96,322 +96,97 @@ const hasSiteSelected = computed(() => !!sitesStore.currentSiteId)
 </script>
 
 <template>
-  <div class="history-panel">
+  <div class="h-full flex flex-col overflow-hidden bg-slate-950 bg-slate-950">
     <!-- Заголовок: список или детали -->
-    <div class="history-header" v-if="!selectedConversation">
-      <h2 class="history-title">История клиентов</h2>
-      <span v-if="hasSiteSelected" class="history-site">
+    <div v-if="!selectedConversation"
+      class="flex items-center gap-3 px-6 py-5 pb-4 shrink-0 border-b border-slate-800 border-slate-800">
+      <h2 class="text-lg font-semibold text-slate-100 text-slate-100 m-0">История клиентов</h2>
+      <span v-if="hasSiteSelected"
+        class="text-xs text-slate-600 text-slate-600 px-2.5 py-0.5 bg-slate-800/50 bg-slate-800/50 rounded-full">
         {{ sitesStore.currentSite?.name }}
       </span>
     </div>
 
-    <div class="history-header" v-else>
-      <button class="back-btn" @click="closeConversation">←</button>
-      <div class="conv-detail-header">
-        <h2 class="history-title">{{ selectedConversation.title }}</h2>
-        <span class="conv-detail-site">{{ sitesStore.currentSite?.name }}</span>
+    <div v-else
+      class="flex items-center gap-3 px-6 py-5 pb-4 shrink-0 border-b border-slate-800 border-slate-800">
+      <button
+        class="w-8 h-8 border border-slate-700 border-slate-700 bg-slate-800/50 bg-slate-800/50 rounded-lg cursor-pointer flex items-center justify-center text-base text-slate-500 text-slate-400 shrink-0 transition-colors hover:bg-slate-700 hover:bg-slate-700"
+        @click="closeConversation">←</button>
+      <div class="flex items-center gap-2 min-w-0">
+        <h2 class="text-lg font-semibold text-slate-100 text-slate-100 m-0">{{ selectedConversation.title }}</h2>
+        <span class="text-xs text-slate-600 text-slate-600 shrink-0">{{ sitesStore.currentSite?.name }}</span>
       </div>
     </div>
 
     <!-- Состояния: нет сайта / пусто -->
-    <div v-if="!hasSiteSelected" class="history-empty">
-      <div class="empty-icon">📋</div>
-      <p>Выберите сайт, чтобы увидеть<br/>историю обращений клиентов</p>
+    <div v-if="!hasSiteSelected"
+      class="flex-1 flex flex-col items-center justify-center text-center px-6 py-10 text-slate-500 text-slate-500">
+      <div class="text-5xl mb-4 leading-none">📋</div>
+      <p class="text-sm leading-relaxed m-0">Выберите сайт, чтобы увидеть<br/>историю обращений клиентов</p>
     </div>
 
-    <div v-else-if="conversations.length === 0 && !selectedConversation" class="history-empty">
-      <div class="empty-icon">💬</div>
-      <p>Пока нет обращений</p>
-      <p class="empty-hint">Когда клиент начнёт чат с AI Pilot на сайте,<br/>история появится здесь</p>
+    <div v-else-if="conversations.length === 0 && !selectedConversation"
+      class="flex-1 flex flex-col items-center justify-center text-center px-6 py-10 text-slate-500 text-slate-500">
+      <div class="text-5xl mb-4 leading-none">💬</div>
+      <p class="text-sm leading-relaxed m-0">Пока нет обращений</p>
+      <p class="text-xs text-slate-600 text-slate-600 mt-1 m-0">Когда клиент начнёт чат с AI Pilot на сайте,<br/>история появится здесь</p>
     </div>
 
     <!-- Список диалогов -->
-    <div v-else-if="!selectedConversation" class="history-list">
+    <div v-else-if="!selectedConversation"
+      class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-1">
       <div
         v-for="conv in conversations"
         :key="conv.id"
-        class="conv-item"
+        class="px-4 py-3.5 rounded-xl cursor-pointer transition-all border border-transparent hover:bg-slate-800/50 hover:border-slate-700/50 active:scale-[0.99]"
         @click="openConversation(conv)"
       >
-        <div class="conv-header">
-          <span class="conv-title">{{ conv.title || 'Без темы' }}</span>
-          <span class="conv-time">{{ formatTime(conv.lastMessage) }}</span>
+        <div class="flex justify-between items-baseline gap-3 mb-1">
+          <span class="text-sm font-semibold text-slate-100 text-slate-100 truncate">{{ conv.title || 'Без темы' }}</span>
+          <span class="text-xs text-slate-600 text-slate-600 whitespace-nowrap shrink-0">{{ formatTime(conv.lastMessage) }}</span>
         </div>
-        <p class="conv-preview">{{ conv.preview || 'Нет сообщений' }}</p>
-        <div class="conv-meta">
-          <span v-if="conv.unread > 0" class="conv-unread">{{ conv.unread }} новых</span>
+        <p class="text-xs text-slate-500 text-slate-500 leading-relaxed truncate m-0">{{ conv.preview || 'Нет сообщений' }}</p>
+        <div class="mt-1.5">
+          <span v-if="conv.unread > 0"
+            class="inline-block bg-blue-600 text-white text-[11px] font-semibold px-2 py-px rounded-full leading-snug">
+            {{ conv.unread }} новых
+          </span>
         </div>
       </div>
     </div>
 
     <!-- Раскрытый диалог (сообщения) -->
-    <div v-else class="conversation-detail">
+    <div v-else class="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
       <!-- Статус загрузки -->
-      <div v-if="isLoadingMessages" class="history-empty">
-        <div class="spinner"></div>
-        <p>Загрузка сообщений...</p>
+      <div v-if="isLoadingMessages"
+        class="flex-1 flex flex-col items-center justify-center text-center px-6 py-10 text-slate-500 text-slate-500">
+        <div class="w-7 h-7 border-[3px] border-slate-700 border-slate-700 border-t-blue-500 rounded-full animate-spin mb-3"></div>
+        <p class="text-sm m-0">Загрузка сообщений...</p>
       </div>
 
       <!-- Сообщения -->
-      <div v-else class="messages-list">
+      <div v-else class="flex flex-col gap-3">
         <div
           v-for="(msg, idx) in getConvMessages(selectedConversation.id)"
           :key="idx"
-          class="msg-item"
-          :class="{ 'msg-client': msg.role === 'client', 'msg-assistant': msg.role === 'assistant' }"
+          class="max-w-[90%] flex flex-col gap-1"
+          :class="msg.role === 'client' ? 'self-end' : 'self-start'"
         >
-          <div class="msg-header">
-            <span class="msg-role">{{ msg.role === 'client' ? '👤 Клиент' : '🤖 AI Pilot' }}</span>
-            <span class="msg-time">{{ msg.time || formatTime(msg.timestamp) }}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-semibold text-slate-600 text-slate-600">{{ msg.role === 'client' ? '👤 Клиент' : '🤖 AI Pilot' }}</span>
+            <span class="text-[10px] text-slate-700 text-slate-700">{{ msg.time || formatTime(msg.timestamp) }}</span>
           </div>
-          <div class="msg-text" v-html="DOMPurify.sanitize((msg.content || msg.text || '').replace(/\n/g, '<br/>'))"></div>
+          <div class="px-3.5 py-2.5 rounded-xl text-sm leading-relaxed"
+            :class="msg.role === 'client'
+              ? 'bg-blue-600 text-white rounded-br-sm'
+              : 'bg-slate-800 bg-slate-800 text-slate-100 text-slate-100 border border-slate-800 border-slate-700 rounded-bl-sm'"
+            v-html="DOMPurify.sanitize((msg.content || msg.text || '').replace(/\n/g, '<br/>'))"></div>
         </div>
-        <div v-if="getConvMessages(selectedConversation.id).length === 0" class="history-empty">
-          <p>Нет сообщений в этом обращении</p>
+        <div v-if="getConvMessages(selectedConversation.id).length === 0"
+          class="flex-1 flex flex-col items-center justify-center text-center px-6 py-10 text-slate-500 text-slate-500">
+          <p class="text-sm m-0">Нет сообщений в этом обращении</p>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.history-panel {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* Header */
-.history-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 24px 16px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.history-title {
-  font-size: var(--typography-h3-size);
-  font-weight: var(--typography-h3-weight);
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.history-site {
-  font-size: var(--typography-body-small);
-  color: var(--text-quaternary);
-  padding: 2px 10px;
-  background: var(--bg-tertiary);
-  border-radius: 12px;
-}
-
-.back-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-tertiary);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  transition: background 0.12s;
-}
-
-.back-btn:hover {
-  background: var(--bg-hover);
-}
-
-.conv-detail-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.conv-detail-site {
-  font-size: var(--typography-body-small);
-  color: var(--text-quaternary);
-  flex-shrink: 0;
-}
-
-/* Empty states */
-.history-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 40px 24px;
-  color: var(--text-tertiary);
-}
-
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  line-height: 1;
-}
-
-.empty-icon + p {
-  font-size: var(--typography-body-size);
-  line-height: 1.6;
-  margin: 0;
-}
-
-.empty-hint {
-  color: var(--text-quaternary) !important;
-  margin-top: 4px !important;
-  font-size: var(--typography-body-small) !important;
-}
-
-/* Список диалогов */
-.history-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.conv-item {
-  padding: 14px 16px;
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  transition: all 0.12s ease;
-  border: 1px solid transparent;
-}
-
-.conv-item:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-color);
-}
-
-.conv-item:active {
-  transform: scale(0.99);
-}
-
-.conv-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 4px;
-}
-
-.conv-title {
-  font-size: var(--typography-body-size);
-  font-weight: 600;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.conv-time {
-  font-size: var(--typography-body-small);
-  color: var(--text-quaternary);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.conv-preview {
-  font-size: var(--typography-body-small);
-  color: var(--text-tertiary);
-  line-height: 1.5;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin: 0;
-}
-
-.conv-meta {
-  margin-top: 6px;
-}
-
-.conv-unread {
-  display: inline-block;
-  background: var(--color-primary);
-  color: var(--text-inverse);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 1px 8px;
-  border-radius: 10px;
-  line-height: 1.5;
-}
-
-/* Раскрытый диалог */
-.conversation-detail {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.messages-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.msg-item {
-  max-width: 90%;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.msg-client {
-  align-self: flex-end;
-}
-
-.msg-assistant {
-  align-self: flex-start;
-}
-
-.msg-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.msg-role {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-quaternary);
-}
-
-.msg-time {
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
-.msg-text {
-  padding: 10px 14px;
-  border-radius: var(--border-radius-md);
-  font-size: var(--typography-body-size);
-  line-height: 1.6;
-  position: relative;
-}
-
-.msg-client .msg-text {
-  background: var(--chat-user-bg);
-  color: var(--chat-user-color);
-  border-bottom-right-radius: 4px;
-}
-
-.msg-assistant .msg-text {
-  background: var(--chat-assistant-bg);
-  color: var(--chat-assistant-color);
-  border: 1px solid var(--chat-assistant-border);
-  border-bottom-left-radius: 4px;
-}
-</style>
