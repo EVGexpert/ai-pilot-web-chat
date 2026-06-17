@@ -1,5 +1,25 @@
 /* Inter Variable */
-@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap");
+
+/* Tailwind CSS v4 */
+@import "tailwindcss";
+
+/* ─── Tailwind v4 Theme Tokens ─── */
+@theme {
+  --color-accent: #7e4ce0;
+  --color-accent-hover: #6a3dc0;
+  --color-chat-bg: #eae9ec;
+  --color-chat-surface: #1e293b;
+  --color-chat-sidebar: #0b1120;
+  --color-chat-border: #334155;
+  --color-chat-text: #e2e8f0;
+  --color-chat-text-muted: #94a3b8;
+  --color-chat-accent: #3b82f6;
+  --color-chat-success: #22c55e;
+  --color-chat-warning: #f59e0b;
+  --color-chat-danger: #ef4444;
+  --font-chat: "Inter", system-ui, -apple-system, sans-serif;
+}
 
 @import "tailwindcss";
 
@@ -9,7 +29,7 @@
 /* ============ CSS Variables (Light) ============ */
 :root {
   /* Типографика */
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --typography-h1-size: 28px;
   --typography-h1-weight: 400;
   --typography-h2-size: 24px;
@@ -36,6 +56,8 @@
   --color-primary-hover: #2563eb;
   --color-primary-light: #eff6ff;
   --color-primary-content: #191919;
+  --color-accent: #7e4ce0;
+  --color-accent-hover: #6a3dc0;
 
   /* Фоны */
   --bg-primary: #ffffff;
@@ -45,6 +67,7 @@
   --bg-card: #ffffff;
   --bg-sidebar: #f5f5f6;
   --bg-hover: #e9eaeb;
+  --bg-chat: #eae9ec;
   --code-bg: #f1f1f4;
 
   /* Текст */
@@ -91,12 +114,25 @@
   --chat-input-bg: #f5f5f6;
 
   /* Sidebar */
-  --sidebar-width: 320px;
+  --sidebar-width: 288px;
+  --sidebar-collapsed-width: 64px;
   --sidebar-section-gap: 16px;
 
   /* Safe areas */
-  --safe-area-inset-top: 0px;
-  --safe-area-inset-bottom: 0px;
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Theme toggle */
+  --toggle-bg: #eeeeF1;
+  --toggle-active-bg: #fafafa;
+  --toggle-text: #666666;
+  --toggle-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --toggle-shadow-active: 0 1px 4px rgba(0, 0, 0, 0.18);
+  --toggle-ring: rgba(0, 0, 0, 0.1);
+
+  /* Sidebar gradient */
+  --sidebar-gradient-from: #f5f5f6;
+  --sidebar-gradient-to: transparent;
 }
 
 /* ============ Dark Theme ============ */
@@ -105,6 +141,8 @@
   --color-primary-hover: #60a5fa;
   --color-primary-light: #1e3a5f;
   --color-primary-content: #ededed;
+  --color-accent: #a57de4;
+  --color-accent-hover: #b895e8;
 
   --bg-primary: #020617;
   --bg-secondary: #0f172a;
@@ -146,18 +184,20 @@
   box-sizing: border-box;
 }
 
-html, body, #app {
+html,
+body,
+#app {
   height: 100%;
   font-family: var(--font-family);
   font-size: var(--typography-body-size);
   color: var(--text-primary);
-  background: var(--bg-primary);
+  background: var(--bg-chat);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--bg-primary);
+  background: var(--bg-chat);
   transition: background 0.2s ease;
 }
 
@@ -210,11 +250,66 @@ body {
 
 /* ============ Mobile + Safe Area ============ */
 
-:root {
-  --safe-area-inset-top: env(safe-area-inset-top, 0px);
-  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
+@keyframes pulse-dot {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideInRight 0.25s ease-out;
+}
+
+/* ============ Scrollbar Thin Utility ============ */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-muted) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--text-muted);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-button {
+  display: none;
+}
+
+.scrollbar-thin::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ============ Mobile + Safe Area ============ */
 @media (max-width: 767px) {
   :root {
     --sidebar-width: min(85vw, 320px);

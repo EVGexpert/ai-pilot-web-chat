@@ -38,10 +38,28 @@ const siteStatusDot = (status) => {
   }
 }
 
+function siteActiveStatus(status) {
+  if (status === 'online') return 'bg-blue-400'
+  return siteStatusColor(status)
+}
+
+function formatConversationDate(timestamp) {
+  if (!timestamp) return ''
+  const d = new Date(timestamp)
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+}
+
 function handleLogout() {
   sitesStore.clientConversations = []
   authStore.logout()
 }
+
+function handleToggleCollapse() {
+  emit('toggle-collapse')
+}
+
+/** User email from auth store */
+const userEmail = computed(() => authStore.user?.email || '')
 </script>
 
 <template>

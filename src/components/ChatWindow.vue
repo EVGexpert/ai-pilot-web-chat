@@ -1,219 +1,140 @@
 <script setup>
+/**
+ * ChatWindow.vue
+ * Основное окно чата. Работает в двух режимах:
+ *   - admin: чат область (messages + input) — sidebar управляется MainContent
+ *   - client: сайдбар сессий + хедер + чат область
+ *
+ * Дизайн из chat-layout.html. Все функциональные части сохранены.
+ */
 import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
+import { useChatApi } from '../composables/useChatApi'
+import { useGatewayClient } from '../composables/useGatewayClient'
 import MessageArea from './MessageArea.vue'
 import ChatInput from './ChatInput.vue'
-import ThemeToggle from './ThemeToggle.vue'
+import ClientSidebar from './ClientSidebar.vue'
 
 const props = defineProps({ clientMode: { type: Boolean, default: false } })
 
 const authStore = useAuthStore()
 const sitesStore = useSitesStore()
-const messagesContainer = ref(null)
 
-const messages = ref([])
-const isConnected = ref(false)
-const isLoading = ref(false)
-const streamingContent = ref('')
-const error = ref(null)
-const currentSessionId = ref(null)
-const sessionsList = ref([])
+// API слой через composable (REST)
+const chatApi = useChatApi(authStore, sitesStore)
+const { currentSessionId, sessionsList, messages, isLoading, error, streamingContent } = chatApi
 
-const showClientHistory = ref(false)
-const csSidebarOpen = ref(false)
+// WebSocket клиент с автореконнектом
+const gatewayUrl = import.meta.env.VITE_GATEWAY_WS_URL || `wss://chat.pilotsite.ru/ws/`
+const ws = useGatewayClient(gatewayUrl, {
+  token: authStore.token,
+  maxReconnectAttempts: 10,
+  baseDelay: 1000,
+  maxDelay: 30000,
+  ackTimeout: 10000
+})
 
-function toggleCsSidebar() {
-  csSidebarOpen.value = !csSidebarOpen.value
-}
+// Реактивный статус подключения
+// REST API всегда доступен — WS нужен только для стриминга
+const isConnected = computed(() => true)
+const wsStatus = computed(() => {
+  if (ws.connected.value) return 'connected'
+  if (ws.reconnecting.value) return 'reconnecting'
+  return 'disconnected'
+})
 
-function closeCsSidebar() {
-  csSidebarOpen.value = false
-}
-const currentSiteConversations = computed(() => sitesStore.currentSiteConversations)
+// Has a site selected?
+const hasSite = computed(() => {
+  return !!(authStore.siteUrl || sitesStore.currentSite?.url)
+})
 
-function disconnect() {}
-
-async function handleSend(text) {
-  messages.value = [...messages.value, { id: `user-${Date.now()}`, role: 'user', content: text }]
-  isLoading.value = true
-  error.value = null
-
-  // Определяем siteUrl
-  let sendSiteUrl = authStore.siteUrl
-  if (!sendSiteUrl && sitesStore.currentSite) {
-    sendSiteUrl = sitesStore.currentSite.url
-  }
-
-  if (!sendSiteUrl) {
-    error.value = 'Не выбран сайт. Выберите сайт в боковой панели.'
-    isLoading.value = false
+/** Handle send — check site first */
+function handleSend(text) {
+  if (!hasSite.value) {
+    error.value = 'Выберите сайт в боковой панели'
     return
   }
-
-  try {
-    const res = await fetch('/api/chat/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + authStore.token
-      },
-      body: JSON.stringify({
-        message: text,
-        siteUrl: sendSiteUrl,
-        sessionId: currentSessionId.value
-      })
-    })
-    
-    if (res.ok) {
-      const data = await res.json()
-      currentSessionId.value = data.sessionId || currentSessionId.value
-      const newMsg = { id: `msg-${Date.now()}`, role: 'assistant', content: data.message }
-      if (data.actions && data.actions.length > 0) {
-        newMsg.actions = data.actions
-      }
-      messages.value = [...messages.value, newMsg]
-      await loadSessions()
-    } else {
-      const err = await res.json().catch(() => ({ error: 'Unknown error' }))
-      error.value = err.error || 'Ошибка отправки'
-    }
-  } catch (e) {
-    error.value = 'Сетевая ошибка: ' + e.message
-  } finally {
-    isLoading.value = false
-    streamingContent.value = ''
-  }
-}
-function handleReconnect() { error.value = null; connect() }
-
-// Action Proposal: approve / reject
-async function handleApproveAction(actionId) {
-  const msg = messages.value.find(m => m.actions?.some(a => a.id === actionId))
-  if (!msg) return
-  const action = msg.actions.find(a => a.id === actionId)
-  if (action) action.status = 'approved'
-
-  // Собираем payload для выполнения через WP Plugin
-  const actionPayload = action.raw || {
-    type: action.type || 'other',
-    target: action.target || {},
-    patch: action.patch || {}
-  }
-
-  try {
-    await fetch('/api/chat/actions/approve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
-      body: JSON.stringify({
-        actionId,
-        sessionId: currentSessionId.value,
-        siteUrl: authStore.siteUrl || sitesStore.currentSite?.url,
-        action: actionPayload
-      })
-    })
-  } catch (e) {
-    console.warn('Approve API call failed:', e)
-  }
+  chatApi.sendMessage(text)
 }
 
-async function handleRejectAction(actionId) {
-  const msg = messages.value.find(m => m.actions?.some(a => a.id === actionId))
-  if (!msg) return
-  const action = msg.actions.find(a => a.id === actionId)
-  if (action) action.status = 'rejected'
-  try {
-    await fetch('/api/chat/actions/reject', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
-      body: JSON.stringify({ actionId, sessionId: currentSessionId.value })
-    })
-  } catch (e) {
-    console.warn('Reject API call failed:', e)
+// Слушаем входящие WS сообщения и добавляем в чат
+ws.onMessage((data) => {
+  if (data.type === 'assistant_message' && data.content) {
+    const newMsg = { id: `ws-${Date.now()}`, role: 'assistant', content: data.content }
+    if (data.actions) newMsg.actions = data.actions
+    messages.value = [...messages.value, newMsg]
   }
+})
+
+// Автоподключение WS при монтировании
+onMounted(() => {
+  ws.connect()
+  nextTick(() => {
+    const el = messagesContainer.value?.$el || messagesContainer.value
+    if (el) el.addEventListener('scroll', handleScroll)
+  })
+})
+
+const messagesContainer = ref(null)
+const userScrolledUp = ref(false)
+
+function handleScroll() {
+  const el = messagesContainer.value?.$el || messagesContainer.value
+  if (!el) return
+  const threshold = 100
+  userScrolledUp.value = el.scrollHeight - el.scrollTop - el.clientHeight > threshold
 }
 
-// Загрузить список сессий
-async function loadSessions() {
-  try {
-    const res = await fetch('/api/chat/sessions?siteUrl=' + encodeURIComponent(authStore.siteUrl), {
-      headers: { 'Authorization': 'Bearer ' + authStore.token }
-    })
-    if (res.ok) {
-      const data = await res.json()
-      sessionsList.value = data.sessions || []
-    }
-  } catch (e) {
-    console.warn('Sessions load failed:', e)
-  }
+const csSidebarOpen = ref(false)
+
+function toggleCsSidebar() { csSidebarOpen.value = !csSidebarOpen.value }
+function closeCsSidebar() { csSidebarOpen.value = false }
+
+function disconnect() {
+  ws.disconnect()
 }
 
-// Загрузить историю конкретной сессии
-async function loadSessionHistory(sessionId) {
-  try {
-    const res = await fetch('/api/chat/history?sessionId=' + encodeURIComponent(sessionId), {
-      headers: { 'Authorization': 'Bearer ' + authStore.token }
-    })
-    if (res.ok) {
-      const hist = await res.json()
-      if (hist.messages && hist.messages.length > 0) {
-        messages.value = hist.messages.map(m => ({
-          id: 'msg-' + m.id,
-          role: m.role,
-          content: m.content
-        }))
-      }
-    }
-  } catch (e) {
-    console.warn('History load failed:', e)
-  }
+function handleReconnect() {
+  error.value = null
+  ws.connect()
 }
 
-// Новый чат — создаём сессию и очищаем
-async function startNewChat() {
-  try {
-    const res = await fetch('/api/chat/new', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + authStore.token
-      },
-      body: JSON.stringify({ siteUrl: authStore.siteUrl })
-    })
-    if (res.ok) {
-      const data = await res.json()
-      currentSessionId.value = data.sessionId
-      messages.value = []
-      streamingContent.value = ''
-      isLoading.value = false
-      error.value = null
-      await loadSessions()
-    }
-  } catch (e) {
-    console.warn('New chat failed:', e)
-  }
-}
-
-// Выбрать сессию из списка
-async function selectSession(sessionId) {
-  currentSessionId.value = sessionId
-  await loadSessionHistory(sessionId)
-}
-
-function handleLogout() { 
-  // Очищаем флаги приветствия при выходе
+/** Очистить флаги приветствия при выходе */
+function handleLogout() {
   const keys = Object.keys(localStorage).filter(k => k.startsWith('aipilot_greeted_'))
   keys.forEach(k => localStorage.removeItem(k))
-  disconnect(); authStore.logout() 
+  disconnect()
+  authStore.logout()
 }
 
-isConnected.value = true
-onUnmounted(() => disconnect())
+onUnmounted(() => {
+  const el = messagesContainer.value?.$el || messagesContainer.value
+  if (el) el.removeEventListener('scroll', handleScroll)
+  disconnect()
+})
 
-// Клиент: всё из БД, без localStorage
+// Авто-скролл вниз при новых сообщениях (если пользователь не проскроллил вверх)
+watch([messages, streamingContent], async () => {
+  await nextTick()
+  if (!userScrolledUp.value && messagesContainer.value) {
+    const el = messagesContainer.value.$el || messagesContainer.value
+    if (el?.scrollTo) {
+      el.scrollTo(0, el.scrollHeight)
+    } else {
+      el.scrollTop = el.scrollHeight
+    }
+  }
+}, { deep: true })
+
+/**
+ * Инициализация для клиентского режима:
+ *   - загружаем siteUrl из /api/auth/me
+ *   - загружаем сессии
+ *   - если нет сессий — создаём приветствие
+ */
 if (props.clientMode) {
-  nextTick(async () => {
-    isConnected.value = true
+  onMounted(async () => {
     try {
       if (!authStore.siteUrl && authStore.token) {
         const meRes = await fetch('/api/auth/me', {
@@ -228,23 +149,27 @@ if (props.clientMode) {
         }
       }
       if (!authStore.siteUrl) return
-      await loadSessions()
+
+      await chatApi.loadSessions()
       if (sessionsList.value.length > 0) {
         const last = sessionsList.value[0]
-        currentSessionId.value = last.id
-        await loadSessionHistory(last.id)
+        await chatApi.selectSession(last.id)
       }
       if (sessionsList.value.length === 0) {
+        const sendSiteUrl = authStore.siteUrl
         const res = await fetch('/api/chat/send', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
-          body: JSON.stringify({ message: '/start', siteUrl: authStore.siteUrl })
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + authStore.token
+          },
+          body: JSON.stringify({ message: '/start', siteUrl: sendSiteUrl })
         })
         if (res.ok) {
           const data = await res.json()
           currentSessionId.value = data.sessionId
           messages.value = [{ id: 'greeting', role: 'assistant', content: data.message }]
-          await loadSessions()
+          await chatApi.loadSessions()
         }
       }
     } catch (e) {
@@ -252,11 +177,6 @@ if (props.clientMode) {
     }
   })
 }
-
-watch([messages, streamingContent], async () => {
-  await nextTick()
-  if (messagesContainer.value) messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-}, { deep: true })
 </script>
 
 <template>

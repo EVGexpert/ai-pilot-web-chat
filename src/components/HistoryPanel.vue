@@ -21,7 +21,6 @@ const selectedConversation = computed(() =>
   props.conversations.find(c => c.id === selectedConvId.value) || null
 )
 
->
 
 function openConversation(conv) {
   selectedConvId.value = conv.id

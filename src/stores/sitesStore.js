@@ -97,6 +97,11 @@ export const useSitesStore = defineStore('sites', () => {
     }
   }
 
+  /** Установить список сайтов напрямую (используется при логине) */
+  function setSites(siteList) {
+    sites.value = siteList
+  }
+
   function setActiveView(view) {
     activeView.value = view
   }
@@ -105,6 +110,6 @@ export const useSitesStore = defineStore('sites', () => {
     sites, currentSiteId, currentSite,
     clientConversations, currentSiteConversations,
     activeView,
-    fetchSites, selectSite, fetchClientHistory, setActiveView
+    fetchSites, setSites, selectSite, fetchClientHistory, setActiveView
   }
 })

@@ -1,192 +1,678 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat Layout — AI Pilot Design</title>
-  <link rel="stylesheet" href="/src/style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen overflow-hidden">
-  <div class="flex h-screen">
-    <!-- Sidebar -->
-    <aside class="w-72 shrink-0 bg-slate-950 border-r border-slate-800 flex flex-col overflow-hidden">
-      <div class="px-4 py-5 border-b border-slate-800">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-600/20">AP</div>
-          <div>
-            <h1 class="text-base font-bold text-slate-100">AI Pilot</h1>
-            <p class="text-xs text-slate-500">Управление сайтами</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat Layout — AI Pilot Design</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body class="bg-chat-bg h-screen overflow-hidden p-5">
+    <div class="flex gap-5 h-full">
+      <!-- Sidebar -->
+      <aside
+        class="w-72 shrink-0 bg-gray-100 flex flex-col divide-y divide-gray-200 rounded-2xl overflow-hidden py-5 px-4"
+      >
+        <div class="side-header space-y-5 pb-5 shrink-0">
+          <div class="flex justify-between">
+            <img
+              src="img/logo-aipilot-v3.png"
+              class="size-16 shrink-0"
+              alt="AI Pilot"
+            />
+
+            <div class="open-close">
+              <svg
+                class="size-7 text-gray-500"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  d="M9.67272 0.522841C10.8339 0.522841 11.76 0.522714 12.4963 0.602493C13.2453 0.683657 13.8789 0.854248 14.4264 1.25197C14.7504 1.48739 15.0355 1.77247 15.2709 2.0965C15.6686 2.64394 15.8392 3.27758 15.9204 4.02655C16.0002 4.7629 16 5.68895 16 6.85014V9.14986C16 10.3111 16.0002 11.2371 15.9204 11.9735C15.8392 12.7224 15.6686 13.3561 15.2709 13.9035C15.0355 14.2275 14.7504 14.5126 14.4264 14.748C13.8789 15.1458 13.2453 15.3163 12.4963 15.3975C11.76 15.4773 10.8339 15.4772 9.67272 15.4772H6.3273C5.16611 15.4772 4.24006 15.4773 3.50371 15.3975C2.75474 15.3163 2.1211 15.1458 1.57366 14.748C1.24963 14.5126 0.964549 14.2275 0.729131 13.9035C0.331407 13.3561 0.160817 12.7224 0.0796529 11.9735C-0.000126137 11.2371 1.25338e-09 10.3111 1.25338e-09 9.14986V6.85014C1.25329e-09 5.68895 -0.000126137 4.7629 0.0796529 4.02655C0.160817 3.27758 0.331407 2.64394 0.729131 2.0965C0.964549 1.77247 1.24963 1.48739 1.57366 1.25197C2.1211 0.854248 2.75474 0.683657 3.50371 0.602493C4.24006 0.522714 5.16611 0.522841 6.3273 0.522841H9.67272ZM5.54303 1.88715V14.1118C5.78636 14.1128 6.04709 14.1169 6.3273 14.1169H9.67272C10.8639 14.1169 11.7032 14.1164 12.3493 14.0465C12.9824 13.9779 13.3497 13.8494 13.6268 13.6482C13.8354 13.4966 14.0195 13.3125 14.1711 13.1039C14.3723 12.8268 14.5007 12.4595 14.5693 11.8264C14.6393 11.1803 14.6398 10.341 14.6398 9.14986V6.85014C14.6398 5.65896 14.6393 4.81967 14.5693 4.1736C14.5007 3.54048 14.3723 3.17318 14.1711 2.89609C14.0195 2.68747 13.8354 2.50337 13.6268 2.35179C13.3497 2.1506 12.9824 2.02212 12.3493 1.95353C11.7032 1.88358 10.8639 1.88307 9.67272 1.88307H6.3273C6.04709 1.88307 5.78636 1.8862 5.54303 1.88715ZM4.1828 1.91166C3.99125 1.9216 3.8148 1.93577 3.65076 1.95353C3.01764 2.02212 2.65034 2.1506 2.37325 2.35179C2.16463 2.50337 1.98052 2.68747 1.82895 2.89609C1.62776 3.17318 1.49928 3.54048 1.43069 4.1736C1.36074 4.81967 1.36023 5.65896 1.36023 6.85014V9.14986C1.36023 10.341 1.36074 11.1803 1.43069 11.8264C1.49928 12.4595 1.62776 12.8268 1.82895 13.1039C1.98052 13.3125 2.16463 13.4966 2.37325 13.6482C2.65034 13.8494 3.01764 13.9779 3.65076 14.0465C3.81478 14.0642 3.99127 14.0774 4.1828 14.0873V1.91166Z"
+                  fill="currentColor"
+                ></path>
+              </svg>
+            </div>
+          </div>
+          <!-- Поиск -->
+          <div class="relative">
+            <svg
+              class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Поиск"
+              class="w-full py-2 pl-10 pr-4 bg-white border-0 rounded-xl text-gray-700 text-sm placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-accent/50"
+            />
+          </div>
+          <!-- Новый чат -->
+          <div class="">
+            <button class="new-chat">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="size-4"
+                viewBox="0 0 16 16"
+                fill="none"
+              >
+                <path
+                  d="M8 0.599609C3.91309 0.599609 0.599609 3.91309 0.599609 8C0.599609 9.13376 0.855461 10.2098 1.3125 11.1719L1.5918 11.7588L2.76562 11.2012L2.48633 10.6143C2.11034 9.82278 1.90039 8.93675 1.90039 8C1.90039 4.63106 4.63106 1.90039 8 1.90039C11.3689 1.90039 14.0996 4.63106 14.0996 8C14.0996 11.3689 11.3689 14.0996 8 14.0996C7.31041 14.0996 6.80528 14.0514 6.35742 13.9277C5.91623 13.8059 5.49768 13.6021 4.99707 13.2529C4.26492 12.7422 3.21611 12.5616 2.35156 13.1074L2.33789 13.1162L2.32422 13.126L1.58789 13.6436L2.01953 14.9297L3.0459 14.207C3.36351 14.0065 3.83838 14.0294 4.25293 14.3184C4.84547 14.7317 5.39743 15.011 6.01172 15.1807C6.61947 15.3485 7.25549 15.4004 8 15.4004C12.0869 15.4004 15.4004 12.0869 15.4004 8C15.4004 3.91309 12.0869 0.599609 8 0.599609ZM7.34473 4.93945V7.34961H4.93945V8.65039H7.34473V11.0605H8.64551V8.65039H11.0605V7.34961H8.64551V4.93945H7.34473Z"
+                  fill="currentColor"
+                ></path>
+              </svg>
+              <span>Новый чат</span>
+            </button>
           </div>
         </div>
-      </div>
-
-      <div class="px-4 pt-4 pb-2">
-        <div class="relative">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <input type="text" placeholder="Поиск..." class="w-full bg-slate-900 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 rounded-xl pl-10 pr-4 py-2 outline-none focus:border-blue-500/40 transition-colors" />
-        </div>
-      </div>
-
-      <div class="px-4 py-3 flex-1 overflow-y-auto scrollbar-thin">
-        <h2 class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Мои сайты</h2>
-        <nav class="space-y-1 mb-6">
-          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl bg-blue-500/10 text-blue-400 text-sm font-medium transition-colors">
-            <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0"></span>
-            <span class="truncate">pilotsite.ru</span>
-          </a>
-          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 text-slate-300 text-sm transition-colors">
-            <span class="w-2 h-2 rounded-full bg-green-500 shrink-0"></span>
-            <span class="truncate">client1.ru</span>
-          </a>
-          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 text-slate-400 text-sm transition-colors">
-            <span class="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>
-            <span class="truncate">obelisk.evgexpert.ru</span>
-          </a>
-        </nav>
-
-        <h2 class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Недавние диалоги</h2>
-        <div class="space-y-1">
-          <a href="#" class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors">
-            <span class="block text-sm text-slate-300 truncate">Обновить контакты</span>
-            <span class="block text-xs text-slate-600">28 мая</span>
-          </a>
-          <a href="#" class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors">
-            <span class="block text-sm text-slate-300 truncate">Добавить страницу «Услуги»</span>
-            <span class="block text-xs text-slate-600">27 мая</span>
-          </a>
-          <a href="#" class="block px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-colors">
-            <span class="block text-sm text-slate-300 truncate">Настроить формы</span>
-            <span class="block text-xs text-slate-600">26 мая</span>
-          </a>
-        </div>
-      </div>
-
-      <div class="px-4 py-4 border-t border-slate-800">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300">A</div>
+        <!-- Chat history - занимает всё свободное пространство -->
+        <div class="relative flex-1 min-h-0 flex flex-col my-5">
+          <div
+            class="chat-history scrollbar-thin flex-1 overflow-y-auto space-y-5 px-1"
+          >
+            <!-- Today -->
             <div>
-              <span class="block text-sm text-slate-200 font-medium">admin@demo.ru</span>
-              <span class="block text-xs text-slate-600">Администратор</span>
+              <p class="text-gray-400 text-sm mb-3">Сегодня</p>
+              <ul class="text-gray-800 space-y-2">
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >How to be a better person?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >Hacking FBI server with linux?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >How to get rich from youtube as an influe?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >Help me with web development tasks fro</a
+                  >
+                </li>
+              </ul>
+            </div>
+            <!-- 7 Days -->
+            <div>
+              <p class="text-gray-400 text-sm mb-3">7 дней</p>
+              <ul class="text-gray-800 space-y-2">
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >How to be a better person?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >Hacking FBI server with linux?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >How to get rich from youtube as an influe?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >Help me with web development tasks fro</a
+                  >
+                </li>
+              </ul>
+            </div>
+            <!-- 30 Days -->
+            <div>
+              <p class="text-gray-400 text-sm mb-3">30 дней</p>
+              <ul class="text-gray-800 space-y-2">
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >How to get rich from youtube as an influe?</a
+                  >
+                </li>
+                <li>
+                  <a href="#" class="hover:text-accent"
+                    >Help me with web development tasks fro</a
+                  >
+                </li>
+              </ul>
             </div>
           </div>
-          <button class="p-2 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer" title="Выйти">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
-          </button>
+          <!-- Градиент к прозрачному внизу -->
+          <div
+            class="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-linear-to-t from-gray-100 to-transparent"
+          ></div>
         </div>
-      </div>
-    </aside>
-
-    <!-- Main area -->
-    <main class="flex-1 flex flex-col min-w-0">
-      <!-- Header чата -->
-      <header class="shrink-0 px-6 py-3 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-        <div class="flex items-center gap-3">
-          <div>
-            <h2 class="text-sm font-semibold text-slate-100">pilotsite.ru</h2>
-            <p class="text-xs text-slate-500">Активный сайт · 2 задачи ожидают</p>
-          </div>
-        </div>
-      </header>
-
-      <!-- Messages -->
-      <div class="flex-1 overflow-y-auto px-4 py-6 space-y-4 scrollbar-thin">
-        <!-- Дата-разделитель -->
-        <div class="flex justify-center"><span class="text-xs text-slate-600 bg-slate-800/50 rounded-full px-4 py-1">28 мая 2026</span></div>
-
-        <!-- Приветствие -->
-        <div class="flex justify-start animate-fade-in">
-          <div class="max-w-[75%] bg-slate-800/80 text-slate-100 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed">
-            <p>Привет! Я AI Pilot. Чем могу помочь? Могу:</p>
-            <ul class="list-disc list-inside mt-2 text-slate-300 space-y-1">
-              <li>Обновить контент на сайте</li>
-              <li>Добавить/изменить страницы</li>
-              <li>Настроить плагины и опции</li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Сообщение пользователя -->
-        <div class="flex justify-end animate-fade-in">
-          <div class="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
-            <p>Обнови контакты на главной. Телефон: +7 (4012) 999-999, email: hello@pilotsite.ru</p>
-            <span class="block text-[10px] text-blue-200 mt-1 text-right">10:34</span>
-          </div>
-        </div>
-
-        <!-- Ответ ассистента -->
-        <div class="flex justify-start animate-fade-in">
-          <div class="max-w-[75%] bg-slate-800/80 text-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed">
-            <p>Нашёл текущие контакты:</p>
-            <div class="bg-slate-900/60 rounded-lg p-3 mt-2 text-xs font-mono space-y-1">
-              <div><span class="text-blue-400">Телефон:</span> <span class="text-slate-300">+7 (4012) 123-456</span></div>
-              <div><span class="text-blue-400">Email:</span> <span class="text-slate-300">info@pilotsite.ru</span></div>
+        <!-- Footer - всегда внизу -->
+        <div class="chat-footer shrink-0 space-y-4">
+          <!-- Профиль -->
+          <div class="profile-card">
+            <div class="flex items-center gap-3">
+              <img
+                class="profile-img rounded-full size-10 shrink-0"
+                src="img/user-img.png"
+                alt=""
+              />
+              <div class="text-sm text-gray-800">
+                <p>James Broeng</p>
+                <p class="text-gray-500">test@aipilot.ru</p>
+              </div>
             </div>
-            <p class="mt-2">Хотите заменить оба контакта? Я подготовлю изменения.</p>
-            <span class="block text-[10px] text-slate-500 mt-1">10:35</span>
-          </div>
-        </div>
+            <div class="profile-setting flex flex-col justify-between">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="size-4 text-gray-500"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                />
+              </svg>
 
-        <!-- Подтверждение пользователя -->
-        <div class="flex justify-end animate-fade-in">
-          <div class="max-w-[75%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed shadow-lg">
-            <p>Да, заменяй</p>
-            <span class="block text-[10px] text-blue-200 mt-1 text-right">10:35</span>
-          </div>
-        </div>
-
-        <!-- Action proposal -->
-        <div class="flex justify-start animate-fade-in">
-          <div class="max-w-[85%] bg-slate-800/80 border border-amber-500/20 rounded-2xl rounded-bl-md p-4 text-sm shadow-lg">
-            <div class="flex items-center gap-2 mb-2 text-slate-300">
-              <span class="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">!</span>
-              <span class="font-medium">Предлагаю действие</span>
-            </div>
-            <p class="text-slate-300 mb-2">Обновить контакты на главной странице:</p>
-            <div class="bg-slate-950/60 rounded-xl p-3 mb-3 font-mono text-xs space-y-1">
-              <div><span class="text-blue-400">option:</span> <span class="text-slate-300">contacts_phone</span></div>
-              <div><span class="text-blue-400">new value:</span> <span class="text-green-300">+7 (4012) 999-999</span></div>
-              <div><span class="text-blue-400">option:</span> <span class="text-slate-300">contacts_email</span></div>
-              <div><span class="text-blue-400">new value:</span> <span class="text-green-300">hello@pilotsite.ru</span></div>
-            </div>
-            <div class="flex gap-2">
-              <button class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer">✓ Подтвердить</button>
-              <button class="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-xl transition-colors cursor-pointer">✕ Отклонить</button>
-            </div>
-            <span class="block text-[10px] text-slate-600 mt-2">10:36</span>
-          </div>
-        </div>
-
-        <!-- Typing -->
-        <div class="flex justify-start animate-fade-in">
-          <div class="bg-slate-800/80 text-slate-400 rounded-2xl rounded-bl-md px-4 py-3 text-sm">
-            <div class="flex items-center gap-1.5">
-              <span class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]"></span>
-              <span class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]" style="animation-delay: 0.16s;"></span>
-              <span class="w-2 h-2 bg-slate-500 rounded-full animate-[pulse-dot_1.4s_ease-in-out_infinite]" style="animation-delay: 0.32s;"></span>
+              <button
+                type="button"
+                class="flex size-4 items-center justify-center rounded-xl text-[#666666] transition hover:bg-white/70"
+                title="Выйти"
+                aria-label="Выйти"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  class="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <path d="M16 17l5-5-5-5"></path>
+                  <path d="M21 12H9"></path>
+                </svg>
+              </button>
             </div>
           </div>
-        </div>
-      </div>
+          <!-- Setting -->
+          <div
+            class="flex items-center justify-between rounded-b-2xl bg-[#f4f4f6] px-5"
+          >
+            <div
+              class="grid h-[34px] w-[235px] grid-cols-2 rounded-xl bg-[#eeeeF1] p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]"
+              role="group"
+              aria-label="Color mode"
+            >
+              <button
+                type="button"
+                class="flex items-center justify-center rounded-[10px] bg-[#fafafa] text-[#666666] shadow-[0_1px_4px_rgba(0,0,0,0.18)] ring-1 ring-black/10"
+                title="Светлая"
+                aria-label="Color mode: Светлая"
+                aria-pressed="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <circle cx="12" cy="12" r="3.2"></circle>
+                  <path d="M12 3.5v2"></path>
+                  <path d="M12 18.5v2"></path>
+                  <path d="M4.5 12h2"></path>
+                  <path d="M17.5 12h2"></path>
+                  <path d="m6.7 6.7 1.4 1.4"></path>
+                  <path d="m15.9 15.9 1.4 1.4"></path>
+                  <path d="m17.3 6.7-1.4 1.4"></path>
+                  <path d="m8.1 15.9-1.4 1.4"></path>
+                </svg>
+              </button>
 
-      <!-- Input -->
-      <div class="shrink-0 px-4 py-3 border-t border-slate-800 bg-slate-950/80 backdrop-blur">
-        <div class="flex items-end gap-2 bg-slate-900 border border-slate-700/60 rounded-2xl px-4 py-3 transition-colors max-w-3xl mx-auto">
-          <textarea rows="1" placeholder="Напишите сообщение…"
-                    class="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 resize-none outline-none leading-relaxed max-h-32"></textarea>
-          <button disabled class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-600 cursor-not-allowed transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </button>
+              <button
+                type="button"
+                class="flex items-center justify-center rounded-[10px] text-[#666666] transition hover:bg-white/60"
+                title="Тёмная"
+                aria-label="Color mode: Тёмная"
+                aria-pressed="false"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path
+                    d="M12 3.5a7 7 0 0 0 8.5 8.5A8.5 8.5 0 1 1 12 3.5Z"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </main>
-  </div>
-</body>
+      </aside>
+
+      <!-- Main area -->
+      <main class="flex-1 flex flex-col min-w-0">
+        <section
+          class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-chat-bg"
+        >
+          <!-- Messages -->
+          <div class="scrollbar-thin flex-1 overflow-y-auto px-6 pb-8 pt-2">
+            <div class="mx-auto flex w-full max-w-5xl flex-col gap-3">
+              <!-- Assistant: small message -->
+              <div class="flex items-start gap-3 animate-fade-in">
+                <img
+                  src="img/logo-aipilot-v2.png"
+                  alt=""
+                  class="size-9 shrink-0 rounded-full object-cover"
+                />
+
+                <div class="max-w-[560px]">
+                  <div
+                    class="rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed text-gray-800 shadow-sm ring-1 ring-black/5"
+                  >
+                    Hello! I’m your personal Assistant Slothpilot.
+                    <span class="ml-2 whitespace-nowrap text-xs text-gray-400"
+                      >10:25</span
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <!-- User: voice message -->
+              <div class="flex items-start justify-end gap-3 animate-slide-in">
+                <div class="max-w-[420px]">
+                  <div
+                    class="flex items-center gap-3 rounded-2xl rounded-tr-md bg-accent px-4 py-3 text-white shadow-lg shadow-accent/20"
+                  >
+                    <button
+                      type="button"
+                      class="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-accent"
+                      aria-label="Play voice message"
+                    >
+                      <svg viewBox="0 0 24 24" class="size-4 fill-current">
+                        <path d="M8 5v14l11-7z"></path>
+                      </svg>
+                    </button>
+
+                    <div class="flex h-8 flex-1 items-center gap-0.5">
+                      <span class="h-3 w-0.5 rounded-full bg-white/70"></span>
+                      <span class="h-5 w-0.5 rounded-full bg-white/80"></span>
+                      <span class="h-4 w-0.5 rounded-full bg-white/60"></span>
+                      <span class="h-7 w-0.5 rounded-full bg-white"></span>
+                      <span class="h-3 w-0.5 rounded-full bg-white/60"></span>
+                      <span class="h-6 w-0.5 rounded-full bg-white/90"></span>
+                      <span class="h-4 w-0.5 rounded-full bg-white/70"></span>
+                      <span class="h-8 w-0.5 rounded-full bg-white"></span>
+                      <span class="h-5 w-0.5 rounded-full bg-white/70"></span>
+                      <span class="h-3 w-0.5 rounded-full bg-white/60"></span>
+                      <span class="h-6 w-0.5 rounded-full bg-white/90"></span>
+                      <span class="h-4 w-0.5 rounded-full bg-white/70"></span>
+                      <span class="h-7 w-0.5 rounded-full bg-white"></span>
+                      <span class="h-3 w-0.5 rounded-full bg-white/60"></span>
+                      <span class="h-5 w-0.5 rounded-full bg-white/80"></span>
+                      <span class="h-4 w-0.5 rounded-full bg-white/70"></span>
+                      <span class="h-8 w-0.5 rounded-full bg-white"></span>
+                      <span class="h-5 w-0.5 rounded-full bg-white/70"></span>
+                      <span class="h-3 w-0.5 rounded-full bg-white/60"></span>
+                      <span class="h-6 w-0.5 rounded-full bg-white/90"></span>
+                    </div>
+
+                    <div class="flex shrink-0 flex-col items-end gap-1 text-xs">
+                      <span>02:12</span>
+                      <span
+                        class="inline-flex items-center gap-1 text-white/60"
+                      >
+                        11:25
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <img
+                  src="img/user-img.png"
+                  alt=""
+                  class="size-9 shrink-0 rounded-full object-cover"
+                />
+              </div>
+
+              <!-- Assistant: long message -->
+              <div class="flex items-start gap-3 animate-fade-in">
+                <img
+                  src="img/logo-aipilot-v2.png"
+                  alt=""
+                  class="size-9 shrink-0 rounded-full object-cover"
+                />
+
+                <div class="max-w-[560px]">
+                  <div
+                    class="rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed text-gray-800 shadow-sm ring-1 ring-black/5"
+                  >
+                    <p class="mb-3">
+                      Do Androids Dream of Electric Sheep is a 1968 dystopian
+                      science fiction novel by American writer Philip K. Dick.
+                      Set in a post-apocalyptic San Francisco, the story unfolds
+                      after a devastating global war.
+                    </p>
+
+                    <ol class="list-decimal space-y-1 pl-5">
+                      <li>
+                        <span class="font-medium">Androids and Humans:</span>
+                        The novel explores the uneasy coexistence of humans and
+                        androids.
+                      </li>
+                      <li>
+                        <span class="font-medium">Empathy and Identity:</span>
+                        Androids lack empathy, making them vulnerable to
+                        detection.
+                      </li>
+                      <li>
+                        <span class="font-medium">Status Symbols:</span>
+                        Owning real animals is a status symbol due to mass
+                        extinctions.
+                      </li>
+                    </ol>
+
+                    <div
+                      class="mt-2 flex items-center justify-end gap-1 text-xs text-gray-400"
+                    >
+                      12:25
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- User: external link -->
+              <div class="flex items-start justify-end gap-3 animate-slide-in">
+                <div class="w-full max-w-[420px]">
+                  <div
+                    class="overflow-hidden rounded-2xl rounded-tr-md bg-accent text-white shadow-lg shadow-accent/20"
+                  >
+                    <div
+                      class="flex items-start justify-between gap-4 bg-black/10 px-4 py-3"
+                    >
+                      <div>
+                        <p class="text-sm font-semibold">External Link Title</p>
+                        <p class="mt-1 text-xs text-white/60">
+                          External link description
+                        </p>
+                      </div>
+
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="size-5 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path
+                          d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+                        ></path>
+                        <path
+                          d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+                        ></path>
+                      </svg>
+                    </div>
+
+                    <div
+                      class="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+                    >
+                      <span class="truncate">https://www.externallink.com</span>
+                      <span
+                        class="flex shrink-0 items-center gap-1 text-xs text-white/60"
+                      >
+                        01:25
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <img
+                  src="img/user-img.png"
+                  alt=""
+                  class="size-9 shrink-0 rounded-full object-cover"
+                />
+              </div>
+
+              <!-- Assistant: message with actions -->
+              <div class="flex items-start gap-3 animate-fade-in">
+                <img
+                  src="img/logo-aipilot-v2.png"
+                  alt=""
+                  class="size-9 shrink-0 rounded-full object-cover"
+                />
+
+                <div class="max-w-[500px]">
+                  <div
+                    class="rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed text-gray-800 shadow-sm ring-1 ring-black/5"
+                  >
+                    <p>
+                      Duis aute irure dolor in reprehenderit in voluptate velit
+                      esse cillum dolore eu fugiat nulla pariatur.
+                    </p>
+
+                    <p class="mt-5">
+                      Excepteur sint occaecat cupidatat non proident, sunt in
+                      culpa qui officia deserunt mollit anim id est laborum. 💀
+                    </p>
+
+                    <div
+                      class="mt-2 flex items-center justify-end gap-1 text-xs text-gray-400"
+                    >
+                      02:25
+                    </div>
+                  </div>
+
+                  <div class="mt-2 flex items-center gap-4 pl-1 text-gray-400">
+                    <button
+                      class="transition hover:text-accent"
+                      aria-label="Listen"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="size-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M11 5 6 9H3v6h3l5 4V5Z"></path>
+                        <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+                      </svg>
+                    </button>
+
+                    <button
+                      class="transition hover:text-accent"
+                      aria-label="Copy"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="size-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <rect x="8" y="8" width="12" height="12" rx="2"></rect>
+                        <path d="M4 16V6a2 2 0 0 1 2-2h10"></path>
+                      </svg>
+                    </button>
+
+                    <button
+                      class="transition hover:text-accent"
+                      aria-label="Regenerate"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="size-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M21 12a9 9 0 0 1-15.5 6.3"></path>
+                        <path d="M3 12A9 9 0 0 1 18.5 5.7"></path>
+                        <path d="M18 3v4h4"></path>
+                        <path d="M6 21v-4H2"></path>
+                      </svg>
+                    </button>
+
+                    <button
+                      class="transition hover:text-accent"
+                      aria-label="Dislike"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="size-5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M17 14V2"></path>
+                        <path
+                          d="M9 18.1 10 14H4.8a2 2 0 0 1-2-2.4l1.4-7A2 2 0 0 1 6.2 3H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3.4a2 2 0 0 0-1.7 1l-3 5a2 2 0 0 1-3.6-1.9Z"
+                        ></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Typing -->
+              <div class="flex items-start justify-end gap-3 animate-slide-in">
+                <div
+                  class="flex h-10 items-center gap-1 rounded-2xl rounded-tr-md bg-accent px-4 shadow-lg shadow-accent/20"
+                >
+                  <span
+                    class="size-1.5 animate-[pulse-dot_1.4s_infinite] rounded-full bg-white"
+                  ></span>
+                  <span
+                    class="size-1.5 animate-[pulse-dot_1.4s_infinite_0.2s] rounded-full bg-white"
+                  ></span>
+                  <span
+                    class="size-1.5 animate-[pulse-dot_1.4s_infinite_0.4s] rounded-full bg-white"
+                  ></span>
+                </div>
+
+                <img
+                  src="img/user-img.png"
+                  alt=""
+                  class="size-9 shrink-0 rounded-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Composer -->
+          <div class="shrink-0 px-0 pb-0">
+            <form
+              class="flex min-h-28 items-start gap-3 rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-black/5"
+            >
+              <button
+                type="button"
+                class="mt-1 flex size-9 shrink-0 items-center justify-center rounded-xl text-gray-400 transition hover:bg-gray-100 hover:text-accent"
+                aria-label="Attach file"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  class="size-5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+                  ></path>
+                </svg>
+              </button>
+
+              <textarea
+                rows="1"
+                placeholder="Спросите AIPilot"
+                class="max-h-36 min-h-12 flex-1 resize-none bg-transparent pt-3 text-sm text-gray-800 placeholder-gray-500 outline-none"
+              ></textarea>
+
+              <div class="flex shrink-0 items-center gap-3 self-end">
+                <button
+                  type="button"
+                  class="flex size-9 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-accent/40 hover:text-accent"
+                  aria-label="Emoji"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    class="size-5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                    <path d="M9 9h.01"></path>
+                    <path d="M15 9h.01"></path>
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  class="flex size-9 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-accent/40 hover:text-accent"
+                  aria-label="Voice message"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    class="size-5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"
+                    ></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <path d="M12 19v3"></path>
+                  </svg>
+                </button>
+
+                <button
+                  type="submit"
+                  class="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-medium text-white shadow-lg shadow-accent/20 transition hover:bg-accent/90"
+                >
+                  <span>Send</span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    class="size-4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="m22 2-7 20-4-9-9-4Z"></path>
+                    <path d="M22 2 11 13"></path>
+                  </svg>
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
 </html>

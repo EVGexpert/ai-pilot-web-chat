@@ -1,6 +1,13 @@
 <script setup>
+/**
+ * MessageArea.vue
+ * Область сообщений по дизайну chat-layout.html.
+ * Сообщения с аватарками, date divider, streaming, typing indicator.
+ * Padding: pt-2 (8px) pb-8 (32px) px-6 (24px) per design.
+ */
 import MessageBubble from './MessageBubble.vue'
 import TypingIndicator from './TypingIndicator.vue'
+import { computed } from 'vue'
 
 const props = defineProps({
   messages: { type: Array, default: () => [] },
@@ -8,12 +15,34 @@ const props = defineProps({
   isLoading: { type: Boolean, default: false },
   isConnected: { type: Boolean, default: false },
   error: { default: null },
+  hasSite: { type: Boolean, default: true },
   startTitle: { type: String, default: 'Добро пожаловать' },
   startHint: { type: String, default: '' },
   clientMode: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['approve-action', 'reject-action'])
+
+/** Show no-site message in admin mode when no site selected */
+const showNoSite = computed(() => {
+  return !props.hasSite && !props.clientMode && props.isConnected && props.messages.length === 0
+})
+
+/** Group messages by date for dividers */
+const messageGroups = computed(() => {
+  if (!props.messages.length) return []
+  const groups = []
+  let currentDate = ''
+  for (const msg of props.messages) {
+    const msgDate = msg.date || ''
+    if (msgDate !== currentDate) {
+      groups.push({ date: msgDate, messages: [] })
+      currentDate = msgDate
+    }
+    groups[groups.length - 1].messages.push(msg)
+  }
+  return groups
+})
 </script>
 
 <template>

@@ -3,7 +3,9 @@ import { computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 
 const authStore = useAuthStore()
-const current = computed(() => authStore.theme)
+
+const isLight = computed(() => authStore.theme === 'light')
+const isDark = computed(() => authStore.theme === 'dark')
 
 function set(mode) {
   authStore.setTheme(mode)

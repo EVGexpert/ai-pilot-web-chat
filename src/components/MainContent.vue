@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
+import { useDevice } from '../composables/useDevice'
 import LoginForm from './LoginForm.vue'
 import AppSidebar from './AppSidebar.vue'
 import ChatWindow from './ChatWindow.vue'
@@ -9,9 +10,9 @@ import HistoryPanel from './HistoryPanel.vue'
 
 const authStore = useAuthStore()
 const sitesStore = useSitesStore()
+const { isMobile, sidebarOpen, toggleSidebar, closeSidebar } = useDevice()
 
-const sidebarOpen = ref(false)
-const isMobile = ref(window.innerWidth < 768)
+const sidebarCollapsed = ref(false)
 
 const sidebarClass = computed(() => {
   if (isMobile.value) {
@@ -29,26 +30,13 @@ function onResize() {
 
 onMounted(() => {
   authStore.initTheme()
-  window.addEventListener('resize', onResize)
   if (authStore.isAuthenticated) {
     sitesStore.fetchSites()
   }
 })
 
-onUnmounted(() => {
-  window.removeEventListener('resize', onResize)
-})
-
 function handleLogin() {
   sitesStore.fetchSites()
-}
-
-function toggleSidebar() {
-  sidebarOpen.value = !sidebarOpen.value
-}
-
-function closeSidebar() {
-  sidebarOpen.value = false
 }
 </script>
 

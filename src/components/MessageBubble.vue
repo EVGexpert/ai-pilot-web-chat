@@ -1,13 +1,25 @@
 <script setup>
+/**
+ * MessageBubble.vue
+ * Бабл сообщения по дизайну chat-layout.html:
+ *   - Ассистент: avatar слева + content + время + actions
+ *   - Пользователь: content + avatar справа
+ *   - Системное сообщение по центру
+ *   - Markdown рендеринг через marked + DOMPurify
+ *   - Action proposal card
+ *
+ * Ассистент: bg-white, rounded-2xl rounded-tl-md, shadow-sm, ring-1 ring-black/5, px-4 py-3, text-sm text-gray-800
+ * Пользователь: bg-accent, rounded-2xl rounded-tr-md, text-white, shadow-lg shadow-accent/20, px-4 py-3
+ * Тёмная тема: ассистент bg var(--chat-assistant-bg) с border, пользователь bg var(--chat-user-bg)
+ */
 import { computed } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import ActionProposalCard from './ActionProposalCard.vue'
 
-// Настройка marked
 marked.setOptions({
-  gfm: true,        // GitHub Flavored Markdown (таблицы, зачёркивание, ссылки)
-  breaks: true,     // перенос строки → <br>
+  gfm: true,
+  breaks: true,
 })
 
 const props = defineProps({
@@ -31,20 +43,25 @@ function isAction(msg) {
 
 defineEmits(['approve-action', 'reject-action'])
 
-/** Рендерим содержимое сообщения как безопасный HTML из Markdown */
 const renderedContent = computed(() => {
   const raw = props.message.content || ''
   if (!raw) return ''
-  
-  // Сообщения пользователя и системы — plain text (не парсим маркдаун от пользователя)
   if (isUser(props.message) || isSystem(props.message)) {
     return DOMPurify.sanitize(raw)
   }
-  
-  // Сообщения ассистента — парсим маркдаун
   const html = marked.parse(raw)
   return DOMPurify.sanitize(html)
 })
+
+function formatTime(msg) {
+  if (!msg.time) return ''
+  return msg.time
+}
+
+/** Copy message content to clipboard */
+function copyContent() {
+  navigator.clipboard?.writeText(props.message.content || '')
+}
 </script>
 
 <template>
@@ -90,6 +107,11 @@ const renderedContent = computed(() => {
       <div v-html="renderedContent" class="msg-content"></div>
       <span v-if="message.time" class="block text-[10px] light:text-gray-500 text-slate-500 mt-1">{{ message.time }}</span>
     </div>
+    <img
+      src="/img/user-img.png"
+      alt=""
+      class="bubble-avatar"
+    />
   </div>
 </template>
 

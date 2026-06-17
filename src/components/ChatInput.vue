@@ -1,5 +1,11 @@
 <script setup>
-import { ref } from 'vue'
+/**
+ * ChatInput.vue
+ * Компонент ввода сообщения по дизайну chat-layout.html.
+ * Attach + textarea + emoji + voice + send
+ * Форма: flex, min-h-112px, gap-12px, bg-white, rounded-2xl, shadow-sm, ring-1 ring-black/5
+ */
+import { ref, computed } from 'vue'
 
 const emit = defineEmits(['send'])
 const props = defineProps({
@@ -11,11 +17,13 @@ const props = defineProps({
 const messageInput = ref('')
 const textareaRef = ref(null)
 
+const hasText = computed(() => messageInput.value.trim().length > 0)
+
 function autoResize() {
   const el = textareaRef.value
   if (el) {
     el.style.height = 'auto'
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+    el.style.height = Math.min(el.scrollHeight, 144) + 'px'
   }
 }
 

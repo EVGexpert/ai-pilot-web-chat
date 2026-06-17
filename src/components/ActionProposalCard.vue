@@ -37,19 +37,16 @@ function handleReject() {
   emit('reject', props.action.id)
 }
 
-/** Определяем, является ли строка diff добавлением (+) */
 function isAddition(line) {
   if (typeof line === 'object') return !!(line.added || line.isAddition)
   return line.startsWith('+')
 }
 
-/** Определяем, является ли строка diff удалением (-) */
 function isDeletion(line) {
   if (typeof line === 'object') return !!(line.removed || line.isDeletion)
   return line.startsWith('-')
 }
 
-/** Чистим префикс для отображения */
 function cleanDiff(line) {
   if (typeof line === 'object') return line.text || ''
   return line.replace(/^[+-]\s*/, '')

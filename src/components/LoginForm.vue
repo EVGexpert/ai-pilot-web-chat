@@ -38,12 +38,12 @@ async function handleLogin() {
       let siteUrl = ''
       if (data.sites && data.sites.length > 0) {
         siteUrl = data.sites[0].url || ''
-        sitesStore.sites.value = data.sites.map(s => ({
+        sitesStore.setSites(data.sites.map(s => ({
           id: s.url || s.id,
           name: s.name || s.url,
           status: 'online',
           url: s.url
-        }))
+        })))
       }
       authStore.login(data.token, {
         name: name.value.trim() || userData.name || email.value.split('@')[0],
