@@ -36,7 +36,8 @@ const ws = useGatewayClient(gatewayUrl, {
 })
 
 // Реактивный статус подключения
-const isConnected = computed(() => wsStatus.value === 'connected')
+// REST API всегда доступен — WS нужен только для стриминга
+const isConnected = computed(() => true)
 const wsStatus = computed(() => {
   if (ws.connected.value) return 'connected'
   if (ws.reconnecting.value) return 'reconnecting'

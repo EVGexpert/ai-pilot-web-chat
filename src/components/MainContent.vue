@@ -114,6 +114,7 @@ function handleLogin() {
   overflow: hidden;
   background: var(--bg-chat);
   gap: 20px;
+  padding: 20px;
 }
 
 .main-area {
@@ -121,7 +122,7 @@ function handleLogin() {
   display: flex;
   overflow: hidden;
   min-width: 0;
-  padding: 20px;
+  padding: 0;
 }
 
 .sidebar-overlay {
