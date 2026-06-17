@@ -17,6 +17,8 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           timeout: 30
+          host_key_checking: false
+          protocol: tcp
           script: |
             echo "✅ SSH connection successful"
             whoami
@@ -30,6 +32,8 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           timeout: 120
+          host_key_checking: false
+          protocol: tcp
           script: |
             set -e
             echo "🚀 Starting deployment..."
