@@ -11,12 +11,19 @@ jobs:
       - uses: actions/checkout@v4
 
       # ✅ Используем GitHub Secrets
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "SSH key saved"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          key_path: ~/.ssh/deploy_key
           envs: JWT_SECRET,GATEWAY_TOKEN
           timeout: 120
           debug: true
