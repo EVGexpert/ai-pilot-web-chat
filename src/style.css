@@ -1,30 +1,34 @@
-/* Inter Variable */
-@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap");
+/* ========================================
+   AI Pilot — Design System v3
+   Based on design/src/style.css + chat-layout.html
+   ======================================== */
 
-/* Tailwind CSS v4 */
+/* Tailwind CSS v4 — MUST be first */
 @import "tailwindcss";
 
-/* ─── Tailwind v4 Theme Tokens ─── */
+/* ─── Tailwind v4 Theme Tokens (from design system) ─── */
 @theme {
+  /* Chat-specific colors */
+  --color-chat-bg: #eae9ec;
   --color-accent: #7e4ce0;
   --color-accent-hover: #6a3dc0;
-  --color-chat-bg: #eae9ec;
   --color-chat-surface: #1e293b;
   --color-chat-sidebar: #0b1120;
   --color-chat-border: #334155;
   --color-chat-text: #e2e8f0;
   --color-chat-text-muted: #94a3b8;
   --color-chat-accent: #3b82f6;
+  --color-chat-accent-hover: #2563eb;
   --color-chat-success: #22c55e;
   --color-chat-warning: #f59e0b;
   --color-chat-danger: #ef4444;
+  --color-chat-user: #3b82f6;
+  --color-chat-assistant: #1e293b;
+  --color-chat-system: #1e293b;
   --font-chat: "Inter", system-ui, -apple-system, sans-serif;
 }
 
-@import "tailwindcss";
-
 @custom-variant light (&:where([data-theme="light"] *));
-
 
 /* ============ CSS Variables (Light) ============ */
 :root {
@@ -52,9 +56,9 @@
   --space-xxl: 40px;
 
   /* Основная палитра */
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-primary-light: #eff6ff;
+  --color-primary: #7e4ce0;
+  --color-primary-hover: #6a3dc0;
+  --color-primary-light: #e7e6f0;
   --color-primary-content: #191919;
   --color-accent: #7e4ce0;
   --color-accent-hover: #6a3dc0;
@@ -79,7 +83,7 @@
   --text-inverse: #ffffff;
 
   /* Границы */
-  --border-color: #e2e8f0;
+  --border-color: #e8e8e8;
   --border-light: #f1f1f1;
   --border-radius-sm: 8px;
   --border-radius-md: 12px;
@@ -106,12 +110,12 @@
   --z-dialog: 1500;
 
   /* Chat-specific */
-  --chat-user-bg: #3b82f6;
+  --chat-user-bg: #7e4ce0;
   --chat-user-color: #ffffff;
-  --chat-assistant-bg: #f1f5f9;
-  --chat-assistant-color: #191919;
-  --chat-assistant-border: #e8e8e8;
-  --chat-input-bg: #f5f5f6;
+  --chat-assistant-bg: #ffffff;
+  --chat-assistant-color: #1f2937;
+  --chat-assistant-border: rgba(0, 0, 0, 0.05);
+  --chat-input-bg: #ffffff;
 
   /* Sidebar */
   --sidebar-width: 288px;
@@ -137,42 +141,55 @@
 
 /* ============ Dark Theme ============ */
 [data-theme="dark"] {
-  --color-primary: #3b82f6;
-  --color-primary-hover: #60a5fa;
-  --color-primary-light: #1e3a5f;
+  --color-primary: #a57de4;
+  --color-primary-hover: #b895e8;
+  --color-primary-light: #453266;
   --color-primary-content: #ededed;
   --color-accent: #a57de4;
   --color-accent-hover: #b895e8;
 
-  --bg-primary: #020617;
-  --bg-secondary: #0f172a;
-  --bg-tertiary: #1e293b;
-  --bg-input: #1e293b;
-  --bg-card: #0f172a;
-  --bg-sidebar: #020617;
-  --bg-hover: #1e293b;
-  --code-bg: #0f172a;
+  --bg-primary: #1c1c1c;
+  --bg-secondary: #222222;
+  --bg-tertiary: #2b2b2b;
+  --bg-input: #2d2c29;
+  --bg-card: #222222;
+  --bg-sidebar: #191919;
+  --bg-hover: #333333;
+  --bg-chat: #141419;
+  --code-bg: #1a1a2e;
 
-  --text-primary: #f1f5f9;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --text-quaternary: #64748b;
-  --text-muted: #475569;
-  --text-inverse: #020617;
+  --text-primary: #ededed;
+  --text-secondary: #bfbfbf;
+  --text-tertiary: #858686;
+  --text-quaternary: #646565;
+  --text-muted: #4f4f50;
+  --text-inverse: #191919;
 
-  --border-color: #1e293b;
-  --border-light: #0f172a;
+  --border-color: #333330;
+  --border-light: #2a2b2d;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
 
-  --chat-user-bg: #3b82f6;
+  --chat-user-bg: #a57de4;
   --chat-user-color: #ffffff;
-  --chat-assistant-bg: #1e293b;
-  --chat-assistant-color: #f1f5f9;
-  --chat-assistant-border: #334155;
-  --chat-input-bg: #1e293b;
+  --chat-assistant-bg: #222222;
+  --chat-assistant-color: #ededed;
+  --chat-assistant-border: rgba(255, 255, 255, 0.08);
+  --chat-input-bg: #222222;
+
+  /* Theme toggle dark */
+  --toggle-bg: #2b2b2b;
+  --toggle-active-bg: #3a3a3a;
+  --toggle-text: #999999;
+  --toggle-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --toggle-shadow-active: 0 1px 4px rgba(0, 0, 0, 0.4);
+  --toggle-ring: rgba(255, 255, 255, 0.1);
+
+  /* Sidebar gradient dark */
+  --sidebar-gradient-from: #191919;
+  --sidebar-gradient-to: transparent;
 }
 
 /* ============ Reset & Base ============ */
@@ -238,75 +255,86 @@ body {
   opacity: 0;
 }
 
-/* ============ Custom Animations ============ */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.25s ease-out both;
-}
-
-/* ============ Mobile + Safe Area ============ */
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(16px);
+/* ============ Animations & Utilities (Tailwind v4) ============ */
+@layer utilities {
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes pulse-dot {
+    0%, 80%, 100% {
+      transform: scale(0.6);
+      opacity: 0.4;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-slide-in {
+    animation: slideInRight 0.25s ease-out;
+  }
+
+  /* Scrollbar thin utility */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--text-muted);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
 
-@keyframes pulse-dot {
-  0%,
-  80%,
-  100% {
-    transform: scale(0.6);
-    opacity: 0.4;
+/* ============ Components (Tailwind v4) ============ */
+@layer components {
+  .new-chat {
+    @apply flex justify-center items-center gap-3 bg-white rounded-xl shadow-xl shadow-accent/10 text-sm text-gray-600 w-full px-3 py-2 hover:bg-accent/70 hover:text-white transition-colors;
   }
-  40% {
-    transform: scale(1);
-    opacity: 1;
+
+  .profile-card {
+    @apply flex justify-between bg-white p-4 rounded-xl shadow-sm;
   }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.2s ease-out;
-}
-
-.animate-slide-in {
-  animation: slideInRight 0.25s ease-out;
-}
-
-/* ============ Scrollbar Thin Utility ============ */
-.scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: var(--text-muted) transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar {
-  width: 3px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: var(--text-muted);
-  border-radius: 3px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-button {
-  display: none;
-}
-
-.scrollbar-thin::-webkit-scrollbar-corner {
-  background: transparent;
 }
 
 /* ============ Mobile + Safe Area ============ */
