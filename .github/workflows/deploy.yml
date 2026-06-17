@@ -10,48 +10,57 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ✅ Используем GitHub Secrets
-      - name: Setup SSH Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          echo "SSH key saved"
-
-      - name: Deploy via SSH
+      - name: Test SSH Connection
         uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
-          key_path: ~/.ssh/deploy_key
-          envs: JWT_SECRET,GATEWAY_TOKEN
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          timeout: 30
+          script: |
+            echo "✅ SSH connection successful"
+            whoami
+            pwd
+
+      - name: Deploy via SSH
+        if: success()
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
           timeout: 120
-          debug: true
           script: |
             set -e
-            cd ~/ai-pilot-web-chat
+            echo "🚀 Starting deployment..."
+            cd ~/ai-pilot-web-chat || exit 1
+            echo "📁 In directory: $(pwd)"
 
             # Сбрасываем локальные изменения
-            git stash --include-untracked
-            git clean -fd
+            git stash --include-untracked || true
+            git clean -fd || true
             git pull origin main
+            echo "✅ Git updated"
 
             # Docker сеть
-            docker network create aipilot 2>/dev/null || true
-
-            # === Auth API (деплоится отдельно через ai-pilot-auth-api repo!) ===
-            echo "⏩ Auth API не деплоится отсюда — используйте EVGexpert/ai-pilot-auth-api"
+            docker network create aipilot 2>/dev/null || echo "Network exists"
 
             # === Веб-чат ===
-            docker build -t ai-pilot-chat .
-            docker rm -f ai-pilot-chat 2>/dev/null || true
+            echo "🔨 Building Docker image..."
+            docker build -t ai-pilot-chat . || exit 1
+            echo "✅ Image built"
+
+            echo "🛑 Stopping old container..."
+            docker rm -f ai-pilot-chat 2>/dev/null || echo "No old container"
+
+            echo "🚀 Starting new container..."
             docker run -d \
               --name ai-pilot-chat \
               --restart unless-stopped \
               --network aipilot \
               --add-host host.docker.internal:host-gateway \
               -p 127.0.0.1:3000:80 \
-              ai-pilot-chat
+              ai-pilot-chat || exit 1
 
             docker image prune -f
             echo "✅ Deploy complete: $(date)"
