@@ -19,41 +19,27 @@ jobs:
       - name: Add host to known_hosts
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy via SSH
+      - name: Test SSH
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "echo 'SSH works!'"
+
+      - name: Git Pull
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && git pull origin main"
+
+      - name: Docker Build
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && docker build -t ai-pilot-chat ."
+
+      - name: Docker Deploy
         run: |
           ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
-            set -e
-            echo "🚀 Starting deployment..."
-            
-            cd ~/ai-pilot-web-chat || { echo "❌ Failed to cd"; exit 1; }
-            echo "📁 In directory: $(pwd)"
-            
-            echo "📥 Pulling latest code..."
-            git stash --include-untracked || true
-            git clean -fd || true
-            git pull origin main
-            echo "✅ Git updated"
-            
-            echo "🐳 Creating Docker network..."
-            docker network create aipilot 2>/dev/null || echo "Network exists"
-            
-            echo "🔨 Building image..."
-            docker build -t ai-pilot-chat . || { echo "❌ Docker build failed"; exit 1; }
-            echo "✅ Image built"
-            
-            echo "🛑 Stopping old container..."
-            docker rm -f ai-pilot-chat 2>/dev/null || echo "No old container"
-            
-            echo "🚀 Starting new container..."
+            docker network create aipilot 2>/dev/null || true
+            docker rm -f ai-pilot-chat 2>/dev/null || true
             docker run -d \
               --name ai-pilot-chat \
               --restart unless-stopped \
               --network aipilot \
               --add-host host.docker.internal:host-gateway \
               -p 127.0.0.1:3000:80 \
-              ai-pilot-chat || { echo "❌ Docker run failed"; exit 1; }
-            echo "✅ Container started"
-            
+              ai-pilot-chat
             docker image prune -f
-            echo "✅ Deploy complete: $(date)"
+            echo "✅ Deployed!"
           EOF
