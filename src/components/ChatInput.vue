@@ -41,9 +41,9 @@ defineExpose({ messageInput })
 </script>
 
 <template>
-  <footer class="shrink-0 px-4 py-3 border-t border-gray-200 bg-white/80 backdrop-blur-sm">
+  <footer class="shrink-0 px-4 py-3 border-t border-slate-800 /80 backdrop-blur-sm">
     <div
-      class="flex items-end gap-2 bg-white border border-gray-300/60 rounded-2xl px-4 py-3 transition-colors max-w-3xl mx-auto"
+      class="flex items-end gap-2 bg-slate-950 border border-slate-700/60 rounded-2xl px-4 py-3 transition-colors max-w-3xl mx-auto"
       :class="{
         'border-blue-500/40 ring-1 ring-blue-500/20': messageInput.trim() && isConnected && !isLoading,
         'opacity-60 cursor-not-allowed': !isConnected
@@ -55,7 +55,7 @@ defineExpose({ messageInput })
         rows="1"
         :placeholder="isConnected ? (isLoading ? 'Ожидайте ответа…' : placeholder) : 'Нет соединения…'"
         :disabled="!isConnected || isLoading"
-        class="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 resize-none outline-none leading-relaxed max-h-32"
+        class="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-500 resize-none outline-none leading-relaxed max-h-32"
         @input="autoResize"
         @keydown="handleKeydown"
       ></textarea>
@@ -64,7 +64,7 @@ defineExpose({ messageInput })
       <button
         v-if="!messageInput.trim() && !isLoading"
         disabled
-        class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-gray-200 text-gray-400 cursor-not-allowed transition-colors"
+        class="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-slate-700 text-slate-600 cursor-not-allowed transition-colors"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>

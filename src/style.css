@@ -1,25 +1,25 @@
 /* ========================================
-   AI Pilot — Light Design System
-   Derived from chat-layout.html (inverted to light)
+   AI Pilot — Design System (dark, from design/src/style.css)
+   chat-layout.html design tokens
    ======================================== */
 
 @import "tailwindcss";
 
 @theme {
-  --color-chat-bg: #f9fafb;
-  --color-chat-surface: #ffffff;
-  --color-chat-sidebar: #ffffff;
-  --color-chat-border: #e5e7eb;
-  --color-chat-text: #111827;
-  --color-chat-text-muted: #9ca3af;
-  --color-chat-accent: #2563eb;
-  --color-chat-accent-hover: #1d4ed8;
-  --color-chat-success: #16a34a;
-  --color-chat-warning: #d97706;
-  --color-chat-danger: #dc2626;
-  --color-chat-user: #2563eb;
-  --color-chat-assistant: #f3f4f6;
-  --color-chat-system: #f3f4f6;
+  --color-chat-bg: #0f172a;
+  --color-chat-surface: #1e293b;
+  --color-chat-sidebar: #0b1120;
+  --color-chat-border: #334155;
+  --color-chat-text: #e2e8f0;
+  --color-chat-text-muted: #94a3b8;
+  --color-chat-accent: #3b82f6;
+  --color-chat-accent-hover: #2563eb;
+  --color-chat-success: #22c55e;
+  --color-chat-warning: #f59e0b;
+  --color-chat-danger: #ef4444;
+  --color-chat-user: #3b82f6;
+  --color-chat-assistant: #1e293b;
+  --color-chat-system: #1e293b;
   --font-chat: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -49,11 +49,11 @@ body,
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #334155;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #475569;
 }
 
 .scrollbar-thin {

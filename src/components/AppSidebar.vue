@@ -43,23 +43,23 @@ function handleLogout() {
 </script>
 
 <template>
-  <aside class="w-72 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden h-screen">
+  <aside class="w-72 shrink-0 bg-slate-950 border-r border-slate-800 flex flex-col overflow-hidden h-screen">
     <!-- Brand -->
-    <div class="px-4 py-5 border-b border-gray-200">
+    <div class="px-4 py-5 border-b border-slate-800">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-600/20">
             AP
           </div>
           <div>
-            <h1 class="text-base font-bold text-gray-900">AI Pilot</h1>
-            <p class="text-xs text-gray-400">Управление сайтами</p>
+            <h1 class="text-base font-bold text-slate-100">AI Pilot</h1>
+            <p class="text-xs text-slate-600">Управление сайтами</p>
           </div>
         </div>
         <div class="flex items-center gap-1">
           <ThemeToggle />
           <button
-            class="md:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            class="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-600 hover:text-slate-300 transition-colors"
             @click.stop="$emit('close')"
             title="Закрыть меню"
           >
@@ -74,28 +74,28 @@ function handleLogout() {
     <!-- Search -->
     <div class="px-4 pt-4 pb-2">
       <div class="relative">
-        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input
           type="text"
           placeholder="Поиск..."
-          class="w-full bg-gray-100 border border-gray-200 text-sm text-gray-900 placeholder-gray-400 rounded-xl pl-10 pr-4 py-2 outline-none focus:border-blue-500/40 transition-colors"
+          class="w-full bg-slate-800 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 rounded-xl pl-10 pr-4 py-2 outline-none focus:border-blue-500/40 transition-colors"
         />
       </div>
     </div>
 
     <!-- Sites & History -->
     <div class="flex-1 overflow-y-auto px-4 py-3">
-      <h2 class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Мои сайты</h2>
+      <h2 class="text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-2">Мои сайты</h2>
       <nav class="space-y-1 mb-6">
         <button
           v-for="site in sitesStore.sites"
           :key="site.id"
           class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors cursor-pointer"
           :class="sitesStore.currentSiteId === site.id
-            ? 'bg-blue-50 text-blue-600 font-medium'
-            : 'hover:bg-gray-100 text-gray-600'"
+            ? 'bg-blue-500/10 text-blue-400 font-medium'
+            : 'hover:bg-slate-800 text-slate-300'"
           @click="sitesStore.selectSite(site.id)"
         >
           <span class="w-2 h-2 rounded-full shrink-0" :class="siteStatusDot(site.status)"></span>
@@ -103,40 +103,40 @@ function handleLogout() {
         </button>
 
         <div v-if="sitesStore.sites.length === 0" class="py-6 text-center">
-          <p class="text-sm text-gray-500">Нет подключённых сайтов</p>
-          <p class="text-xs text-gray-400 mt-1">Установите плагин AI Pilot на WordPress</p>
+          <p class="text-sm text-slate-400">Нет подключённых сайтов</p>
+          <p class="text-xs text-slate-600 mt-1">Установите плагин AI Pilot на WordPress</p>
         </div>
       </nav>
 
       <template v-if="sitesStore.currentSiteConversations.length > 0">
-        <h2 class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Недавние диалоги</h2>
+        <h2 class="text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-2">Недавние диалоги</h2>
         <div class="space-y-1">
           <div
             v-for="conv in sitesStore.currentSiteConversations"
             :key="conv.id"
-            class="px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer"
+            class="px-3 py-1.5 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
           >
-            <span class="block text-sm text-gray-600 truncate">{{ conv.title || conv.preview || 'Диалог' }}</span>
-            <span class="block text-xs text-gray-400">{{ conv.lastMessage || '' }}</span>
+            <span class="block text-sm text-slate-300 truncate">{{ conv.title || conv.preview || 'Диалог' }}</span>
+            <span class="block text-xs text-slate-600">{{ conv.lastMessage || '' }}</span>
           </div>
         </div>
       </template>
     </div>
 
     <!-- User footer -->
-    <div class="px-4 py-4 border-t border-gray-200 mt-auto">
+    <div class="px-4 py-4 border-t border-slate-800 mt-auto">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3 min-w-0">
-          <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
+          <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400 shrink-0">
             {{ userInitial }}
           </div>
           <div class="min-w-0">
-            <span class="block text-sm text-gray-800 font-medium truncate">{{ userEmail }}</span>
-            <span class="block text-xs text-gray-400">{{ userRole }}</span>
+            <span class="block text-sm text-slate-200 font-medium truncate">{{ userEmail }}</span>
+            <span class="block text-xs text-slate-600">{{ userRole }}</span>
           </div>
         </div>
         <button
-          class="shrink-0 p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+          class="shrink-0 p-2 rounded-lg hover:bg-slate-800 text-slate-600 hover:text-slate-300 transition-colors"
           @click="handleLogout"
           title="Выйти"
         >
@@ -157,10 +157,10 @@ function handleLogout() {
   background: transparent;
 }
 .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #334155;
   border-radius: 4px;
 }
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #475569;
 }
 </style>

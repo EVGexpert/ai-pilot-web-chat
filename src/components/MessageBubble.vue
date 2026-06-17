@@ -33,7 +33,7 @@ const renderedContent = computed(() => {
 <template>
   <!-- Date separator -->
   <div v-if="isSystem(message)" class="flex justify-center animate-fade-in">
-    <span class="text-xs text-gray-400 bg-gray-200/60 rounded-full px-4 py-1">
+    <span class="text-xs text-slate-600 bg-slate-800/50 rounded-full px-4 py-1">
       {{ message.content }}
     </span>
   </div>
@@ -48,12 +48,12 @@ const renderedContent = computed(() => {
 
   <!-- Assistant with action proposal -->
   <div v-else-if="isAction(message)" class="flex justify-start animate-fade-in">
-    <div class="max-w-[85%] bg-gray-50 border border-amber-500/20 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed shadow-sm">
-      <div class="flex items-center gap-2 mb-2 text-gray-600">
-        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-600 text-xs font-bold">!</span>
+    <div class="max-w-[85%] bg-slate-900 border border-amber-500/20 rounded-2xl rounded-bl-md px-4 py-3 text-sm leading-relaxed shadow-sm">
+      <div class="flex items-center gap-2 mb-2 text-slate-300">
+        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold">!</span>
         <span class="font-medium">Предлагаю действие</span>
       </div>
-      <div v-html="renderedContent" class="msg-content text-gray-600"></div>
+      <div v-html="renderedContent" class="msg-content text-slate-300"></div>
       <div v-if="message.actions && message.actions.length" class="mt-3 space-y-2">
         <ActionProposalCard
           v-for="action in message.actions"
@@ -63,15 +63,15 @@ const renderedContent = computed(() => {
           @reject="(id) => $emit('reject-action', id)"
         />
       </div>
-      <span v-if="message.time" class="block text-[10px] text-gray-400 mt-2">{{ message.time }}</span>
+      <span v-if="message.time" class="block text-[10px] text-slate-600 mt-2">{{ message.time }}</span>
     </div>
   </div>
 
   <!-- Assistant bubble (regular) -->
   <div v-else class="flex justify-start animate-fade-in">
-    <div class="max-w-[75%] bg-gray-100 text-gray-900 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed shadow-sm">
+    <div class="max-w-[75%] bg-slate-800 text-slate-100 rounded-2xl rounded-bl-md px-4 py-2.5 text-sm leading-relaxed shadow-sm">
       <div v-html="renderedContent" class="msg-content"></div>
-      <span v-if="message.time" class="block text-[10px] text-gray-400 mt-1">{{ message.time }}</span>
+      <span v-if="message.time" class="block text-[10px] text-slate-600 mt-1">{{ message.time }}</span>
     </div>
   </div>
 </template>
