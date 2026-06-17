@@ -12,3 +12,4 @@ test2.db
 var-dark-worker.json
 migration-*.md
 migration-step-*.md
+test_index.db
