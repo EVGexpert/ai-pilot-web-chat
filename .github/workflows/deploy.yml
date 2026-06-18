@@ -23,7 +23,7 @@ jobs:
         run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "echo 'SSH works!'"
 
       - name: Git Pull
-        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && git pull origin main"
+        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && git fetch origin && git reset --hard origin/main"
 
       - name: Docker Build
         run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && docker build -t ai-pilot-chat ."

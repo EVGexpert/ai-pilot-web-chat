@@ -1,31 +1,27 @@
 /* ========================================
-   AI Pilot — Design System
-   Based on design/src/style.css + chat-layout.html
+   AI Pilot — Design System (light, from chat-layout.html)
    ======================================== */
 
-/* Tailwind CSS v4 — MUST be first */
 @import "tailwindcss";
 
-/* ─── Tailwind v4 Theme Tokens (from design/src/style.css) ─── */
 @theme {
-  --color-chat-bg: #0f172a;
-  --color-chat-surface: #1e293b;
-  --color-chat-sidebar: #0b1120;
-  --color-chat-border: #334155;
-  --color-chat-text: #e2e8f0;
-  --color-chat-text-muted: #94a3b8;
+  --color-chat-bg: #eae9ec;
+  --color-chat-surface: #ffffff;
+  --color-chat-sidebar: #f3f4f6;
+  --color-chat-border: #e5e7eb;
+  --color-chat-text: #374151;
+  --color-chat-text-muted: #6b7280;
   --color-chat-accent: #3b82f6;
   --color-chat-accent-hover: #2563eb;
   --color-chat-success: #22c55e;
   --color-chat-warning: #f59e0b;
   --color-chat-danger: #ef4444;
   --color-chat-user: #3b82f6;
-  --color-chat-assistant: #1e293b;
-  --color-chat-system: #1e293b;
+  --color-chat-assistant: #ffffff;
+  --color-chat-system: #ffffff;
   --font-chat: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* ─── Базовые стили ─── */
 *,
 *::before,
 *::after {
@@ -45,7 +41,6 @@ body,
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Scrollbar ─── */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -53,11 +48,11 @@ body,
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #d1d5db;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #9ca3af;
 }
 
 .scrollbar-thin {
@@ -78,7 +73,6 @@ body,
   border-radius: 3px;
 }
 
-/* ─── Анимации ─── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -102,7 +96,6 @@ body,
   animation: slideInRight 0.25s ease-out;
 }
 
-/* ─── Vue Transitions ─── */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.15s ease;
@@ -124,12 +117,10 @@ body,
   opacity: 0;
 }
 
-/* ─── Mobile safe area ─── */
 @media (max-width: 767px) {
   ::-webkit-scrollbar {
     width: 4px;
   }
-
   body {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;

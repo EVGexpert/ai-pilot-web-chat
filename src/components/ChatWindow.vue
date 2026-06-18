@@ -1,7 +1,6 @@
 <script setup>
 /**
- * ChatWindow.vue
- * Основное окно чата. Дизайн из chat-layout.html (slate-950 dark theme).
+ * ChatWindow.vue — light theme from chat-layout.html
  */
 import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
@@ -10,6 +9,7 @@ import { useChatApi } from '../composables/useChatApi'
 import { useGatewayClient } from '../composables/useGatewayClient'
 import MessageArea from './MessageArea.vue'
 import ChatInput from './ChatInput.vue'
+import ClientSidebar from './ClientSidebar.vue'
 
 const props = defineProps({ clientMode: { type: Boolean, default: false } })
 
@@ -29,11 +29,6 @@ const ws = useGatewayClient(gatewayUrl, {
 })
 
 const isConnected = computed(() => true)
-const wsStatus = computed(() => {
-  if (ws.connected.value) return 'connected'
-  if (ws.reconnecting.value) return 'reconnecting'
-  return 'disconnected'
-})
 
 const hasSite = computed(() => !!(authStore.siteUrl || sitesStore.currentSite?.url))
 
@@ -161,11 +156,11 @@ function selectSession(id) { chatApi.selectSession(id) }
 
 <template>
   <!-- АДМИН -->
-  <div v-if="!clientMode" class="h-full flex flex-col bg-slate-950 w-full">
-    <header class="shrink-0 px-6 py-3 border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm flex items-center gap-3">
-      <h2 class="text-sm font-semibold text-slate-100">{{ sitesStore.currentSite?.name || 'Чат' }}</h2>
-      <p class="text-xs text-slate-500 ml-auto">Активный сайт · {{ sessionsList.length || '0' }} задач ожидают</p>
-      <button v-if="error" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors" @click="handleReconnect">🔁</button>
+  <div v-if="!clientMode" class="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-chat-bg">
+    <header class="shrink-0 px-6 py-3 border-b border-gray-200 bg-chat-bg flex items-center gap-3">
+      <h2 class="text-sm font-semibold text-gray-700">{{ sitesStore.currentSite?.name || 'Чат' }}</h2>
+      <p class="text-xs text-gray-400 ml-auto">Активный сайт · {{ sessionsList.length || '0' }} задач ожидают</p>
+      <button v-if="error" class="p-1.5 rounded-lg hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors" @click="handleReconnect">🔁</button>
     </header>
     <MessageArea ref="messagesContainer"
       :messages="messages" :streamingContent :isLoading :isConnected :error
@@ -177,68 +172,38 @@ function selectSession(id) { chatApi.selectSession(id) }
   </div>
 
   <!-- КЛИЕНТ -->
-  <div v-else class="flex flex-1 w-full min-h-0">
-    <div v-if="csSidebarOpen" class="fixed inset-0 bg-black/50 z-[99]" @click="closeCsSidebar"></div>
+  <div v-else class="flex flex-1 w-full min-h-0 relative">
+    <!-- Mobile overlay -->
+    <div v-if="csSidebarOpen" class="fixed inset-0 bg-black/30 z-[99]" @click="closeCsSidebar"></div>
 
-    <aside class="client-sidebar w-72 border-r border-slate-800 bg-slate-950 flex flex-col shrink-0 hidden md:flex" :class="{ 'cs-sidebar--open': csSidebarOpen }">
-      <div class="flex items-center justify-between px-4 pt-6 pb-3">
-        <div class="flex items-center gap-2">
-          <span class="text-[22px] leading-none">🎯</span>
-          <span class="text-base font-bold text-slate-100 tracking-tight">AI Pilot</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <button class="cs-close-btn w-8 h-8 bg-transparent rounded-lg cursor-pointer flex items-center justify-center text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400" @click="closeCsSidebar" title="Закрыть">✕</button>
-        </div>
-      </div>
+    <!-- Client sidebar -->
+    <ClientSidebar
+      :sessionsList="sessionsList"
+      :currentSessionId="currentSessionId"
+      :siteName="sitesStore.currentSite?.name || ''"
+      :csSidebarOpen="csSidebarOpen"
+      @close="closeCsSidebar"
+      @select-session="selectSession"
+      @new-chat="startNewChat"
+      @logout="handleLogout"
+    />
 
-      <div v-if="sitesStore.currentSite" class="px-4 py-1 text-xs text-slate-500 flex items-center gap-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span>
-        {{ sitesStore.currentSite.name }}
-      </div>
-
-      <div class="mx-4 my-2 border-t border-slate-800"></div>
-
-      <button class="w-full border border-dashed border-slate-700 bg-transparent text-slate-400 rounded-xl px-3 py-2 text-sm text-left hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors" @click="startNewChat">✏️ Новый чат</button>
-
-      <div class="text-[10px] font-semibold uppercase tracking-widest text-slate-600 px-4 pt-3 pb-1.5">История</div>
-      <div class="flex-1 overflow-y-auto px-2 pb-2 scrollbar-thin">
-        <div v-if="sessionsList.length === 0" class="text-xs text-slate-600 text-center py-6 px-4">Нет обращений</div>
-        <div v-for="s in sessionsList" :key="s.id"
-          class="px-3 py-2.5 rounded-xl cursor-pointer transition-colors"
-          :class="s.id === currentSessionId
-            ? 'bg-blue-500/10 border border-blue-500/20'
-            : 'hover:bg-slate-800/50'"
-          @click="selectSession(s.id)">
-          <div class="flex items-baseline justify-between gap-2 mb-0.5">
-            <span class="text-[13px] font-semibold truncate"
-              :class="s.id === currentSessionId ? 'text-blue-400' : 'text-slate-100'">
-              {{ s.title || 'Чат' }}
-            </span>
-            <span v-if="s.date" class="text-[10px] text-slate-600 shrink-0">{{ s.date }}</span>
-          </div>
-          <p class="text-[11px] truncate"
-            :class="s.id === currentSessionId ? 'text-blue-300/60' : 'text-slate-500'">
-            {{ s.preview || s.messageCount + ' сообщений' }}
-          </p>
-        </div>
-      </div>
-
-      <div class="px-4 py-3 border-t border-slate-800">
-        <button class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors" @click="handleLogout">← Выйти</button>
-      </div>
-    </aside>
-
+    <!-- Chat area -->
     <div class="flex-1 flex flex-col min-w-0 min-h-0 relative">
-      <button class="cs-mobile-burger fixed top-3 left-3 z-20 w-10 h-10 rounded-lg bg-slate-900 shadow-md flex-col items-center justify-center gap-[5px] cursor-pointer transition-colors hover:bg-slate-800" @click="toggleCsSidebar">
-        <span class="block w-5 h-0.5 bg-slate-100 rounded-sm"></span>
-        <span class="block w-5 h-0.5 bg-slate-100 rounded-sm"></span>
-        <span class="block w-5 h-0.5 bg-slate-100 rounded-sm"></span>
+      <!-- Mobile hamburger for client sidebar -->
+      <button
+        class="fixed top-3 left-3 z-20 w-10 h-10 rounded-lg bg-white shadow-sm ring-1 ring-black/5 flex-col items-center justify-center gap-[5px] cursor-pointer md:hidden flex"
+        @click="toggleCsSidebar"
+      >
+        <span class="block w-5 h-0.5 bg-gray-600 rounded-sm"></span>
+        <span class="block w-5 h-0.5 bg-gray-600 rounded-sm"></span>
+        <span class="block w-5 h-0.5 bg-gray-600 rounded-sm"></span>
       </button>
 
-      <header class="shrink-0 px-6 py-3 border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm flex items-center gap-3">
-        <h2 class="text-sm font-semibold text-slate-100">{{ sitesStore.currentSite?.name || 'Чат' }}</h2>
-        <p class="text-xs text-slate-500 ml-auto">Активный сайт · {{ sessionsList.length || '0' }} задач ожидают</p>
-        <button v-if="error" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors" @click="handleReconnect">🔁</button>
+      <header class="shrink-0 px-6 py-3 border-b border-gray-200 bg-chat-bg flex items-center gap-3">
+        <h2 class="text-sm font-semibold text-gray-700">{{ sitesStore.currentSite?.name || 'Чат' }}</h2>
+        <p class="text-xs text-gray-400 ml-auto">Активный сайт · {{ sessionsList.length || '0' }} задач ожидают</p>
+        <button v-if="error" class="p-1.5 rounded-lg hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors" @click="handleReconnect">🔁</button>
       </header>
       <MessageArea ref="messagesContainer"
         :messages :streamingContent :isLoading :isConnected :error
@@ -252,22 +217,7 @@ function selectSession(id) { chatApi.selectSession(id) }
 </template>
 
 <style scoped>
-.cs-close-btn { display: none; }
-
 @media (max-width: 767px) {
   .cs-close-btn { display: flex; }
-  .client-sidebar {
-    position: fixed !important;
-    display: flex !important;
-    left: -100%;
-    top: 0;
-    bottom: 0;
-    width: min(85vw, 320px) !important;
-    z-index: 100;
-    transition: left 0.25s ease;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
-  }
-  .client-sidebar.cs-sidebar--open { left: 0; }
-  .cs-mobile-burger { display: flex !important; }
 }
 </style>
