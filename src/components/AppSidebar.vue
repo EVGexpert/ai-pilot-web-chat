@@ -47,14 +47,8 @@ function handleLogout() {
     <!-- Header: Logo + Close -->
     <div class="side-header space-y-5 pb-5 shrink-0">
       <div class="flex items-center justify-between">
-        <!-- Pen/stylus SVG logo -->
-        <svg class="size-12 shrink-0 text-gray-700" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="2" y="2" width="60" height="60" rx="14" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2"/>
-          <path d="M18 46V38L38 18L46 26L26 46H18Z" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5" stroke-linejoin="round"/>
-          <path d="M38 18L46 26" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M18 46L16 52L22 50L26 46" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5" stroke-linejoin="round"/>
-          <circle cx="22" cy="42" r="2" fill="white" opacity="0.6"/>
-        </svg>
+        <!-- Logo -->
+        <img src="/img/logo-aipilot-v3.png" alt="AI Pilot" class="size-12 shrink-0 object-contain" />
 
         <div class="flex items-center gap-1">
           <ThemeToggle />

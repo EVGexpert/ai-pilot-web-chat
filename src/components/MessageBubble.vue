@@ -13,6 +13,28 @@ const props = defineProps({
   message: { type: Object, required: true }
 })
 
+/**
+ * SVG аватар ассистента — стилизованное перо как в дизайне
+ */
+const assistantAvatar = `
+<svg class="size-9 shrink-0 rounded-full object-cover" viewBox="0 0 64 64" fill="none">
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2"/>
+  <path d="M18 46V38L38 18L46 26L26 46H18Z" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M38 18L46 26" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M18 46L16 52L22 50L26 46" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5" stroke-linejoin="round"/>
+  <circle cx="22" cy="42" r="2" fill="white" opacity="0.6"/>
+</svg>`
+
+/**
+ * SVG аватар пользователя — круглая иконка человека
+ */
+const userAvatar = `
+<svg class="size-9 shrink-0 rounded-full object-cover" viewBox="0 0 64 64" fill="none">
+  <circle cx="32" cy="32" r="30" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2"/>
+  <circle cx="32" cy="24" r="10" fill="#3b82f6" opacity="0.8"/>
+  <path d="M14 50c0-8 8-14 18-14s18 6 18 14" fill="#3b82f6" opacity="0.8" stroke="#2563eb" stroke-width="1"/>
+</svg>`
+
 function isUser(msg) { return msg.role === 'user' }
 function isSystem(msg) { return msg.role === 'system' }
 function isAction(msg) { return msg.actions && msg.actions.length > 0 }
@@ -40,18 +62,20 @@ const renderedContent = computed(() => {
 
   <!-- User bubble -->
   <div v-else-if="isUser(message)" class="flex items-start justify-end gap-3 animate-slide-in">
-    <div class="max-w-[420px]">
+    <div class="max-w-[420px] order-1">
       <div class="rounded-2xl rounded-tr-md bg-accent px-4 py-3 text-sm leading-relaxed text-white shadow-lg shadow-accent/20">
         <div v-html="renderedContent" class="msg-content"></div>
-        <div class="flex items-center justify-end gap-1 mt-1">
+        <div class="flex items-center justify-end gap-1 mt-2">
           <span v-if="message.time" class="text-[10px] text-white/60">{{ message.time }}</span>
         </div>
       </div>
     </div>
+    <div v-html="userAvatar" class="order-2 shrink-0"></div>
   </div>
 
   <!-- Assistant with action proposal -->
   <div v-else-if="isAction(message)" class="flex items-start gap-3 animate-fade-in">
+    <div v-html="assistantAvatar" class="shrink-0"></div>
     <div class="max-w-[500px]">
       <div class="rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed text-gray-800 shadow-sm ring-1 ring-black/5">
         <div class="flex items-center gap-2 mb-2 text-gray-600">
@@ -77,6 +101,7 @@ const renderedContent = computed(() => {
 
   <!-- Assistant bubble (regular) -->
   <div v-else class="flex items-start gap-3 animate-fade-in">
+    <div v-html="assistantAvatar" class="shrink-0"></div>
     <div class="max-w-[560px]">
       <div class="rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed text-gray-800 shadow-sm ring-1 ring-black/5">
         <div v-html="renderedContent" class="msg-content"></div>

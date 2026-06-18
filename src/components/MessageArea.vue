@@ -45,7 +45,14 @@ const emit = defineEmits(['approve-action', 'reject-action'])
       />
 
       <!-- Streaming -->
-      <div v-if="streamingContent" class="flex justify-start animate-fade-in">
+      <div v-if="streamingContent" class="flex items-start gap-3 animate-fade-in">
+        <svg class="size-9 shrink-0 rounded-full" viewBox="0 0 64 64" fill="none">
+          <rect x="2" y="2" width="60" height="60" rx="14" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2"/>
+          <path d="M18 46V38L38 18L46 26L26 46H18Z" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M38 18L46 26" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M18 46L16 52L22 50L26 46" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5" stroke-linejoin="round"/>
+          <circle cx="22" cy="42" r="2" fill="white" opacity="0.6"/>
+        </svg>
         <div class="max-w-[560px] rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed text-gray-800 shadow-sm ring-1 ring-black/5">
           {{ streamingContent }}
         </div>
