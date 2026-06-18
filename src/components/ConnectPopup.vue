@@ -172,53 +172,53 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="bg-slate-950 bg-slate-950 min-h-screen flex items-center justify-center p-4">
-    <div class="bg-slate-950 bg-slate-900 border border-slate-800 border-slate-800 rounded-2xl p-8 w-full max-w-[380px] shadow-xl text-center"
-         :class="{'border-red-500/30 border-red-500/30 ring-red-200 ring-1 ring-red-500/10': errorMsg && step === 'login'}">
+  <div class="bg-chat-bg min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-[380px] shadow-xl text-center"
+         :class="{'border-red-400 ring-1 ring-red-200': errorMsg && step === 'login'}">
       <!-- Logo -->
-      <div class="w-14 h-14 rounded-2xl bg-blue-500/10 bg-blue-500/15 flex items-center justify-center mx-auto mb-3">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400 text-blue-400">
+      <div class="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-3">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-accent">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
       </div>
-      <h1 class="text-lg font-semibold text-slate-100 text-slate-100 m-0 mb-5">{{ pageTitle }}</h1>
+      <h1 class="text-lg font-semibold text-gray-800 m-0 mb-5">{{ pageTitle }}</h1>
 
       <!-- Форма входа / регистрации -->
       <form v-if="step === 'login'" class="flex flex-col gap-3.5 text-left" @submit.prevent="handleSubmit">
-        <div v-if="siteName" class="inline-block bg-slate-700 bg-slate-800 text-slate-400 text-slate-400 px-3 py-1 rounded-full text-xs self-center mb-1">
+        <div v-if="siteName" class="inline-block bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs self-center mb-1">
           {{ siteName }}
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-slate-400 text-slate-400">Email</label>
+          <label class="text-xs font-medium text-gray-500">Email</label>
           <input v-model="email" type="email"
-            class="w-full bg-slate-800/50 bg-slate-800/50 border border-slate-800/60 border-slate-700/60 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 text-slate-100 placeholder-slate-500 placeholder-slate-500 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 focus:ring-blue-200 focus:ring-blue-500/20"
+            class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/20"
             placeholder="your@email.com" :disabled="isLoading" />
         </div>
 
         <div v-if="isRegister" class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-slate-400 text-slate-400">Имя (необязательно)</label>
+          <label class="text-xs font-medium text-gray-500">Имя (необязательно)</label>
           <input v-model="name" type="text"
-            class="w-full bg-slate-800/50 bg-slate-800/50 border border-slate-800/60 border-slate-700/60 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 text-slate-100 placeholder-slate-500 placeholder-slate-500 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 focus:ring-blue-200 focus:ring-blue-500/20"
+            class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/20"
             placeholder="Ваше имя" :disabled="isLoading" />
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-slate-400 text-slate-400">Пароль</label>
+          <label class="text-xs font-medium text-gray-500">Пароль</label>
           <input v-model="password" type="password"
-            class="w-full bg-slate-800/50 bg-slate-800/50 border border-slate-800/60 border-slate-700/60 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 text-slate-100 placeholder-slate-500 placeholder-slate-500 outline-none transition-colors focus:border-blue-500/50 focus:ring-1 focus:ring-blue-200 focus:ring-blue-500/20"
+            class="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/20"
             placeholder="••••••••" :disabled="isLoading" />
         </div>
 
         <!-- Error -->
         <div v-if="errorMsg"
-          class="bg-red-500/10 bg-red-500/10 border border-red-500/30 border-red-500/30 text-red-400 text-red-300 text-sm rounded-xl px-3 py-2 flex items-center gap-2">
+          class="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-3 py-2 flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           {{ errorMsg }}
         </div>
 
         <button type="submit" :disabled="isLoading"
-          class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+          class="w-full py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
           <span v-if="isLoading" class="flex items-center gap-2">
             <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
             {{ isRegister ? 'Регистрация...' : 'Вход...' }}
@@ -227,7 +227,7 @@ async function handleSubmit() {
         </button>
 
         <button type="button"
-          class="bg-transparent border-none text-blue-400 text-blue-400 cursor-pointer text-xs text-center py-1 hover:underline"
+          class="bg-transparent border-none text-accent cursor-pointer text-xs text-center py-1 hover:underline"
           @click="isRegister = !isRegister; errorMsg = ''">
           {{ isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться' }}
         </button>
@@ -235,42 +235,42 @@ async function handleSubmit() {
 
       <!-- Сканирование -->
       <div v-if="step === 'scanning'" class="flex flex-col items-center gap-3 py-3">
-        <div class="w-9 h-9 border-[3px] border-slate-700 border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
-        <p class="text-sm text-slate-400 text-slate-500 m-0 leading-relaxed">AI-помощник изучает структуру сайта, контент и настройки</p>
+        <div class="w-9 h-9 border-[3px] border-gray-300 border-t-accent rounded-full animate-spin"></div>
+        <p class="text-sm text-gray-500 m-0 leading-relaxed">AI-помощник изучает структуру сайта, контент и настройки</p>
         <div class="flex flex-col gap-2 w-full text-left py-2">
-          <div class="bg-slate-800/50 bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-400 text-slate-400 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:0.1s]">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0"></span> Посты и страницы
+          <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 flex items-center gap-2.5 text-xs text-gray-500 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:0.1s]">
+            <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0"></span> Посты и страницы
           </div>
-          <div class="bg-slate-800/50 bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-400 text-slate-400 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:0.4s]">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0"></span> Плагины и тема
+          <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 flex items-center gap-2.5 text-xs text-gray-500 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:0.4s]">
+            <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0"></span> Плагины и тема
           </div>
-          <div class="bg-slate-800/50 bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-400 text-slate-400 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:0.7s]">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0"></span> Меню и навигация
+          <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 flex items-center gap-2.5 text-xs text-gray-500 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:0.7s]">
+            <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0"></span> Меню и навигация
           </div>
-          <div class="bg-slate-800/50 bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 text-xs text-slate-400 text-slate-400 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:1s]">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0"></span> Tone of Voice
+          <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 flex items-center gap-2.5 text-xs text-gray-500 animate-[fadeIn_0.3s_ease_forwards] opacity-0 [animation-delay:1s]">
+            <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shrink-0"></span> Tone of Voice
           </div>
         </div>
       </div>
 
       <!-- Успех -->
       <div v-if="step === 'success'" class="flex flex-col items-center gap-3 py-3">
-        <div class="w-14 h-14 rounded-2xl bg-green-500/15 bg-green-500/15 flex items-center justify-center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400 text-green-400">
+        <div class="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
         </div>
-        <p class="text-sm text-slate-400 text-slate-500 m-0" v-if="siteName">Сайт {{ siteName }} подключён к AI Pilot</p>
-        <p class="text-sm text-slate-400 text-slate-500 m-0" v-else>AI Pilot готов к работе</p>
-        <p class="text-xs text-slate-600 text-slate-600 m-0">Перенаправляю обратно в WordPress...</p>
+        <p class="text-sm text-gray-500 m-0" v-if="siteName">Сайт {{ siteName }} подключён к AI Pilot</p>
+        <p class="text-sm text-gray-500 m-0" v-else>AI Pilot готов к работе</p>
+        <p class="text-xs text-gray-400 m-0">Перенаправляю обратно в WordPress...</p>
       </div>
 
       <!-- Ошибка -->
       <div v-if="step === 'error'" class="flex flex-col items-center gap-3 py-3">
         <div class="text-4xl leading-none">❌</div>
-        <p class="text-xs text-red-400 text-red-400 m-0 leading-relaxed">{{ errorMsg }}</p>
+        <p class="text-xs text-red-600 m-0 leading-relaxed">{{ errorMsg }}</p>
         <button
-          class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
+          class="w-full py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white text-sm font-medium transition-colors"
           @click="step = 'login'; errorMsg = ''">Попробовать снова</button>
       </div>
     </div>

@@ -1,25 +1,24 @@
 /* ========================================
-   AI Pilot — Design System (dark, from design/src/style.css)
-   chat-layout.html design tokens
+   AI Pilot — Design System (light, from chat-layout.html)
    ======================================== */
 
 @import "tailwindcss";
 
 @theme {
-  --color-chat-bg: #0f172a;
-  --color-chat-surface: #1e293b;
-  --color-chat-sidebar: #0b1120;
-  --color-chat-border: #334155;
-  --color-chat-text: #e2e8f0;
-  --color-chat-text-muted: #94a3b8;
+  --color-chat-bg: #eae9ec;
+  --color-chat-surface: #ffffff;
+  --color-chat-sidebar: #f3f4f6;
+  --color-chat-border: #e5e7eb;
+  --color-chat-text: #374151;
+  --color-chat-text-muted: #6b7280;
   --color-chat-accent: #3b82f6;
   --color-chat-accent-hover: #2563eb;
   --color-chat-success: #22c55e;
   --color-chat-warning: #f59e0b;
   --color-chat-danger: #ef4444;
   --color-chat-user: #3b82f6;
-  --color-chat-assistant: #1e293b;
-  --color-chat-system: #1e293b;
+  --color-chat-assistant: #ffffff;
+  --color-chat-system: #ffffff;
   --font-chat: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -49,11 +48,11 @@ body,
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #d1d5db;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #9ca3af;
 }
 
 .scrollbar-thin {

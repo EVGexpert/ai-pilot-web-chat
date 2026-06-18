@@ -13,24 +13,30 @@ const modes = [
   {
     id: 'light',
     title: 'Светлая',
-    icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>'
+    icon: '<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 3.5v2"></path><path d="M12 18.5v2"></path><path d="M4.5 12h2"></path><path d="M17.5 12h2"></path><path d="m6.7 6.7 1.4 1.4"></path><path d="m15.9 15.9 1.4 1.4"></path><path d="m17.3 6.7-1.4 1.4"></path><path d="m8.1 15.9-1.4 1.4"></path></svg>'
   },
   {
     id: 'dark',
     title: 'Тёмная',
-    icon: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6.5 6.5 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>'
+    icon: '<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3.5a7 7 0 0 0 8.5 8.5A8.5 8.5 0 1 1 12 3.5Z"></path></svg>'
   }
 ]
 </script>
 
 <template>
-  <div class="flex gap-0.5 p-0.5 bg-gray-200/50 rounded-lg" role="group" aria-label="Color mode">
+  <div
+    class="grid h-[34px] w-full max-w-[235px] grid-cols-2 rounded-xl bg-[#eeeeF1] p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] ring-1 ring-black/5"
+    role="group"
+    aria-label="Color mode"
+  >
     <button
       v-for="m in modes"
       :key="m.id"
       type="button"
-      class="w-7 h-7 border border-transparent bg-transparent rounded-md cursor-pointer flex items-center justify-center text-slate-600 transition-all p-0"
-      :class="{ 'text-blue-400 !border-blue-400/50 !bg-blue-50': current === m.id }"
+      class="flex items-center justify-center rounded-[10px] text-[#666666] transition"
+      :class="current === m.id
+        ? 'bg-[#fafafa] shadow-[0_1px_4px_rgba(0,0,0,0.18)] ring-1 ring-black/10'
+        : 'hover:bg-white/60'"
       :title="m.title"
       :aria-label="`Color mode: ${m.title}`"
       :aria-pressed="current === m.id"
