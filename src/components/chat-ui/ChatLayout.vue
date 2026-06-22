@@ -95,8 +95,12 @@ function handleNewChat() {
 </script>
 
 <template>
-  <div :class="embedded ? ['flex', 'h-full', 'min-h-0', 'overflow-hidden', 'bg-chat-bg'] : ['h-screen', 'overflow-hidden', 'bg-chat-bg', 'p-3', 'md:p-5']">
-    <div class="flex h-full gap-5">
+  <div
+    :class="embedded
+      ? ['flex', 'h-full', 'w-full', 'min-h-0', 'min-w-0', 'overflow-hidden', 'bg-chat-bg']
+      : ['h-screen', 'w-full', 'overflow-hidden', 'bg-chat-bg', 'p-3', 'md:p-5']"
+  >
+    <div class="flex h-full w-full min-w-0 gap-5">
       <ChatSidebar
         v-if="showSidebar"
         class="hidden md:flex"
@@ -135,8 +139,8 @@ function handleNewChat() {
         />
       </Transition>
 
-      <main class="flex min-w-0 flex-1 flex-col">
-        <section class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-chat-bg">
+      <main class="flex h-full min-w-0 flex-1 flex-col">
+        <section class="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl bg-chat-bg">
           <div class="mb-3 flex items-center justify-between md:hidden">
             <button
               v-if="showSidebar"
