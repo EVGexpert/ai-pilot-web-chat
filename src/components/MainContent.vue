@@ -113,11 +113,7 @@ function handleLogin() {
     </template>
 
     <template v-else>
-      <div class="flex h-full min-w-0 bg-chat-bg">
-        <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <ChatWindow :clientMode="true" />
-        </main>
-      </div>
+      <ChatWindow :clientMode="true" />
     </template>
   </div>
 </template>
