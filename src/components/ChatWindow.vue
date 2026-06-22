@@ -1,9 +1,4 @@
 <script setup>
-/**
- * ChatWindow.vue — adapter for ChatLayout
- * Preserves all business logic: auth, chatApi, gatewayClient, WebSocket.
- * Renders ChatLayout as UI template.
- */
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
@@ -21,7 +16,7 @@ const { currentSessionId, sessionsList, messages, isLoading, error, streamingCon
 // --- State ---
 const chatDraft = ref('')
 
-// --- Computed adapters for new UI ---
+// --- Computed adapters ---
 
 const normalizedMessages = computed(() => {
   return messages.value.map((message) => ({
@@ -144,7 +139,6 @@ onUnmounted(() => { ws.disconnect() })
 </script>
 
 <template>
-  <!-- Admin mode: external AppSidebar managed by MainContent, so show-sidebar=false -->
   <ChatLayout
     v-if="!clientMode"
     v-model="chatDraft"
@@ -164,8 +158,6 @@ onUnmounted(() => { ws.disconnect() })
     @approve-action="handleApproveAction"
     @reject-action="handleRejectAction"
   />
-
-  <!-- Client mode: ChatLayout handles sidebar internally -->
   <ChatLayout
     v-else
     v-model="chatDraft"
