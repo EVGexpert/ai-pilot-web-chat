@@ -5,7 +5,7 @@
 import { computed } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import ActionProposalCard from './ActionProposalCard.vue'
+import ActionProposalCard from '../ActionProposalCard.vue'
 
 marked.setOptions({ gfm: true, breaks: true })
 

@@ -4,7 +4,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
-import MessageBubble from '../MessageBubble.vue'
+import MessageBubble from '../_legacy-chat/MessageBubble.vue'
 
 describe('MessageBubble.vue', () => {
   beforeEach(() => {
@@ -18,7 +18,7 @@ describe('MessageBubble.vue', () => {
     })
 
     expect(wrapper.text()).toContain('Привет!')
-    expect(wrapper.find('.max-w-\\[75\\%\\]').exists()).toBe(true)
+    expect(wrapper.find('.max-w-\\[420px\\]').exists()).toBe(true)
   })
 
   it('рендерит сообщение ассистента', () => {

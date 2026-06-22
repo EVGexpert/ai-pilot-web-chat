@@ -1,24 +1,69 @@
 <script setup>
-/**
- * ChatWindow.vue — light theme from chat-layout.html
- */
-import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
 import { useChatApi } from '../composables/useChatApi'
 import { useGatewayClient } from '../composables/useGatewayClient'
-import MessageArea from './MessageArea.vue'
-import ChatInput from './ChatInput.vue'
-import ClientSidebar from './ClientSidebar.vue'
+import ChatLayout from './chat-ui/ChatLayout.vue'
 
 const props = defineProps({ clientMode: { type: Boolean, default: false } })
 
 const authStore = useAuthStore()
 const sitesStore = useSitesStore()
-
 const chatApi = useChatApi(authStore, sitesStore)
 const { currentSessionId, sessionsList, messages, isLoading, error, streamingContent } = chatApi
 
+const theme = ref('light')
+const composerText = ref('')
+
+const isSending = computed(() => isLoading.value)
+const isAssistantTyping = computed(() => streamingContent.value.length > 0)
+
+const userProfile = computed(() => ({
+  name: authStore.user?.name || authStore.user?.email || 'Пользователь',
+  email: authStore.user?.email || '',
+  avatar: null
+}))
+
+// Нормализуем сообщения для нового формата
+const uiMessages = computed(() => {
+  const msgs = messages.value.map(msg => ({
+    id: msg.id || `msg-${Date.now()}-${Math.random()}`,
+    role: msg.role,
+    content: msg.content,
+    actions: msg.actions || [],
+    time: msg.time || new Date().toISOString()
+  }))
+  if (streamingContent.value) {
+    msgs.push({ id: 'streaming', role: 'assistant', content: streamingContent.value, actions: [], time: new Date().toISOString() })
+  }
+  return msgs
+})
+
+// Группируем сессии по времени
+const historyGroups = computed(() => {
+  const list = sessionsList.value || []
+  const now = Date.now()
+  const day = 86400000
+  const groups = {
+    today: { label: 'Сегодня', items: [] },
+    week: { label: 'Эта неделя', items: [] },
+    month: { label: 'Этот месяц', items: [] },
+    older: { label: 'Ранее', items: [] }
+  }
+  list.forEach(session => {
+    const time = new Date(session.createdAt || session.updatedAt || Date.now()).getTime()
+    const diff = now - time
+    const item = { id: session.id, title: session.title || `Чат от ${new Date(time).toLocaleDateString('ru-RU')}`, time: new Date(time) }
+    if (diff < day) groups.today.items.push(item)
+    else if (diff < 7 * day) groups.week.items.push(item)
+    else if (diff < 30 * day) groups.month.items.push(item)
+    else groups.older.items.push(item)
+  })
+  return Object.values(groups).filter(g => g.items.length > 0)
+})
+
+// WebSocket (сохранить логику)
 const gatewayUrl = import.meta.env.VITE_GATEWAY_WS_URL || `wss://chat.pilotsite.ru/ws/`
 const ws = useGatewayClient(gatewayUrl, {
   token: authStore.token,
@@ -28,18 +73,6 @@ const ws = useGatewayClient(gatewayUrl, {
   ackTimeout: 10000
 })
 
-const isConnected = computed(() => true)
-
-const hasSite = computed(() => !!(authStore.siteUrl || sitesStore.currentSite?.url))
-
-function handleSend(text) {
-  if (!hasSite.value) {
-    error.value = 'Выберите сайт в боковой панели'
-    return
-  }
-  chatApi.sendMessage(text)
-}
-
 ws.onMessage((data) => {
   if (data.type === 'assistant_message' && data.content) {
     const newMsg = { id: `ws-${Date.now()}`, role: 'assistant', content: data.content }
@@ -48,67 +81,30 @@ ws.onMessage((data) => {
   }
 })
 
-onMounted(() => {
-  ws.connect()
-  nextTick(() => {
-    const el = messagesContainer.value?.$el || messagesContainer.value
-    if (el) el.addEventListener('scroll', handleScroll)
-  })
-})
-
-const messagesContainer = ref(null)
-const userScrolledUp = ref(false)
-
-function handleScroll() {
-  const el = messagesContainer.value?.$el || messagesContainer.value
-  if (!el) return
-  const threshold = 100
-  userScrolledUp.value = el.scrollHeight - el.scrollTop - el.clientHeight > threshold
-}
-
-const csSidebarOpen = ref(false)
-
-function toggleCsSidebar() { csSidebarOpen.value = !csSidebarOpen.value }
-function closeCsSidebar() { csSidebarOpen.value = false }
-
-function disconnect() { ws.disconnect() }
-
-function handleReconnect() {
-  error.value = null
-  ws.connect()
-}
-
-function handleLogout() {
-  const keys = Object.keys(localStorage).filter(k => k.startsWith('aipilot_greeted_'))
-  keys.forEach(k => localStorage.removeItem(k))
-  disconnect()
-  authStore.logout()
-}
-
-onUnmounted(() => {
-  const el = messagesContainer.value?.$el || messagesContainer.value
-  if (el) el.removeEventListener('scroll', handleScroll)
-  disconnect()
-})
-
-watch([messages, streamingContent], async () => {
-  await nextTick()
-  if (!userScrolledUp.value && messagesContainer.value) {
-    const el = messagesContainer.value.$el || messagesContainer.value
-    if (el?.scrollTo) {
-      el.scrollTo(0, el.scrollHeight)
-    } else {
-      el.scrollTop = el.scrollHeight
-    }
+function handleSend(text) {
+  const hasSite = !!(authStore.siteUrl || sitesStore.currentSite?.url)
+  if (!hasSite) {
+    error.value = 'Выберите сайт в боковой панели'
+    return
   }
-}, { deep: true })
+  chatApi.sendMessage(text)
+}
 
+function handleNewChat() { chatApi.startNewChat() }
+
+function handleSelectChat(id) { chatApi.selectSession(id) }
+
+function handleApproveAction(id) { chatApi.approveAction(id) }
+
+function handleRejectAction(id) { chatApi.rejectAction(id) }
+
+// Client mode init (сохранить)
 if (props.clientMode) {
   onMounted(async () => {
     try {
       if (!authStore.siteUrl && authStore.token) {
         const meRes = await fetch('/api/auth/me', {
-          headers: { 'Authorization': '***' + authStore.token }
+          headers: { 'Authorization': 'Bearer ' + authStore.token }
         })
         if (meRes.ok) {
           const meData = await meRes.json()
@@ -119,7 +115,6 @@ if (props.clientMode) {
         }
       }
       if (!authStore.siteUrl) return
-
       await chatApi.loadSessions()
       if (sessionsList.value.length > 0) {
         const last = sessionsList.value[0]
@@ -129,10 +124,7 @@ if (props.clientMode) {
         const sendSiteUrl = authStore.siteUrl
         const res = await fetch('/api/chat/send', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': '***' + authStore.token
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
           body: JSON.stringify({ message: '/start', siteUrl: sendSiteUrl })
         })
         if (res.ok) {
@@ -142,82 +134,34 @@ if (props.clientMode) {
           await chatApi.loadSessions()
         }
       }
-    } catch (e) {
-      console.warn('Init failed:', e)
-    }
+    } catch (e) { console.warn('Init failed:', e) }
   })
 }
 
-function handleApproveAction(id) { chatApi.approveAction(id) }
-function handleRejectAction(id) { chatApi.rejectAction(id) }
-function startNewChat() { chatApi.startNewChat() }
-function selectSession(id) { chatApi.selectSession(id) }
+onMounted(() => { ws.connect() })
+onUnmounted(() => { ws.disconnect() })
 </script>
 
 <template>
-  <!-- АДМИН -->
-  <div v-if="!clientMode" class="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-chat-bg">
-    <header class="shrink-0 px-6 py-3 border-b border-gray-200 bg-chat-bg flex items-center gap-3">
-      <h2 class="text-sm font-semibold text-gray-700">{{ sitesStore.currentSite?.name || 'Чат' }}</h2>
-      <p class="text-xs text-gray-400 ml-auto">Активный сайт · {{ sessionsList.length || '0' }} задач ожидают</p>
-      <button v-if="error" class="p-1.5 rounded-lg hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors" @click="handleReconnect">🔁</button>
-    </header>
-    <MessageArea ref="messagesContainer"
-      :messages="messages" :streamingContent :isLoading :isConnected :error
-      startTitle="Добро пожаловать в AI Pilot"
-      startHint="Напишите, что нужно сделать с сайтом"
-      @approve-action="handleApproveAction"
-      @reject-action="handleRejectAction" />
-    <ChatInput :isConnected :isLoading @send="handleSend" />
-  </div>
-
-  <!-- КЛИЕНТ -->
-  <div v-else class="flex flex-1 w-full min-h-0 relative">
-    <!-- Mobile overlay -->
-    <div v-if="csSidebarOpen" class="fixed inset-0 bg-black/30 z-[99]" @click="closeCsSidebar"></div>
-
-    <!-- Client sidebar -->
-    <ClientSidebar
-      :sessionsList="sessionsList"
-      :currentSessionId="currentSessionId"
-      :siteName="sitesStore.currentSite?.name || ''"
-      :csSidebarOpen="csSidebarOpen"
-      @close="closeCsSidebar"
-      @select-session="selectSession"
-      @new-chat="startNewChat"
-      @logout="handleLogout"
-    />
-
-    <!-- Chat area -->
-    <div class="flex-1 flex flex-col min-w-0 min-h-0 relative">
-      <!-- Mobile hamburger for client sidebar -->
-      <button
-        class="fixed top-3 left-3 z-20 w-10 h-10 rounded-lg bg-white shadow-sm ring-1 ring-black/5 flex-col items-center justify-center gap-[5px] cursor-pointer md:hidden flex"
-        @click="toggleCsSidebar"
-      >
-        <span class="block w-5 h-0.5 bg-gray-600 rounded-sm"></span>
-        <span class="block w-5 h-0.5 bg-gray-600 rounded-sm"></span>
-        <span class="block w-5 h-0.5 bg-gray-600 rounded-sm"></span>
-      </button>
-
-      <header class="shrink-0 px-6 py-3 border-b border-gray-200 bg-chat-bg flex items-center gap-3">
-        <h2 class="text-sm font-semibold text-gray-700">{{ sitesStore.currentSite?.name || 'Чат' }}</h2>
-        <p class="text-xs text-gray-400 ml-auto">Активный сайт · {{ sessionsList.length || '0' }} задач ожидают</p>
-        <button v-if="error" class="p-1.5 rounded-lg hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors" @click="handleReconnect">🔁</button>
-      </header>
-      <MessageArea ref="messagesContainer"
-        :messages :streamingContent :isLoading :isConnected :error
-        clientMode startTitle="Чем могу помочь?"
-        startHint="Я AI-ассистент вашего сайта."
-        @approve-action="handleApproveAction"
-        @reject-action="handleRejectAction" />
-      <ChatInput :isConnected :isLoading @send="handleSend" />
-    </div>
-  </div>
+  <ChatLayout
+    v-model="composerText"
+    v-model:theme="theme"
+    :embedded="true"
+    :show-sidebar="clientMode"
+    :history-groups="historyGroups"
+    :messages="uiMessages"
+    :active-chat-id="currentSessionId"
+    :user="userProfile"
+    :is-sending="isSending"
+    :is-assistant-typing="isAssistantTyping"
+    @send-message="handleSend"
+    @new-chat="handleNewChat"
+    @select-chat="handleSelectChat"
+    @approve-action="handleApproveAction"
+    @reject-action="handleRejectAction"
+    @profile-settings="() => {}"
+    @copy="(id) => console.log('copy', id)"
+    @like="(id) => console.log('like', id)"
+    @dislike="(id) => console.log('dislike', id)"
+  />
 </template>
-
-<style scoped>
-@media (max-width: 767px) {
-  .cs-close-btn { display: flex; }
-}
-</style>
