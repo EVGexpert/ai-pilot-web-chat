@@ -21,7 +21,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['listen', 'copy', 'like', 'dislike'])
+const emit = defineEmits(['listen', 'copy', 'like', 'dislike', 'approve-action', 'reject-action'])
 const scrollEl = ref(null)
 
 async function scrollToBottom() {
@@ -42,6 +42,8 @@ watch(() => [props.messages.length, props.isTyping], scrollToBottom, { immediate
         :message="message"
         :assistant-avatar="assistantAvatar"
         :user-avatar="userAvatar"
+        @approve-action="emit('approve-action', $event)"
+        @reject-action="emit('reject-action', $event)"
         @listen="emit('listen', $event)"
         @copy="emit('copy', $event)"
         @like="emit('like', $event)"

@@ -50,6 +50,14 @@ const props = defineProps({
   theme: {
     type: String,
     default: 'light'
+  },
+  showSidebar: {
+    type: Boolean,
+    default: true
+  },
+  embedded: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -66,7 +74,9 @@ const emit = defineEmits([
   'listen',
   'copy',
   'like',
-  'dislike'
+  'dislike',
+  'approve-action',
+  'reject-action'
 ])
 
 const mobileSidebarOpen = ref(false)
@@ -85,9 +95,10 @@ function handleNewChat() {
 </script>
 
 <template>
-  <div class="h-screen overflow-hidden bg-chat-bg p-3 md:p-5">
+  <div :class="embedded ? ['flex', 'h-full', 'min-h-0', 'overflow-hidden', 'bg-chat-bg'] : ['h-screen', 'overflow-hidden', 'bg-chat-bg', 'p-3', 'md:p-5']">
     <div class="flex h-full gap-5">
       <ChatSidebar
+        v-if="showSidebar"
         class="hidden md:flex"
         :logo-src="logoSrc"
         :history-groups="historyGroups"
@@ -103,12 +114,12 @@ function handleNewChat() {
       />
 
       <Transition name="fade">
-        <div v-if="mobileSidebarOpen" class="fixed inset-0 z-40 bg-black/30 md:hidden" @click="mobileSidebarOpen = false"></div>
+        <div v-if="showSidebar && mobileSidebarOpen" class="fixed inset-0 z-40 bg-black/30 md:hidden" @click="mobileSidebarOpen = false"></div>
       </Transition>
 
       <Transition name="chat-list">
         <ChatSidebar
-          v-if="mobileSidebarOpen"
+          v-if="showSidebar && mobileSidebarOpen"
           class="fixed bottom-3 left-3 top-3 z-50 md:hidden"
           :logo-src="logoSrc"
           :history-groups="historyGroups"
@@ -128,6 +139,7 @@ function handleNewChat() {
         <section class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-chat-bg">
           <div class="mb-3 flex items-center justify-between md:hidden">
             <button
+              v-if="showSidebar"
               type="button"
               class="flex size-10 items-center justify-center rounded-xl bg-white text-gray-600 shadow-sm transition hover:text-accent"
               aria-label="Открыть меню"
@@ -148,6 +160,8 @@ function handleNewChat() {
             :assistant-avatar="assistantAvatar"
             :user-avatar="userAvatarSrc"
             :is-typing="isAssistantTyping"
+            @approve-action="emit('approve-action', $event)"
+            @reject-action="emit('reject-action', $event)"
             @listen="emit('listen', $event)"
             @copy="emit('copy', $event)"
             @like="emit('like', $event)"

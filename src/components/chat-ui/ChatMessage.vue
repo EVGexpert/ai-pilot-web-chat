@@ -1,7 +1,10 @@
 <script setup>
 import { computed } from 'vue'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import MessageActions from './MessageActions.vue'
 import TypingDots from './TypingDots.vue'
+import ActionProposalCard from '../ActionProposalCard.vue'
 
 const props = defineProps({
   message: {
@@ -22,7 +25,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['listen', 'copy', 'like', 'dislike'])
+const emit = defineEmits(['listen', 'copy', 'like', 'dislike', 'approve-action', 'reject-action'])
 
 const isUser = computed(() => props.message.role === 'user')
 const isAssistant = computed(() => props.message.role === 'assistant')
@@ -37,6 +40,15 @@ const paragraphs = computed(() => {
 })
 
 const waveformBars = computed(() => props.message.waveform || [12, 22, 14, 30, 18, 26, 16, 34, 20, 28, 12, 24, 16, 32, 18, 26])
+
+const renderedContent = computed(() => {
+  if (!props.message?.content) return ''
+  if (props.message.role === 'assistant') {
+    const html = marked.parse(props.message.content)
+    return DOMPurify.sanitize(html)
+  }
+  return props.message.content
+})
 </script>
 
 <template>
@@ -114,9 +126,7 @@ const waveformBars = computed(() => props.message.waveform || [12, 22, 14, 30, 1
       </div>
 
       <div v-else class="chat-assistant-bubble">
-        <p v-for="(paragraph, index) in paragraphs" :key="index" :class="index > 0 ? 'mt-5' : ''">
-          {{ paragraph }}
-        </p>
+        <div v-html="renderedContent" class="prose prose-sm max-w-none"></div>
 
         <!-- message.items — массив пунктов, если ответ нужно вывести списком. -->
         <ol v-if="message.items?.length" class="mt-3 list-decimal space-y-1 pl-5">
@@ -129,6 +139,16 @@ const waveformBars = computed(() => props.message.waveform || [12, 22, 14, 30, 1
         <div v-if="message.time" class="mt-2 flex items-center justify-end gap-1 text-xs text-gray-400">
           {{ message.time }}
         </div>
+      </div>
+
+      <div v-if="message.actions && message.actions.length" class="mt-2 flex flex-col gap-2">
+        <ActionProposalCard
+          v-for="action in message.actions"
+          :key="action.id"
+          :action="action"
+          @approve="(id) => $emit('approve-action', id)"
+          @reject="(id) => $emit('reject-action', id)"
+        />
       </div>
 
       <MessageActions
