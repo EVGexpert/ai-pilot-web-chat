@@ -11,13 +11,19 @@ defineProps({
 })
 
 const emit = defineEmits(['settings'])
+
+const FALLBACK_AVATAR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%239ca3af"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>')
+
+function handleAvatarError(e) {
+  e.target.src = FALLBACK_AVATAR
+}
 </script>
 
 <template>
   <div class="profile-card">
     <div class="flex min-w-0 items-center gap-3">
       <!-- user.avatar — переменная с аватаром текущего пользователя. -->
-      <img class="size-10 shrink-0 rounded-full object-cover" :src="user.avatar || '/img/user-img.png'" alt="" />
+      <img class="size-10 shrink-0 rounded-full object-cover" :src="user.avatar || '/img/user-img.png'" alt="" @error="handleAvatarError" />
 
       <div class="min-w-0 text-sm text-gray-800">
         <!-- user.name / user.email — данные из authStore или профиля пользователя. -->

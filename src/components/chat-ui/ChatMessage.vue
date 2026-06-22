@@ -27,6 +27,12 @@ const props = defineProps({
 
 const emit = defineEmits(['listen', 'copy', 'like', 'dislike', 'approve-action', 'reject-action'])
 
+const FALLBACK_AVATAR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%239ca3af"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>')
+
+function handleAvatarError(e) {
+  e.target.src = FALLBACK_AVATAR
+}
+
 const isUser = computed(() => props.message.role === 'user')
 const isAssistant = computed(() => props.message.role === 'assistant')
 const isLoading = computed(() => props.message.type === 'loading')
@@ -114,11 +120,11 @@ const renderedContent = computed(() => {
       </template>
     </div>
 
-    <img :src="message.avatar || userAvatar" alt="" class="size-9 shrink-0 rounded-full object-cover" />
+    <img :src="message.avatar || userAvatar" alt="" class="size-9 shrink-0 rounded-full object-cover" @error="handleAvatarError" />
   </div>
 
   <div v-else class="flex items-start gap-3 animate-fade-in">
-    <img :src="message.avatar || assistantAvatar" alt="" class="size-9 shrink-0 rounded-full object-cover" />
+    <img :src="message.avatar || assistantAvatar" alt="" class="size-9 shrink-0 rounded-full object-cover" @error="handleAvatarError" />
 
     <div class="max-w-[560px]">
       <div v-if="isLoading" class="inline-flex rounded-2xl rounded-tl-md bg-accent px-4 py-3 shadow-lg shadow-accent/20">
