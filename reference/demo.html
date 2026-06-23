@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Pilot — Reference Components</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    @theme {
+      --color-chat-bg: #eae9ec;
+      --color-accent: #3b82f6;
+      --color-chat-sidebar: #f3f4f6;
+      --color-chat-border: #e5e7eb;
+      --color-chat-text: #374151;
+      --color-chat-text-muted: #6b7280;
+      --font-chat: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #app { height: 100%; overflow: hidden; font-family: var(--font-chat); background: var(--color-chat-bg); color: var(--color-chat-text); }
+
+    .scrollbar-thin { scrollbar-width: thin; scrollbar-color: var(--color-chat-border) transparent; }
+    .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background-color: var(--color-chat-border); border-radius: 3px; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+    .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+    .animate-slide-in { animation: slideInRight 0.25s ease-out; }
+
+    .new-chat {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      border-radius: 0.75rem;
+      background: white;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: #4b5563;
+      box-shadow: 0 20px 25px -5px rgba(59,130,246,0.1);
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .new-chat:hover {
+      background: rgba(59,130,246,0.7);
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- ===== LAYOUT ===== -->
+    <div class="bg-chat-bg h-screen overflow-hidden p-5">
+      <div class="flex h-full w-full gap-5">
+
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="flex w-72 shrink-0 flex-col divide-y divide-gray-200 overflow-hidden rounded-2xl bg-gray-100 px-4 py-5">
+          <!-- HEADER -->
+          <div class="shrink-0 space-y-5 pb-5">
+            <div class="flex justify-between gap-4">
+              <div class="size-16 shrink-0 flex items-center text-sm text-gray-400">[logo]</div>
+              <button type="button" class="flex size-8 items-center justify-center rounded-lg text-gray-500 transition hover:text-accent" aria-label="Свернуть меню">
+                <svg class="size-7" viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.673 1C10.834 1 11.76 1 12.496 1.08c.749.081 1.383.252 1.93.65.325.235.61.52.845.844.398.548.568 1.181.65 1.93.079.737.079 1.663.079 2.824v3.344c0 1.161 0 2.087-.08 2.824-.081.749-.251 1.382-.649 1.93-.235.324-.52.61-.845.845-.547.397-1.181.568-1.93.649-.736.08-1.662.08-2.823.08H6.327c-1.161 0-2.087 0-2.823-.08-.75-.081-1.383-.252-1.93-.65a3.5 3.5 0 0 1-.845-.844c-.398-.548-.568-1.181-.65-1.93C0 12.76 0 11.834 0 10.673V7.327C0 6.166 0 5.24.08 4.504c.081-.749.251-1.382.649-1.93.235-.324.52-.609.845-.845.547-.397 1.181-.568 1.93-.649C4.24 1 5.166 1 6.327 1h3.346ZM5.543 2.365v12.27c.243.001.504.004.784.004h3.346c1.191 0 2.03 0 2.676-.07.633-.069 1-.197 1.278-.398.208-.152.392-.336.544-.545.201-.277.329-.644.398-1.277.07-.646.07-1.486.07-2.677V7.327c0-1.191 0-2.03-.07-2.676-.069-.633-.197-1-.398-1.278a2.14 2.14 0 0 0-.544-.544c-.277-.201-.645-.33-1.278-.398-.646-.07-1.485-.07-2.676-.07H6.327c-.28 0-.541.003-.784.004ZM4.183 2.39c-.192.01-.368.023-.532.041-.633.069-1 .197-1.278.398-.209.152-.393.336-.544.544-.201.278-.33.645-.398 1.278-.07.646-.07 1.485-.07 2.676v3.346c0 1.191 0 2.03.07 2.676.069.633.197 1 .398 1.277.151.21.335.393.544.545.277.201.645.329 1.278.398.164.018.34.031.532.041V2.39Z" fill="currentColor" /></svg>
+              </button>
+            </div>
+
+            <!-- SEARCH -->
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+              <input type="text" placeholder="Поиск" class="w-full rounded-xl border-0 bg-white py-2 pl-10 pr-4 text-sm text-gray-700 shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent/50" />
+            </div>
+
+            <!-- NEW CHAT -->
+            <button class="new-chat" type="button">
+              <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 16 16" fill="none"><path d="M8 .6A7.4 7.4 0 0 0 .6 8c0 1.134.255 2.21.713 3.172l.28.587 1.173-.558-.28-.587A6.08 6.08 0 0 1 1.9 8 6.1 6.1 0 1 1 8 14.1c-.69 0-1.195-.049-1.643-.172-.441-.122-.86-.326-1.36-.675-.732-.51-1.78-.69-2.645-.145l-.014.008-.014.01-.736.518.432 1.286 1.026-.723c.318-.2.793-.178 1.207.111.592.414 1.144.693 1.759.862.607.168 1.243.22 1.988.22A7.4 7.4 0 1 0 8 .6Zm-.655 4.34V7.35H4.94v1.3h2.405v2.41h1.3V8.65h2.416v-1.3H8.646V4.94h-1.3Z" fill="currentColor" /></svg>
+              <span>Новый чат</span>
+            </button>
+          </div>
+
+          <!-- HISTORY -->
+          <div class="relative min-h-0 flex-1 py-5">
+            <div class="scrollbar-thin h-full space-y-6 overflow-y-auto pr-1">
+              <section class="space-y-2"><h3 class="px-1 text-xs font-medium text-gray-400">Сегодня</h3>
+                <ul class="space-y-1 text-sm text-gray-600">
+                  <li><button type="button" class="block w-full truncate rounded-lg px-1.5 py-1.5 text-left transition hover:bg-white/70 hover:text-accent">Ullamco laboris nisi ut</button></li>
+                  <li><button type="button" class="block w-full truncate rounded-lg px-1.5 py-1.5 text-left transition hover:bg-white/70 hover:text-accent">Duis aute irure dolor in</button></li>
+                </ul>
+              </section>
+              <section class="space-y-2"><h3 class="px-1 text-xs font-medium text-gray-400">Вчера</h3>
+                <ul class="space-y-1 text-sm text-gray-600">
+                  <li><button type="button" class="block w-full truncate rounded-lg px-1.5 py-1.5 text-left transition hover:bg-white/70 hover:text-accent">Lorem ipsum dolor sit amet</button></li>
+                  <li><button type="button" class="block w-full truncate rounded-lg px-1.5 py-1.5 text-left transition hover:bg-white/70 hover:text-accent">Consectetur adipiscing elit</button></li>
+                </ul>
+              </section>
+            </div>
+            <div class="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-linear-to-t from-gray-100 to-transparent"></div>
+          </div>
+
+          <!-- PROFILE + THEME -->
+          <div class="shrink-0 space-y-4 pt-4">
+            <div class="flex justify-between bg-white p-4 rounded-xl shadow-sm">
+              <div class="flex min-w-0 items-center gap-3">
+                <div class="size-10 shrink-0 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-500">[U]</div>
+                <div class="min-w-0 text-sm text-gray-800">
+                  <p class="truncate">James Broeng</p>
+                  <p class="truncate text-gray-500">test@aipilot.ru</p>
+                </div>
+              </div>
+              <button type="button" class="flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-accent" aria-label="Profile settings">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.66.84.12.053.237.109.352.168.325.168.718.133 1.01-.085l1.057-.793a1.125 1.125 0 0 1 1.45.12l1.833 1.833c.389.389.44 1.002.12 1.45l-.793 1.057c-.218.292-.253.685-.085 1.01.06.115.115.232.168.352.154.347.466.597.84.66l1.281.213c.542.09.94.56.94 1.11v2.593c0 .55-.398 1.02-.94 1.11l-1.281.213c-.374.063-.686.313-.84.66a6.997 6.997 0 0 1-.168.352c-.168.325-.133.718.085 1.01l.793 1.057c.32.448.269 1.061-.12 1.45l-1.833 1.833a1.125 1.125 0 0 1-1.45.12l-1.057-.793c-.292-.218-.685-.253-1.01-.085a6.997 6.997 0 0 1-.352.168c-.347.154-.597.466-.66.84l-.213 1.281c-.09.542-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.66-.84a6.997 6.997 0 0 1-.352-.168c-.325-.168-.718-.133-1.01.085l-1.057.793a1.125 1.125 0 0 1-1.45-.12L3.02 18.468a1.125 1.125 0 0 1-.12-1.45l.793-1.057c.218-.292.253-.685.085-1.01a6.997 6.997 0 0 1-.168-.352c-.154-.347-.466-.597-.84-.66l-1.281-.213A1.125 1.125 0 0 1 .55 12.616v-2.593c0-.55.398-1.02.94-1.11L2.77 8.7c.374-.063.686-.313.84-.66.053-.12.109-.237.168-.352.168-.325.133-.718-.085-1.01L2.9 5.621a1.125 1.125 0 0 1 .12-1.45l1.833-1.833a1.125 1.125 0 0 1 1.45-.12l1.057.793c.292.218.685.253 1.01.085.115-.06.232-.115.352-.168.347-.154.597-.466.66-.84l.213-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1 rounded-xl bg-gray-200/70 p-1">
+              <button type="button" title="Светлая" aria-label="Color mode: Светлая" aria-pressed="true" class="flex h-9 items-center justify-center rounded-[10px] text-[#666666] transition hover:bg-white/60 bg-white text-accent shadow-sm">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+              </button>
+              <button type="button" title="Тёмная" aria-label="Color mode: Тёмная" aria-pressed="false" class="flex h-9 items-center justify-center rounded-[10px] text-[#666666] transition hover:bg-white/60">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3.5a7 7 0 0 0 8.5 8.5A8.5 8.5 0 1 1 12 3.5Z"></path></svg>
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ===== MAIN ===== -->
+        <main class="flex h-full min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-chat-bg">
+          <!-- Messages area -->
+          <div class="scrollbar-thin flex-1 overflow-y-auto px-6 pb-8 pt-2">
+            <div class="mx-auto flex w-full max-w-5xl flex-col gap-3">
+
+              <!-- USER MESSAGE (text) -->
+              <div class="flex items-start justify-end gap-3 animate-slide-in">
+                <div class="max-w-[420px]">
+                  <div class="rounded-2xl rounded-tr-md bg-accent px-4 py-3 text-sm leading-relaxed text-white shadow-lg shadow-accent/20">
+                    <p>Привет, проверка связи</p>
+                    <span class="ml-2 whitespace-nowrap text-xs text-white/60">01:25</span>
+                  </div>
+                </div>
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239ca3af'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" alt="" class="size-9 shrink-0 rounded-full object-cover">
+              </div>
+
+              <!-- ASSISTANT MESSAGE -->
+              <div class="flex items-start gap-3 animate-fade-in">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239ca3af'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" alt="" class="size-9 shrink-0 rounded-full object-cover">
+                <div class="max-w-[500px]">
+                  <div class="rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed text-gray-800 shadow-sm ring-1 ring-black/5">
+                    <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+                    <p class="mt-5">Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. 💀</p>
+                    <div class="mt-2 flex items-center justify-end gap-1 text-xs text-gray-400">02:25</div>
+                  </div>
+                  <div class="mt-2 flex items-center gap-4 pl-1 text-gray-400">
+                    <button class="transition hover:text-accent" aria-label="Listen">
+                      <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H3v6h3l5 4V5Z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /></svg>
+                    </button>
+                    <button class="transition hover:text-accent" aria-label="Copy">
+                      <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M4 16V6a2 2 0 0 1 2-2h10" /></svg>
+                    </button>
+                    <button class="transition hover:text-accent" aria-label="Regenerate">
+                      <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-15.5 6.3" /><path d="M3 12A9 9 0 0 1 18.5 5.7" /><path d="M18 3v4h4" /><path d="M6 21v-4H2" /></svg>
+                    </button>
+                    <button class="transition hover:text-accent" aria-label="Dislike">
+                      <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 14V2" /><path d="M9 18.1 10 14H4.8a2 2 0 0 1-2-2.4l1.4-7A2 2 0 0 1 6.2 3H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3.4a2 2 0 0 0-1.7 1l-3 5a2 2 0 0 1-3.6-1.9Z" /></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- USER MESSAGE (link card) -->
+              <div class="flex items-start justify-end gap-3 animate-slide-in">
+                <div class="max-w-[420px]">
+                  <div class="overflow-hidden rounded-2xl rounded-tr-md bg-accent text-white shadow-lg shadow-accent/20">
+                    <div class="flex items-start justify-between gap-4 bg-black/10 px-4 py-3">
+                      <div>
+                        <p class="text-sm font-semibold">External Link Title</p>
+                        <p class="mt-1 text-xs text-white/60">External link description</p>
+                      </div>
+                      <svg viewBox="0 0 24 24" class="size-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+                    </div>
+                    <div class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                      <span class="truncate">https://www.externallink.com</span>
+                      <span class="flex shrink-0 items-center gap-1 text-xs text-white/60">01:25</span>
+                    </div>
+                  </div>
+                </div>
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%239ca3af'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" alt="" class="size-9 shrink-0 rounded-full object-cover">
+              </div>
+
+            </div>
+          </div>
+
+          <!-- COMPOSER -->
+          <div class="shrink-0 border-t border-gray-200 bg-white px-6 py-4">
+            <div class="flex items-end gap-3">
+              <div class="relative flex-1">
+                <textarea placeholder="Напишите сообщение..." rows="1" class="block w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 pr-12 text-sm text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:bg-white focus:ring-1 focus:ring-accent/20"></textarea>
+                <button type="button" class="absolute bottom-2 right-2 flex size-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-accent" aria-label="Добавить вложение">
+                  <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+                </button>
+              </div>
+              <button type="button" class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-white shadow-lg shadow-accent/20 transition hover:bg-accent/90 active:scale-[0.99]" aria-label="Отправить сообщение">
+                <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13" /><path d="m22 2-7 20-4-9-9-4 20-7Z" /></svg>
+              </button>
+            </div>
+            <p class="mt-1.5 text-[10px] text-gray-400">AI Pilot может допускать ошибки. Проверяйте важную информацию.</p>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
