@@ -60,7 +60,7 @@ const renderedContent = computed(() => {
 <template>
   <!-- message.time — переменная времени сообщения, например '10:26'. -->
   <div v-if="isUser" class="flex items-start justify-end gap-3 animate-slide-in">
-    <div class="max-w-[560px]">
+    <div class="max-w-[500px]">
       <template v-if="isVoice">
         <div class="flex items-center gap-3 rounded-2xl rounded-tr-md bg-accent px-4 py-3 text-white shadow-lg shadow-accent/20">
           <button type="button" class="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/20 transition hover:bg-white/30" aria-label="Play voice message">
@@ -126,7 +126,7 @@ const renderedContent = computed(() => {
   <div v-else class="flex items-start gap-3 animate-fade-in">
     <img :src="message.avatar || assistantAvatar" alt="" class="size-9 shrink-0 rounded-full object-cover" @error="handleAvatarError" />
 
-    <div class="max-w-[560px]">
+    <div class="max-w-[500px]">
       <div v-if="isLoading" class="inline-flex rounded-2xl rounded-tl-md bg-accent px-4 py-3 shadow-lg shadow-accent/20">
         <TypingDots />
       </div>

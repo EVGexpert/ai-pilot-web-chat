@@ -51,13 +51,11 @@
   
   .chat-assistant-bubble {
     @apply rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed text-gray-800 shadow-sm ring-1 ring-black/5;
-    max-width: 85%;
     animation: fadeIn 0.2s ease-out;
   }
   
   .chat-user-bubble {
     @apply rounded-2xl rounded-tr-md bg-accent px-4 py-3 text-sm leading-relaxed text-white shadow-lg shadow-accent/20;
-    max-width: 85%;
     animation: fadeIn 0.2s ease-out;
   }
 }
