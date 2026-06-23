@@ -20,7 +20,7 @@
   --color-chat-assistant: #ffffff;
   --color-chat-system: #ffffff;
   --font-chat: 'Inter', system-ui, -apple-system, sans-serif;
-  --color-accent: #7e4ce0;
+  --color-accent: #3b82f6;
 }
 
 @layer components {
@@ -56,7 +56,7 @@
   }
   
   .chat-user-bubble {
-    @apply rounded-2xl rounded-tr-md bg-accent px-4 py-3 text-sm leading-relaxed text-white shadow-sm;
+    @apply rounded-2xl rounded-tr-md bg-accent px-4 py-3 text-sm leading-relaxed text-white shadow-lg shadow-accent/20;
     max-width: 85%;
     animation: fadeIn 0.2s ease-out;
   }

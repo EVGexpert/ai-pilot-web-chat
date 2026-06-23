@@ -48,14 +48,14 @@ const filteredGroups = computed(() => {
 
 <template>
   <aside class="flex w-72 shrink-0 flex-col divide-y divide-gray-200 overflow-hidden rounded-2xl bg-gray-100 px-4 py-5">
-    <div class="side-header shrink-0 space-y-5 pb-5">
+    <div class="shrink-0 space-y-5 pb-5">
       <div class="flex justify-between gap-4">
         <!-- logoSrc — путь к логотипу, лучше хранить в public/img или отдавать из настроек бренда. -->
         <img :src="logoSrc" class="size-16 shrink-0" alt="AI Pilot" />
 
         <button
           type="button"
-          class="open-close flex size-8 items-start justify-end rounded-lg text-gray-500 transition hover:text-accent"
+          class="flex size-8 items-center justify-center rounded-lg text-gray-500 transition hover:text-accent"
           aria-label="Свернуть меню"
           @click="emit('toggle-sidebar')"
         >
@@ -103,7 +103,7 @@ const filteredGroups = computed(() => {
       <div class="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-linear-to-t from-gray-100 to-transparent"></div>
     </div>
 
-    <div class="chat-footer shrink-0 space-y-4 pt-4">
+    <div class="shrink-0 space-y-4 pt-4">
       <UserProfileCard :user="user" @settings="emit('profile-settings')" />
       <ThemeSwitcher :model-value="theme" @update:model-value="emit('update:theme', $event)" />
     </div>
