@@ -27,8 +27,8 @@ const historyGroups = computed(() => {
 
   const groups = {
     today: { title: 'Сегодня', items: [] },
-    week: { title: '7 дней', items: [] },
-    month: { title: '30 дней', items: [] }
+    week: { title: 'На этой неделе', items: [] },
+    month: { title: 'В этом месяце', items: [] }
   }
 
   const sevenDaysAgo = new Date(today)
@@ -38,7 +38,13 @@ const historyGroups = computed(() => {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
   for (const session of sessionsList.value) {
-    const dateStr = session.updatedAt || session.createdAt
+    // Приоритет: updatedAt → createdAt → lastMessage.created_at → date
+    const dateStr =
+      session.updatedAt ||
+      session.createdAt ||
+      session.lastMessage?.created_at ||
+      session.date ||
+      null
     const sessionDate = dateStr ? new Date(dateStr) : null
 
     const item = {
@@ -69,6 +75,15 @@ const historyGroups = computed(() => {
   if (groups.today.items.length > 0) result.push(groups.today)
   if (groups.week.items.length > 0) result.push(groups.week)
   if (groups.month.items.length > 0) result.push(groups.month)
+
+  // Если ничего не попала в группы — все равно показываем (fallback)
+  if (result.length === 0 && sessionsList.value.length > 0) {
+    result.push({ title: 'В этом месяце', items: sessionsList.value.map(s => ({
+      id: s.id,
+      title: s.title || s.name || 'Новый чат',
+      date: s.updatedAt || s.createdAt || s.date || ''
+    }))})
+  }
 
   return result
 })
