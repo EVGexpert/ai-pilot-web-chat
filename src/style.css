@@ -77,6 +77,13 @@ body {
     background: transparent;
   }
 
+  .dark .scrollbar-thin {
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  }
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+
   @keyframes fadeIn {
     from {
       opacity: 0;
