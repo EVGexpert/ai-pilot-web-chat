@@ -59,7 +59,7 @@ const filteredGroups = computed(() => {
 
 <template>
   <aside
-    class="flex shrink-0 flex-col divide-y overflow-hidden rounded-2xl py-5 transition-all duration-300"
+    class="flex h-full shrink-0 flex-col divide-y overflow-hidden rounded-2xl py-5 transition-all duration-300"
     :class="[
       isCollapsed ? 'w-20 px-3' : 'w-72 px-4',
       theme === 'dark'

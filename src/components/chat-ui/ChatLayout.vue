@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref } from 'vue'
 import ChatSidebar from './ChatSidebar.vue'
 import ChatMessages from './ChatMessages.vue'
 import ChatComposer from './ChatComposer.vue'
@@ -34,7 +34,6 @@ const emit = defineEmits([
   'approve-action', 'reject-action'
 ])
 
-const messagesContainer = ref(null)
 const sidebarOpen = ref(false)
 
 function toggleSidebar() {
@@ -54,17 +53,7 @@ function handleSelectChat(item) {
   closeSidebar()
 }
 
-// Scroll to bottom when new messages arrive
-watch(() => [props.messages, props.streamingContent], async () => {
-  await nextTick()
-  if (messagesContainer.value) {
-    const el = messagesContainer.value
-    // Use setTimeout to ensure DOM has updated
-    setTimeout(() => {
-      el.scrollTop = el.scrollHeight
-    }, 50)
-  }
-}, { deep: true })
+
 </script>
 
 <template>
@@ -118,7 +107,6 @@ watch(() => [props.messages, props.streamingContent], async () => {
 
       <!-- Messages -->
       <ChatMessages
-        ref="messagesContainer"
         :messages="messages"
         :streamingContent="streamingContent"
         :isLoading="isLoading"

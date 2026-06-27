@@ -107,7 +107,7 @@ async function handleSend(text) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + authStore.token
+        'Authorization': '***' + authStore.token
       },
       body: JSON.stringify({
         message: text,
@@ -155,7 +155,7 @@ async function handleApproveAction(actionId) {
   try {
     await fetch('/api/chat/actions/approve', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
+      headers: { 'Content-Type': 'application/json', 'Authorization': '***' + authStore.token },
       body: JSON.stringify({
         actionId,
         sessionId: currentSessionId.value,
@@ -176,7 +176,7 @@ async function handleRejectAction(actionId) {
   try {
     await fetch('/api/chat/actions/reject', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
+      headers: { 'Content-Type': 'application/json', 'Authorization': '***' + authStore.token },
       body: JSON.stringify({ actionId, sessionId: currentSessionId.value })
     })
   } catch (e) {
@@ -188,7 +188,7 @@ async function handleRejectAction(actionId) {
 async function loadSessions() {
   try {
     const res = await fetch('/api/chat/sessions?siteUrl=' + encodeURIComponent(authStore.siteUrl), {
-      headers: { 'Authorization': 'Bearer ' + authStore.token }
+      headers: { 'Authorization': '***' + authStore.token }
     })
     if (res.ok) {
       const data = await res.json()
@@ -203,7 +203,7 @@ async function loadSessions() {
 async function loadSessionHistory(sessionId) {
   try {
     const res = await fetch('/api/chat/history?sessionId=' + encodeURIComponent(sessionId), {
-      headers: { 'Authorization': 'Bearer ' + authStore.token }
+      headers: { 'Authorization': '***' + authStore.token }
     })
     if (res.ok) {
       const hist = await res.json()
@@ -227,7 +227,7 @@ async function startNewChat() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + authStore.token
+        'Authorization': '***' + authStore.token
       },
       body: JSON.stringify({ siteUrl: authStore.siteUrl })
     })
@@ -281,7 +281,7 @@ if (props.clientMode) {
     try {
       if (!authStore.siteUrl && authStore.token) {
         const meRes = await fetch('/api/auth/me', {
-          headers: { 'Authorization': 'Bearer ' + authStore.token }
+          headers: { 'Authorization': '***' + authStore.token }
         })
         if (meRes.ok) {
           const meData = await meRes.json()
@@ -301,7 +301,7 @@ if (props.clientMode) {
       if (sessionsList.value.length === 0) {
         const res = await fetch('/api/chat/send', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
+          headers: { 'Content-Type': 'application/json', 'Authorization': '***' + authStore.token },
           body: JSON.stringify({ message: '/start', siteUrl: authStore.siteUrl })
         })
         if (res.ok) {
@@ -335,7 +335,7 @@ if (props.clientMode) {
       :clientMode="clientMode"
       :theme="theme"
       :placeholder="'Напишите сообщение...'"
-      :sendLabel="'Send'"
+      :sendLabel="'Отправить'"
       @new-chat="startNewChat"
       @select-chat="handleSelectChat"
       @update:theme="handleThemeUpdate"

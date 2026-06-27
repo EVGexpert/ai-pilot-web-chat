@@ -1,4 +1,5 @@
 <script setup>
+import { ref, watch, nextTick } from 'vue'
 import ChatMessage from './ChatMessage.vue'
 
 const props = defineProps({
@@ -16,10 +17,24 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['approve-action', 'reject-action', 'listen', 'copy', 'like', 'dislike'])
+
+const scrollEl = ref(null)
+
+function scrollToBottom() {
+  nextTick(() => {
+    if (scrollEl.value) {
+      scrollEl.value.scrollTop = scrollEl.value.scrollHeight
+    }
+  })
+}
+
+watch(() => [props.messages.length, props.streamingContent, props.isLoading], () => {
+  scrollToBottom()
+}, { immediate: true })
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto px-4 py-4 md:px-6 flex flex-col gap-4">
+  <div ref="scrollEl" class="flex-1 overflow-y-auto px-4 py-4 md:px-6 flex flex-col gap-4">
     <!-- Error banner -->
     <div v-if="error && !isConnected" class="rounded-lg px-4 py-3 text-sm" :class="theme === 'dark' ? 'bg-red-900/20 text-red-300' : 'bg-red-50 text-red-600'">
       ⚠️ {{ error.message || error }}
