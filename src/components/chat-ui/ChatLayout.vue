@@ -100,7 +100,7 @@ watch(() => [props.messages, props.streamingContent], async () => {
     </div>
 
     <!-- Main area -->
-    <div class="flex flex-1 flex-col min-w-0 bg-chat-bg">
+    <div class="flex flex-1 flex-col min-w-0 bg-chat-bg dark:bg-slate-950">
       <!-- Mobile burger -->
       <div class="md:hidden flex items-center px-4 py-2 border-b border-gray-200 dark:border-slate-700">
         <button
