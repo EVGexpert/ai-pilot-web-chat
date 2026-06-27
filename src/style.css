@@ -42,7 +42,9 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.dark body {
+.dark body,
+.dark html,
+.dark #app {
   background: #0f172a !important;
   color: #e2e8f0;
 }
