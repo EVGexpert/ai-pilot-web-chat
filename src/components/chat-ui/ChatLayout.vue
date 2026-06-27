@@ -79,9 +79,9 @@ watch(() => [props.messages, props.streamingContent], async () => {
     <!-- Sidebar -->
     <div
       :class="[
-        'shrink-0',
+        'shrink-0 h-full',
         'md:relative md:block',
-        'fixed left-0 top-0 h-full z-50 transition-transform duration-300 md:transform-none',
+        'fixed left-0 top-0 z-50 transition-transform duration-300 md:transform-none',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       ]"
     >
@@ -102,9 +102,9 @@ watch(() => [props.messages, props.streamingContent], async () => {
     <!-- Main area -->
     <div class="flex flex-1 flex-col min-w-0 bg-chat-bg">
       <!-- Mobile burger -->
-      <div class="md:hidden flex items-center px-4 py-2 border-b border-gray-200">
+      <div class="md:hidden flex items-center px-4 py-2 border-b border-gray-200 dark:border-slate-700">
         <button
-          class="flex items-center justify-center size-10 rounded-lg transition hover:bg-gray-100"
+          class="flex items-center justify-center size-10 rounded-lg transition hover:bg-gray-100 dark:hover:bg-slate-800"
           @click="toggleSidebar"
           aria-label="Toggle sidebar"
         >
@@ -142,7 +142,6 @@ watch(() => [props.messages, props.streamingContent], async () => {
       <!-- Composer -->
       <div class="px-4 pb-4 pt-2 max-w-5xl mx-auto w-full">
         <ChatComposer
-          :modelValue="''"
           :placeholder="placeholder"
           :disabled="!isConnected"
           :sendLabel="sendLabel"

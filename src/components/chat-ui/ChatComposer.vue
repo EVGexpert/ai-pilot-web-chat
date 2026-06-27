@@ -1,37 +1,22 @@
 <script setup>
-import { ref, watch } from "vue";
+import { ref } from "vue";
 
 const props = defineProps({
-  modelValue: { type: String, default: "" },
   placeholder: { type: String, default: "Спросите AIPilot" },
   disabled: { type: Boolean, default: false },
   sendLabel: { type: String, default: "Send" },
   theme: { type: String, default: "light" }
 });
 
-const emit = defineEmits(["update:modelValue", "submit", "attach", "emoji"]);
+const emit = defineEmits(["submit", "attach", "emoji"]);
 
-const textareaRef = ref(null);
-
-function autoResize() {
-  const el = textareaRef.value;
-  if (el) {
-    el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 144) + "px";
-  }
-}
-
-function handleInput(e) {
-  emit("update:modelValue", e.target.value);
-  autoResize();
-}
+const text = ref("");
 
 const handleSubmit = () => {
-  const value = props.modelValue.trim();
+  const value = text.value.trim();
   if (!value || props.disabled) return;
   emit("submit", value);
-  emit("update:modelValue", "");
-  autoResize();
+  text.value = "";
 };
 
 function handleKeydown(e) {
@@ -40,10 +25,6 @@ function handleKeydown(e) {
     handleSubmit();
   }
 }
-
-watch(() => props.modelValue, () => {
-  autoResize();
-});
 </script>
 
 <template>
@@ -83,8 +64,7 @@ watch(() => props.modelValue, () => {
       </button>
 
       <textarea
-        ref="textareaRef"
-        :value="modelValue"
+        v-model="text"
         rows="1"
         :placeholder="disabled ? 'Нет соединения...' : placeholder"
         class="max-h-36 min-h-12 flex-1 resize-none bg-transparent pt-3 text-sm outline-none transition-colors"
@@ -94,7 +74,6 @@ watch(() => props.modelValue, () => {
             : 'text-gray-800 placeholder-gray-500'
         "
         :disabled="disabled"
-        @input="handleInput"
         @keydown="handleKeydown"
       ></textarea>
 
@@ -127,7 +106,7 @@ watch(() => props.modelValue, () => {
         <button
           type="submit"
           class="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-medium text-white shadow-lg shadow-accent/20 transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
-          :disabled="disabled || !modelValue.trim()"
+          :disabled="disabled || !text.trim()"
         >
           <span>{{ sendLabel }}</span>
           <svg

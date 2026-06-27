@@ -28,20 +28,20 @@ function handleClick(item) {
       <li v-for="item in items" :key="item.id">
         <button
           type="button"
-          class="block w-full truncate rounded-lg px-1.5 py-1.5 text-left text-sm transition hover:bg-white/70 hover:text-accent"
+          class="flex w-full items-center truncate text-sm transition hover:text-accent"
           :class="[
-            collapsed ? 'text-center' : '',
+            collapsed ? 'justify-center' : '',
             item.id === activeChatId
-              ? 'bg-white text-accent shadow-sm'
+              ? 'text-accent'
               : theme === 'dark'
-                ? 'text-slate-300 dark:hover:bg-white/10'
+                ? 'text-slate-400'
                 : 'text-gray-800'
           ]"
           :title="item.title"
           @click="handleClick(item)"
         >
           <template v-if="collapsed">
-            <svg class="mx-auto size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
             </svg>
           </template>

@@ -26,16 +26,16 @@ const emit = defineEmits(['approve-action', 'reject-action', 'listen', 'copy', '
     </div>
 
     <!-- Connecting -->
-    <div v-if="!isConnected && !error" class="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400">
-      <div class="w-6 h-6 border-2 border-gray-300 border-t-accent rounded-full animate-spin"></div>
+    <div v-if="!isConnected && !error" class="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400 dark:text-slate-400">
+      <div class="w-6 h-6 border-2 border-gray-300 dark:border-slate-600 border-t-accent rounded-full animate-spin"></div>
       <p class="text-sm">Подключаюсь к серверу...</p>
     </div>
 
     <!-- Empty state -->
     <div v-if="messages.length === 0 && isConnected" class="flex-1 flex flex-col items-center justify-center text-center px-6">
       <div class="text-5xl mb-5 leading-none">🎯</div>
-      <p class="text-lg font-semibold text-gray-800 mb-2">{{ startTitle }}</p>
-      <p v-if="startHint" class="text-sm text-gray-400 leading-relaxed">{{ startHint }}</p>
+      <p class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">{{ startTitle }}</p>
+      <p v-if="startHint" class="text-sm text-gray-400 dark:text-slate-400 leading-relaxed">{{ startHint }}</p>
     </div>
 
     <!-- Messages -->
@@ -57,7 +57,7 @@ const emit = defineEmits(['approve-action', 'reject-action', 'listen', 'copy', '
     <!-- Streaming content -->
     <div v-if="streamingContent" class="flex items-start gap-3 animate-fade-in">
       <img :src="assistantAvatar" alt="" class="size-9 shrink-0 rounded-full object-cover" />
-      <div class="rounded-2xl rounded-tl-md bg-white px-4 py-3 text-sm leading-relaxed text-gray-800 shadow-sm ring-1 ring-black/5">
+      <div class="rounded-2xl rounded-tl-md bg-white dark:bg-slate-900 px-4 py-3 text-sm leading-relaxed text-gray-800 dark:text-slate-100 shadow-sm ring-1 ring-black/5 dark:ring-white/10">
         {{ streamingContent }}
       </div>
     </div>
@@ -65,11 +65,11 @@ const emit = defineEmits(['approve-action', 'reject-action', 'listen', 'copy', '
     <!-- Loading indicator -->
     <div v-if="isLoading && !streamingContent" class="flex items-start gap-3">
       <img :src="assistantAvatar" alt="" class="size-9 shrink-0 rounded-full object-cover" />
-      <div class="rounded-2xl rounded-tl-md bg-white px-4 py-3 shadow-sm ring-1 ring-black/5">
+      <div class="rounded-2xl rounded-tl-md bg-white dark:bg-slate-900 px-4 py-3 shadow-sm ring-1 ring-black/5 dark:ring-white/10">
         <div class="flex gap-1">
-          <span class="w-2 h-2 rounded-full bg-gray-400" style="animation: pulse-dot 1.4s infinite ease-in-out both; animation-delay: -0.32s;"></span>
-          <span class="w-2 h-2 rounded-full bg-gray-400" style="animation: pulse-dot 1.4s infinite ease-in-out both; animation-delay: -0.16s;"></span>
-          <span class="w-2 h-2 rounded-full bg-gray-400" style="animation: pulse-dot 1.4s infinite ease-in-out both;"></span>
+          <span class="w-2 h-2 rounded-full bg-gray-400 dark:bg-slate-500" style="animation: pulse-dot 1.4s infinite ease-in-out both; animation-delay: -0.32s;"></span>
+          <span class="w-2 h-2 rounded-full bg-gray-400 dark:bg-slate-500" style="animation: pulse-dot 1.4s infinite ease-in-out both; animation-delay: -0.16s;"></span>
+          <span class="w-2 h-2 rounded-full bg-gray-400 dark:bg-slate-500" style="animation: pulse-dot 1.4s infinite ease-in-out both;"></span>
         </div>
       </div>
     </div>
