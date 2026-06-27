@@ -1,106 +1,287 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
-import { useChatApi } from '../composables/useChatApi'
-import { useGatewayClient } from '../composables/useGatewayClient'
 import ChatLayout from './chat-ui/ChatLayout.vue'
 
 const props = defineProps({ clientMode: { type: Boolean, default: false } })
 
 const authStore = useAuthStore()
 const sitesStore = useSitesStore()
-const chatApi = useChatApi(authStore, sitesStore)
-const { currentSessionId, sessionsList, messages, isLoading, error, streamingContent } = chatApi
 
-// --- State ---
-const chatDraft = ref('')
+const messages = ref([])
+const isConnected = ref(false)
+const isLoading = ref(false)
+const streamingContent = ref('')
+const error = ref(null)
+const currentSessionId = ref(null)
+const sessionsList = ref([])
+const theme = ref(authStore.theme)
 
-// --- Computed adapters ---
+// Watch authStore.theme changes
+watch(() => authStore.theme, (val) => {
+  theme.value = val
+}, { immediate: true })
 
-const normalizedMessages = computed(() => {
-  return messages.value.map((message) => ({
-    id: message.id || `${message.role}-${Date.now()}-${Math.random()}`,
-    role: message.role,
-    type: message.type || 'text',
-    content: message.content || '',
-    time: message.time || '',
-    actions: message.actions || []
-  }))
-})
-
+// Real date-based history grouping
 const historyGroups = computed(() => {
-  return [
-    {
-      id: 'recent',
-      title: 'История',
-      items: sessionsList.value.map((session) => ({
-        id: session.id,
-        title: session.title || session.name || 'Новый чат',
-        date: session.updatedAt || session.createdAt || ''
-      }))
+  const today = new Date()
+  const todayStr = today.toDateString()
+
+  const groups = {
+    today: { title: 'Сегодня', items: [] },
+    week: { title: '7 дней', items: [] },
+    month: { title: '30 дней', items: [] }
+  }
+
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+  const thirtyDaysAgo = new Date(today)
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  for (const session of sessionsList.value) {
+    const dateStr = session.updatedAt || session.createdAt
+    const sessionDate = dateStr ? new Date(dateStr) : null
+
+    const item = {
+      id: session.id,
+      title: session.title || 'Новый чат',
+      date: dateStr || ''
     }
-  ]
+
+    if (!sessionDate) {
+      groups.month.items.push(item)
+      continue
+    }
+
+    const sessionDateStr = sessionDate.toDateString()
+
+    if (sessionDateStr === todayStr) {
+      groups.today.items.push(item)
+    } else if (sessionDate >= sevenDaysAgo) {
+      groups.week.items.push(item)
+    } else if (sessionDate >= thirtyDaysAgo) {
+      groups.month.items.push(item)
+    } else {
+      // Past 30 days — add to month as "Ранее" if needed
+      groups.month.items.push(item)
+    }
+  }
+
+  const result = []
+  if (groups.today.items.length > 0) result.push(groups.today)
+  if (groups.week.items.length > 0) result.push(groups.week)
+  if (groups.month.items.length > 0) result.push(groups.month)
+
+  return result
 })
 
-const currentUser = computed(() => ({
-  name: authStore.user?.name || 'AI Pilot',
+// User data for sidebar
+const userData = computed(() => ({
+  name: authStore.user?.name || authStore.userName || 'Пользователь',
   email: authStore.user?.email || '',
-  avatar: '/img/user-img.png'
+  avatar: authStore.user?.avatar || ''
 }))
 
-// --- WebSocket ---
-const gatewayUrl = import.meta.env.VITE_GATEWAY_WS_URL || `wss://chat.pilotsite.ru/ws/`
-const ws = useGatewayClient(gatewayUrl, {
-  token: authStore.token,
-  maxReconnectAttempts: 10,
-  baseDelay: 1000,
-  maxDelay: 30000,
-  ackTimeout: 10000
-})
+const currentSiteConversations = computed(() => sitesStore.currentSiteConversations)
 
-ws.onMessage((data) => {
-  if (data.type === 'assistant_message' && data.content) {
-    const newMsg = { id: `ws-${Date.now()}`, role: 'assistant', content: data.content }
-    if (data.actions) newMsg.actions = data.actions
-    messages.value = [...messages.value, newMsg]
+async function handleSend(text) {
+  messages.value = [...messages.value, { id: `user-${Date.now()}`, role: 'user', content: text }]
+  isLoading.value = true
+  error.value = null
+
+  let sendSiteUrl = authStore.siteUrl
+  if (!sendSiteUrl && sitesStore.currentSite) {
+    sendSiteUrl = sitesStore.currentSite.url
   }
-})
 
-// --- Handlers ---
-function handleSend(text) {
-  const hasSite = !!(authStore.siteUrl || sitesStore.currentSite?.url)
-  if (!hasSite) {
-    error.value = 'Выберите сайт в боковой панели'
+  if (!sendSiteUrl) {
+    error.value = 'Не выбран сайт. Выберите сайт в боковой панели.'
+    isLoading.value = false
     return
   }
-  chatApi.sendMessage(text)
+
+  try {
+    const res = await fetch('/api/chat/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + authStore.token
+      },
+      body: JSON.stringify({
+        message: text,
+        siteUrl: sendSiteUrl,
+        sessionId: currentSessionId.value
+      })
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      currentSessionId.value = data.sessionId || currentSessionId.value
+      const newMsg = { id: `msg-${Date.now()}`, role: 'assistant', content: data.message }
+      if (data.actions && data.actions.length > 0) {
+        newMsg.actions = data.actions
+      }
+      messages.value = [...messages.value, newMsg]
+      await loadSessions()
+    } else {
+      const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+      error.value = err.error || 'Ошибка отправки'
+    }
+  } catch (e) {
+    error.value = 'Сетевая ошибка: ' + e.message
+  } finally {
+    isLoading.value = false
+    streamingContent.value = ''
+  }
 }
 
-function handleNewChat() { chatApi.startNewChat() }
+function disconnect() {}
 
-function handleSelectChat(event) {
-  chatApi.selectSession(event.id || event)
+// Action Proposal: approve / reject
+async function handleApproveAction(actionId) {
+  const msg = messages.value.find(m => m.actions?.some(a => a.id === actionId))
+  if (!msg) return
+  const action = msg.actions.find(a => a.id === actionId)
+  if (action) action.status = 'approved'
+
+  const actionPayload = action.raw || {
+    type: action.type || 'other',
+    target: action.target || {},
+    patch: action.patch || {}
+  }
+
+  try {
+    await fetch('/api/chat/actions/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
+      body: JSON.stringify({
+        actionId,
+        sessionId: currentSessionId.value,
+        siteUrl: authStore.siteUrl || sitesStore.currentSite?.url,
+        action: actionPayload
+      })
+    })
+  } catch (e) {
+    console.warn('Approve API call failed:', e)
+  }
 }
 
-function handleApproveAction(id) { chatApi.approveAction(id) }
+async function handleRejectAction(actionId) {
+  const msg = messages.value.find(m => m.actions?.some(a => a.id === actionId))
+  if (!msg) return
+  const action = msg.actions.find(a => a.id === actionId)
+  if (action) action.status = 'rejected'
+  try {
+    await fetch('/api/chat/actions/reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
+      body: JSON.stringify({ actionId, sessionId: currentSessionId.value })
+    })
+  } catch (e) {
+    console.warn('Reject API call failed:', e)
+  }
+}
 
-function handleRejectAction(id) { chatApi.rejectAction(id) }
+// Load sessions list
+async function loadSessions() {
+  try {
+    const res = await fetch('/api/chat/sessions?siteUrl=' + encodeURIComponent(authStore.siteUrl), {
+      headers: { 'Authorization': 'Bearer ' + authStore.token }
+    })
+    if (res.ok) {
+      const data = await res.json()
+      sessionsList.value = data.sessions || []
+    }
+  } catch (e) {
+    console.warn('Sessions load failed:', e)
+  }
+}
+
+// Load session history
+async function loadSessionHistory(sessionId) {
+  try {
+    const res = await fetch('/api/chat/history?sessionId=' + encodeURIComponent(sessionId), {
+      headers: { 'Authorization': 'Bearer ' + authStore.token }
+    })
+    if (res.ok) {
+      const hist = await res.json()
+      if (hist.messages && hist.messages.length > 0) {
+        messages.value = hist.messages.map(m => ({
+          id: 'msg-' + m.id,
+          role: m.role,
+          content: m.content
+        }))
+      }
+    }
+  } catch (e) {
+    console.warn('History load failed:', e)
+  }
+}
+
+// New chat
+async function startNewChat() {
+  try {
+    const res = await fetch('/api/chat/new', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + authStore.token
+      },
+      body: JSON.stringify({ siteUrl: authStore.siteUrl })
+    })
+    if (res.ok) {
+      const data = await res.json()
+      currentSessionId.value = data.sessionId
+      messages.value = []
+      streamingContent.value = ''
+      isLoading.value = false
+      error.value = null
+      await loadSessions()
+    }
+  } catch (e) {
+    console.warn('New chat failed:', e)
+  }
+}
+
+// Select session
+async function selectSession(sessionId) {
+  currentSessionId.value = sessionId
+  await loadSessionHistory(sessionId)
+}
+
+function handleSelectChat(item) {
+  selectSession(item.id)
+}
 
 function handleLogout() {
   const keys = Object.keys(localStorage).filter(k => k.startsWith('aipilot_greeted_'))
   keys.forEach(k => localStorage.removeItem(k))
-  ws.disconnect()
+  disconnect()
   authStore.logout()
 }
 
-// --- Client init ---
+function handleProfileSettings() {
+  handleLogout()
+}
+
+// Theme handler
+function handleThemeUpdate(val) {
+  authStore.setTheme(val)
+}
+
+isConnected.value = true
+onUnmounted(() => disconnect())
+
+// Client mode init
 if (props.clientMode) {
-  onMounted(async () => {
+  nextTick(async () => {
+    isConnected.value = true
     try {
       if (!authStore.siteUrl && authStore.token) {
         const meRes = await fetch('/api/auth/me', {
-          headers: { 'Authorization': '***' + authStore.token }
+          headers: { 'Authorization': 'Bearer ' + authStore.token }
         })
         if (meRes.ok) {
           const meData = await meRes.json()
@@ -111,71 +292,57 @@ if (props.clientMode) {
         }
       }
       if (!authStore.siteUrl) return
-      await chatApi.loadSessions()
+      await loadSessions()
       if (sessionsList.value.length > 0) {
         const last = sessionsList.value[0]
-        await chatApi.selectSession(last.id)
+        currentSessionId.value = last.id
+        await loadSessionHistory(last.id)
       }
       if (sessionsList.value.length === 0) {
-        const sendSiteUrl = authStore.siteUrl
         const res = await fetch('/api/chat/send', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': '***' + authStore.token },
-          body: JSON.stringify({ message: '/start', siteUrl: sendSiteUrl })
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authStore.token },
+          body: JSON.stringify({ message: '/start', siteUrl: authStore.siteUrl })
         })
         if (res.ok) {
           const data = await res.json()
           currentSessionId.value = data.sessionId
           messages.value = [{ id: 'greeting', role: 'assistant', content: data.message }]
-          await chatApi.loadSessions()
+          await loadSessions()
         }
       }
-    } catch (e) { console.warn('Init failed:', e) }
+    } catch (e) {
+      console.warn('Init failed:', e)
+    }
   })
 }
-
-onMounted(() => { ws.connect() })
-onUnmounted(() => { ws.disconnect() })
 </script>
 
 <template>
-  <ChatLayout
-    v-if="!clientMode"
-    v-model="chatDraft"
-    :history-groups="historyGroups"
-    :messages="normalizedMessages"
-    :active-chat-id="currentSessionId"
-    :user="currentUser"
-    :is-sending="isLoading"
-    :is-assistant-typing="isLoading || !!streamingContent"
-    :show-sidebar="false"
-    :embedded="true"
-    logo-src="/img/logo-aipilot-v3.png"
-    assistant-avatar="/img/logo-aipilot-v2.png"
-    @send-message="handleSend"
-    @new-chat="handleNewChat"
-    @select-chat="handleSelectChat"
-    @approve-action="handleApproveAction"
-    @reject-action="handleRejectAction"
-  />
-  <ChatLayout
-    v-else
-    v-model="chatDraft"
-    :history-groups="historyGroups"
-    :messages="normalizedMessages"
-    :active-chat-id="currentSessionId"
-    :user="currentUser"
-    :is-sending="isLoading"
-    :is-assistant-typing="isLoading || !!streamingContent"
-    :show-sidebar="true"
-    :embedded="true"
-    logo-src="/img/logo-aipilot-v3.png"
-    assistant-avatar="/img/logo-aipilot-v2.png"
-    @send-message="handleSend"
-    @new-chat="handleNewChat"
-    @select-chat="handleSelectChat"
-    @approve-action="handleApproveAction"
-    @reject-action="handleRejectAction"
-    @profile-settings="handleLogout"
-  />
+  <div class="h-full w-full">
+    <ChatLayout
+      :historyGroups="historyGroups"
+      :activeChatId="currentSessionId"
+      :user="userData"
+      :logoSrc="'/img/logo-aipilot-v3.png'"
+      :messages="messages"
+      :streamingContent="streamingContent"
+      :isLoading="isLoading"
+      :isConnected="isConnected"
+      :error="error"
+      :startTitle="clientMode ? 'Чем могу помочь?' : 'Добро пожаловать в AI Pilot'"
+      :startHint="clientMode ? 'Я AI-ассистент вашего сайта.' : 'Напишите, что нужно сделать с сайтом'"
+      :clientMode="clientMode"
+      :theme="theme"
+      :placeholder="'Напишите сообщение...'"
+      :sendLabel="'Send'"
+      @new-chat="startNewChat"
+      @select-chat="handleSelectChat"
+      @update:theme="handleThemeUpdate"
+      @profile-settings="handleProfileSettings"
+      @send-message="handleSend"
+      @approve-action="handleApproveAction"
+      @reject-action="handleRejectAction"
+    />
+  </div>
 </template>

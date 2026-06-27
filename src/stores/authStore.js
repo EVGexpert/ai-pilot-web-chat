@@ -4,8 +4,10 @@ import { ref, computed } from 'vue'
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('aipilot_token') || '')
   const user = ref(JSON.parse(localStorage.getItem('aipilot_user') || 'null'))
-  const theme = ref(localStorage.getItem('aipilot_theme') || 'dark')
+  const theme = ref(localStorage.getItem('aipilot_theme') || 'light')
   const siteUrl = ref(localStorage.getItem('aipilot_site_url') || '')
+
+
 
   const isAuthenticated = computed(() => !!token.value)
   const userName = computed(() => user.value?.name || '')
@@ -41,10 +43,18 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function applyTheme(mode) {
+    // Toggle .dark class for new style.css (Tailwind v4-style)
+    document.documentElement.classList.toggle('dark', mode === 'dark')
+
     if (mode === 'system') {
-      mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
+      document.documentElement.setAttribute('data-theme', prefersDark.matches ? 'dark' : 'light')
+      prefersDark.addEventListener('change', (e) => {
+        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light')
+      }, { once: true })
+    } else {
+      document.documentElement.setAttribute('data-theme', mode)
     }
-    document.documentElement.setAttribute('data-theme', mode)
   }
 
   function initTheme() {

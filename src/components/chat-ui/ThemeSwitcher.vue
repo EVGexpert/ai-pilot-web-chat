@@ -1,48 +1,94 @@
 <script setup>
-const props = defineProps({
-  // Значение можно синхронизировать с настройками пользователя: light | dark | system.
-  modelValue: {
-    type: String,
-    default: 'light'
-  }
+defineProps({
+  theme: { type: String, default: 'light' },
+  collapsed: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:theme'])
 
-const modes = [
-  { value: 'light', label: 'Светлая', icon: 'sun' },
-  { value: 'dark', label: 'Тёмная', icon: 'moon' }
-]
+function setTheme(value) {
+  emit('update:theme', value)
+}
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-1 rounded-xl bg-gray-200/70 p-1">
-    <button
-      v-for="mode in modes"
-      :key="mode.value"
-      type="button"
-      :title="mode.label"
-      :aria-label="`Color mode: ${mode.label}`"
-      :aria-pressed="modelValue === mode.value"
-      class="flex h-9 items-center justify-center rounded-[10px] text-[#666666] transition hover:bg-white/60"
-      :class="modelValue === mode.value ? 'bg-white text-accent shadow-sm' : ''"
-      @click="emit('update:modelValue', mode.value)"
+  <div
+    class="flex items-center justify-center rounded-b-2xl transition-colors duration-300"
+    :class="[
+      collapsed ? 'px-1 py-1' : 'px-5',
+      theme === 'dark' ? 'bg-slate-800' : 'bg-[#f4f4f6]',
+    ]"
+  >
+    <div
+      class="grid rounded-xl p-0.5 transition-all duration-300"
+      :class="[
+        collapsed
+          ? 'w-full grid-cols-1 grid-rows-2 gap-1'
+          : 'h-[34px] w-[235px] grid-cols-2',
+        theme === 'dark'
+          ? 'bg-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
+          : 'bg-[#eeeeF1] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]',
+      ]"
+      role="group"
+      aria-label="Color mode"
     >
-      <svg v-if="mode.icon === 'sun'" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
-        <circle cx="12" cy="12" r="4"></circle>
-        <path d="M12 2v2"></path>
-        <path d="M12 20v2"></path>
-        <path d="m4.93 4.93 1.41 1.41"></path>
-        <path d="m17.66 17.66 1.41 1.41"></path>
-        <path d="M2 12h2"></path>
-        <path d="M20 12h2"></path>
-        <path d="m6.34 17.66-1.41 1.41"></path>
-        <path d="m19.07 4.93-1.41 1.41"></path>
-      </svg>
+      <button
+        type="button"
+        class="flex items-center justify-center rounded-[10px] transition"
+        :class="[
+          collapsed ? 'h-8' : '',
+          theme === 'light'
+            ? 'bg-[#fafafa] text-[#666666] shadow-[0_1px_4px_rgba(0,0,0,0.18)] ring-1 ring-black/10'
+            : 'text-slate-400 hover:bg-white/10 hover:text-white',
+        ]"
+        title="Светлая"
+        aria-label="Color mode: Светлая"
+        :aria-pressed="theme === 'light'"
+        @click="setTheme('light')"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          class="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+        >
+          <circle cx="12" cy="12" r="3.2"></circle>
+          <path d="M12 3.5v2"></path>
+          <path d="M12 18.5v2"></path>
+          <path d="M4.5 12h2"></path>
+          <path d="M17.5 12h2"></path>
+          <path d="m6.7 6.7 1.4 1.4"></path>
+          <path d="m15.9 15.9 1.4 1.4"></path>
+          <path d="m17.3 6.7-1.4 1.4"></path>
+          <path d="m8.1 15.9-1.4 1.4"></path>
+        </svg>
+      </button>
 
-      <svg v-else viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
-        <path d="M12 3.5a7 7 0 0 0 8.5 8.5A8.5 8.5 0 1 1 12 3.5Z"></path>
-      </svg>
-    </button>
+      <button
+        type="button"
+        class="flex items-center justify-center rounded-[10px] transition"
+        :class="[
+          collapsed ? 'h-8' : '',
+          theme === 'dark'
+            ? 'bg-slate-700 text-white shadow-[0_1px_4px_rgba(0,0,0,0.35)] ring-1 ring-white/10'
+            : 'text-[#666666] hover:bg-white/60',
+        ]"
+        title="Тёмная"
+        aria-label="Color mode: Тёмная"
+        :aria-pressed="theme === 'dark'"
+        @click="setTheme('dark')"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          class="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+        >
+          <path d="M12 3.5a7 7 0 0 0 8.5 8.5A8.5 8.5 0 1 1 12 3.5Z"></path>
+        </svg>
+      </button>
+    </div>
   </div>
 </template>

@@ -1,187 +1,157 @@
 <script setup>
-import { computed, ref } from 'vue'
-import ChatComposer from './ChatComposer.vue'
-import ChatMessages from './ChatMessages.vue'
+import { ref, watch, nextTick } from 'vue'
 import ChatSidebar from './ChatSidebar.vue'
+import ChatMessages from './ChatMessages.vue'
+import ChatComposer from './ChatComposer.vue'
 
 const props = defineProps({
-  // historyGroups: [{ title: 'Сегодня', items: [{ id, title, date }] }]
-  historyGroups: {
-    type: Array,
-    default: () => []
-  },
-  // messages: [{ id, role: 'assistant'|'user', type?: 'text'|'voice'|'link', content, time, items? }]
-  messages: {
-    type: Array,
-    default: () => []
-  },
-  activeChatId: {
-    type: [String, Number, null],
-    default: null
-  },
-  user: {
-    type: Object,
-    default: () => ({ name: 'James Broeng', email: 'test@aipilot.ru', avatar: '/img/user-img.png' })
-  },
-  logoSrc: {
-    type: String,
-    default: '/img/logo-aipilot-v3.png'
-  },
-  assistantAvatar: {
-    type: String,
-    default: '/img/logo-aipilot-v2.png'
-  },
-  userAvatar: {
-    type: String,
-    default: '/img/user-img.png'
-  },
-  modelValue: {
-    type: String,
-    default: ''
-  },
-  isSending: {
-    type: Boolean,
-    default: false
-  },
-  isAssistantTyping: {
-    type: Boolean,
-    default: false
-  },
-  theme: {
-    type: String,
-    default: 'light'
-  },
-  showSidebar: {
-    type: Boolean,
-    default: true
-  },
-  embedded: {
-    type: Boolean,
-    default: true
-  }
+  // Sidebar props
+  historyGroups: { type: Array, default: () => [] },
+  activeChatId: { type: [String, Number], default: null },
+  user: { type: Object, default: () => ({}) },
+  logoSrc: { type: String, default: '/img/logo-aipilot-v3.png' },
+  // Messages props
+  messages: { type: Array, default: () => [] },
+  streamingContent: { type: String, default: '' },
+  isLoading: { type: Boolean, default: false },
+  isConnected: { type: Boolean, default: false },
+  error: { default: null },
+  startTitle: { type: String, default: 'Добро пожаловать' },
+  startHint: { type: String, default: '' },
+  clientMode: { type: Boolean, default: false },
+  assistantAvatar: { type: String, default: '/img/logo-aipilot-v2.png' },
+  userAvatar: { type: String, default: '' },
+  // Composer props
+  placeholder: { type: String, default: 'Спросите AIPilot' },
+  sendLabel: { type: String, default: 'Send' },
+  theme: { type: String, default: 'light' }
 })
 
 const emit = defineEmits([
-  'update:modelValue',
-  'update:theme',
-  'send-message',
-  'new-chat',
-  'select-chat',
-  'search',
-  'profile-settings',
-  'attach',
-  'emoji',
-  'listen',
-  'copy',
-  'like',
-  'dislike',
-  'approve-action',
-  'reject-action'
+  'new-chat', 'select-chat', 'search', 'update:theme', 'profile-settings',
+  'send-message', 'attach', 'emoji',
+  'listen', 'copy', 'like', 'dislike',
+  'approve-action', 'reject-action'
 ])
 
-const mobileSidebarOpen = ref(false)
+const messagesContainer = ref(null)
+const sidebarOpen = ref(false)
 
-const userAvatarSrc = computed(() => props.user?.avatar || props.userAvatar)
-
-function handleSelectChat(chat) {
-  emit('select-chat', chat)
-  mobileSidebarOpen.value = false
+function toggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value
 }
 
-function handleNewChat() {
-  emit('new-chat')
-  mobileSidebarOpen.value = false
+function closeSidebar() {
+  sidebarOpen.value = false
 }
+
+function handleSend(text) {
+  emit('send-message', text)
+}
+
+function handleSelectChat(item) {
+  emit('select-chat', item)
+  closeSidebar()
+}
+
+// Scroll to bottom when new messages arrive
+watch(() => [props.messages, props.streamingContent], async () => {
+  await nextTick()
+  if (messagesContainer.value) {
+    const el = messagesContainer.value
+    // Use setTimeout to ensure DOM has updated
+    setTimeout(() => {
+      el.scrollTop = el.scrollHeight
+    }, 50)
+  }
+}, { deep: true })
 </script>
 
 <template>
-  <div
-    :class="embedded
-      ? ['flex', 'h-full', 'w-full', 'min-h-0', 'min-w-0', 'overflow-hidden', 'bg-chat-bg']
-      : ['h-screen', 'w-full', 'overflow-hidden', 'bg-chat-bg', 'p-3', 'md:p-5']"
-  >
-    <div class="flex h-full w-full min-w-0 gap-5">
+  <div class="flex h-full w-full">
+    <!-- Mobile overlay -->
+    <div
+      v-if="sidebarOpen"
+      class="fixed inset-0 bg-black/50 z-40 md:hidden"
+      @click="closeSidebar"
+    ></div>
+
+    <!-- Sidebar -->
+    <div
+      :class="[
+        'shrink-0',
+        'md:relative md:block',
+        'fixed left-0 top-0 h-full z-50 transition-transform duration-300 md:transform-none',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      ]"
+    >
       <ChatSidebar
-        v-if="showSidebar"
-        class="hidden md:flex"
-        :logo-src="logoSrc"
-        :history-groups="historyGroups"
-        :active-chat-id="activeChatId"
+        :historyGroups="historyGroups"
+        :activeChatId="activeChatId"
         :user="user"
         :theme="theme"
-        @new-chat="handleNewChat"
+        :logoSrc="logoSrc"
+        @update:theme="(val) => emit('update:theme', val)"
+        @new-chat="(emit('new-chat'), closeSidebar())"
         @select-chat="handleSelectChat"
-        @search="emit('search', $event)"
+        @search="emit('search')"
         @profile-settings="emit('profile-settings')"
-        @toggle-sidebar="mobileSidebarOpen = false"
-        @update:theme="emit('update:theme', $event)"
+      />
+    </div>
+
+    <!-- Main area -->
+    <div class="flex flex-1 flex-col min-w-0 bg-chat-bg">
+      <!-- Mobile burger -->
+      <div class="md:hidden flex items-center px-4 py-2 border-b border-gray-200">
+        <button
+          class="flex items-center justify-center size-10 rounded-lg transition hover:bg-gray-100"
+          @click="toggleSidebar"
+          aria-label="Toggle sidebar"
+        >
+          <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18" />
+            <path d="M3 6h18" />
+            <path d="M3 18h18" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Messages -->
+      <ChatMessages
+        ref="messagesContainer"
+        :messages="messages"
+        :streamingContent="streamingContent"
+        :isLoading="isLoading"
+        :isConnected="isConnected"
+        :error="error"
+        :startTitle="startTitle"
+        :startHint="startHint"
+        :clientMode="clientMode"
+        :assistantAvatar="assistantAvatar"
+        :userAvatar="userAvatar"
+        :theme="theme"
+        class="flex-1 overflow-y-auto"
+        @approve-action="(id) => emit('approve-action', id)"
+        @reject-action="(id) => emit('reject-action', id)"
+        @listen="(id) => emit('listen', id)"
+        @copy="(id) => emit('copy', id)"
+        @like="(id) => emit('like', id)"
+        @dislike="(id) => emit('dislike', id)"
       />
 
-      <Transition name="fade">
-        <div v-if="showSidebar && mobileSidebarOpen" class="fixed inset-0 z-40 bg-black/30 md:hidden" @click="mobileSidebarOpen = false"></div>
-      </Transition>
-
-      <Transition name="chat-list">
-        <ChatSidebar
-          v-if="showSidebar && mobileSidebarOpen"
-          class="fixed bottom-3 left-3 top-3 z-50 md:hidden"
-          :logo-src="logoSrc"
-          :history-groups="historyGroups"
-          :active-chat-id="activeChatId"
-          :user="user"
+      <!-- Composer -->
+      <div class="px-4 pb-4 pt-2 max-w-5xl mx-auto w-full">
+        <ChatComposer
+          :modelValue="''"
+          :placeholder="placeholder"
+          :disabled="!isConnected"
+          :sendLabel="sendLabel"
           :theme="theme"
-          @new-chat="handleNewChat"
-          @select-chat="handleSelectChat"
-          @search="emit('search', $event)"
-          @profile-settings="emit('profile-settings')"
-          @toggle-sidebar="mobileSidebarOpen = false"
-          @update:theme="emit('update:theme', $event)"
+          @submit="handleSend"
+          @attach="emit('attach')"
+          @emoji="emit('emoji')"
         />
-      </Transition>
-
-      <main class="flex h-full min-w-0 flex-1 flex-col">
-        <section class="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl bg-chat-bg">
-          <div class="mb-3 flex items-center justify-between md:hidden">
-            <button
-              v-if="showSidebar"
-              type="button"
-              class="flex size-10 items-center justify-center rounded-xl bg-white text-gray-600 shadow-sm transition hover:text-accent"
-              aria-label="Открыть меню"
-              @click="mobileSidebarOpen = true"
-            >
-              <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 6h16"></path>
-                <path d="M4 12h16"></path>
-                <path d="M4 18h16"></path>
-              </svg>
-            </button>
-
-            <img :src="logoSrc" class="size-10" alt="AI Pilot" />
-          </div>
-
-          <ChatMessages
-            :messages="messages"
-            :assistant-avatar="assistantAvatar"
-            :user-avatar="userAvatarSrc"
-            :is-typing="isAssistantTyping"
-            @approve-action="emit('approve-action', $event)"
-            @reject-action="emit('reject-action', $event)"
-            @listen="emit('listen', $event)"
-            @copy="emit('copy', $event)"
-            @like="emit('like', $event)"
-            @dislike="emit('dislike', $event)"
-          />
-
-          <ChatComposer
-            :model-value="modelValue"
-            :disabled="isSending"
-            @update:model-value="emit('update:modelValue', $event)"
-            @submit="emit('send-message', $event)"
-            @attach="emit('attach')"
-            @emoji="emit('emoji')"
-          />
-        </section>
-      </main>
+      </div>
     </div>
   </div>
 </template>
