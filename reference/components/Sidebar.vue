@@ -363,7 +363,7 @@ const historyGroups = [
         class="flex items-center justify-center rounded-b-2xl transition-colors duration-300"
         :class="[
           isCollapsed ? 'px-1 py-1' : 'px-5',
-          theme === 'dark' ? 'bg-slate-800' : 'bg-[#f4f4f6]',
+          theme === 'dark' ? '' : 'bg-[#f4f4f6]',
         ]"
       >
         <div
