@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
 import { useChatApi } from '../composables/useChatApi'
@@ -13,40 +13,85 @@ const sitesStore = useSitesStore()
 const chatApi = useChatApi(authStore, sitesStore)
 const { currentSessionId, sessionsList, messages, isLoading, error, streamingContent } = chatApi
 
-// --- State ---
-const chatDraft = ref('')
+const theme = ref(authStore.theme)
 
-// --- Computed adapters ---
+// Watch authStore.theme changes
+watch(() => authStore.theme, (val) => {
+  theme.value = val
+}, { immediate: true })
 
-const normalizedMessages = computed(() => {
-  return messages.value.map((message) => ({
-    id: message.id || `${message.role}-${Date.now()}-${Math.random()}`,
-    role: message.role,
-    type: message.type || 'text',
-    content: message.content || '',
-    time: message.time || '',
-    actions: message.actions || []
-  }))
-})
-
+// Real date-based history grouping
 const historyGroups = computed(() => {
-  return [
-    {
-      id: 'recent',
-      title: 'История',
-      items: sessionsList.value.map((session) => ({
-        id: session.id,
-        title: session.title || session.name || 'Новый чат',
-        date: session.updatedAt || session.createdAt || ''
-      }))
+  const today = new Date()
+  const todayStr = today.toDateString()
+
+  const groups = {
+    today: { title: 'Сегодня', items: [] },
+    week: { title: 'На этой неделе', items: [] },
+    month: { title: 'В этом месяце', items: [] }
+  }
+
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+  const thirtyDaysAgo = new Date(today)
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  for (const session of sessionsList.value) {
+    // Приоритет: updatedAt → createdAt → lastMessage.created_at → date
+    const dateStr =
+      session.updatedAt ||
+      session.createdAt ||
+      session.lastMessage?.created_at ||
+      session.date ||
+      null
+    const sessionDate = dateStr ? new Date(dateStr) : null
+
+    const item = {
+      id: session.id,
+      title: session.title || session.name || 'Новый чат',
+      date: dateStr || ''
     }
-  ]
+
+    if (!sessionDate) {
+      groups.month.items.push(item)
+      continue
+    }
+
+    const sessionDateStr = sessionDate.toDateString()
+
+    if (sessionDateStr === todayStr) {
+      groups.today.items.push(item)
+    } else if (sessionDate >= sevenDaysAgo) {
+      groups.week.items.push(item)
+    } else if (sessionDate >= thirtyDaysAgo) {
+      groups.month.items.push(item)
+    } else {
+      groups.month.items.push(item)
+    }
+  }
+
+  const result = []
+  if (groups.today.items.length > 0) result.push(groups.today)
+  if (groups.week.items.length > 0) result.push(groups.week)
+  if (groups.month.items.length > 0) result.push(groups.month)
+
+  // Если ничего не попала в группы — все равно показываем (fallback)
+  if (result.length === 0 && sessionsList.value.length > 0) {
+    result.push({ title: 'В этом месяце', items: sessionsList.value.map(s => ({
+      id: s.id,
+      title: s.title || s.name || 'Новый чат',
+      date: s.updatedAt || s.createdAt || s.date || ''
+    }))})
+  }
+
+  return result
 })
 
-const currentUser = computed(() => ({
+const userData = computed(() => ({
   name: authStore.user?.name || 'AI Pilot',
   email: authStore.user?.email || '',
-  avatar: '/img/user-img.png'
+  avatar: authStore.user?.avatar || ''
 }))
 
 // --- WebSocket ---
@@ -86,6 +131,10 @@ function handleSelectChat(event) {
 function handleApproveAction(id) { chatApi.approveAction(id) }
 
 function handleRejectAction(id) { chatApi.rejectAction(id) }
+
+function handleThemeUpdate(val) {
+  authStore.setTheme(val)
+}
 
 function handleLogout() {
   const keys = Object.keys(localStorage).filter(k => k.startsWith('aipilot_greeted_'))
@@ -139,43 +188,27 @@ onUnmounted(() => { ws.disconnect() })
 </script>
 
 <template>
-  <ChatLayout
-    v-if="!clientMode"
-    v-model="chatDraft"
-    :history-groups="historyGroups"
-    :messages="normalizedMessages"
-    :active-chat-id="currentSessionId"
-    :user="currentUser"
-    :is-sending="isLoading"
-    :is-assistant-typing="isLoading || !!streamingContent"
-    :show-sidebar="false"
-    :embedded="true"
-    logo-src="/img/logo-aipilot-v3.png"
-    assistant-avatar="/img/logo-aipilot-v2.png"
-    @send-message="handleSend"
-    @new-chat="handleNewChat"
-    @select-chat="handleSelectChat"
-    @approve-action="handleApproveAction"
-    @reject-action="handleRejectAction"
-  />
-  <ChatLayout
-    v-else
-    v-model="chatDraft"
-    :history-groups="historyGroups"
-    :messages="normalizedMessages"
-    :active-chat-id="currentSessionId"
-    :user="currentUser"
-    :is-sending="isLoading"
-    :is-assistant-typing="isLoading || !!streamingContent"
-    :show-sidebar="true"
-    :embedded="true"
-    logo-src="/img/logo-aipilot-v3.png"
-    assistant-avatar="/img/logo-aipilot-v2.png"
-    @send-message="handleSend"
-    @new-chat="handleNewChat"
-    @select-chat="handleSelectChat"
-    @approve-action="handleApproveAction"
-    @reject-action="handleRejectAction"
-    @profile-settings="handleLogout"
-  />
+  <div class="h-full w-full">
+    <ChatLayout
+      :historyGroups="historyGroups"
+      :activeChatId="currentSessionId"
+      :user="userData"
+      :logoSrc="'/img/logo-aipilot-v3.png'"
+      :messages="messages"
+      :streamingContent="streamingContent"
+      :isLoading="isLoading"
+      :isConnected="true"
+      :error="error"
+      :theme="theme"
+      :assistantAvatar="'/img/logo-aipilot-v2.png'"
+      :clientMode="clientMode"
+      @new-chat="handleNewChat"
+      @select-chat="handleSelectChat"
+      @update:theme="handleThemeUpdate"
+      @profile-settings="handleLogout"
+      @send-message="handleSend"
+      @approve-action="handleApproveAction"
+      @reject-action="handleRejectAction"
+    />
+  </div>
 </template>

@@ -25,7 +25,7 @@ function handleLogin() {
 </script>
 
 <template>
-  <div class="bg-chat-bg h-screen overflow-hidden p-5">
+  <div class="bg-chat-bg dark:bg-slate-950 h-screen overflow-hidden p-5">
     <LoginForm v-if="!authStore.isAuthenticated" />
 
     <template v-else-if="authStore.isAdmin">
@@ -54,7 +54,7 @@ function handleLogin() {
         </aside>
 
         <!-- Main area -->
-        <main class="flex-1 flex flex-col min-w-0 overflow-hidden rounded-2xl bg-chat-bg">
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden rounded-2xl bg-chat-bg dark:bg-slate-950">
           <!-- Mobile hamburger -->
           <button
             v-if="isMobile"

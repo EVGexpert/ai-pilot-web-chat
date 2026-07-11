@@ -1,47 +1,127 @@
 <script setup>
-defineProps({
-  user: {
-    type: Object,
-    default: () => ({
-      name: 'James Broeng',
-      email: 'test@aipilot.ru',
-      avatar: '/img/user-img.png'
-    })
-  }
+import { ref } from 'vue'
+
+const props = defineProps({
+  user: { type: Object, default: () => ({ name: '', email: '', avatar: '' }) },
+  collapsed: { type: Boolean, default: false },
+  theme: { type: String, default: 'light' }
 })
 
-const emit = defineEmits(['settings'])
+const emit = defineEmits(['profile-settings'])
 
-const FALLBACK_AVATAR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%239ca3af"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>')
+const avatarError = ref(false)
+const hasAvatar = ref(!!props.user.avatar)
 
-function handleAvatarError(e) {
-  e.target.src = FALLBACK_AVATAR
-}
+const initials = ref(
+  (props.user.name || 'U').charAt(0).toUpperCase()
+)
 </script>
 
 <template>
-  <div class="profile-card">
-    <div class="flex min-w-0 items-center gap-3">
-      <!-- user.avatar — переменная с аватаром текущего пользователя. -->
-      <img class="size-10 shrink-0 rounded-full object-cover" :src="user.avatar || '/img/user-img.png'" alt="" @error="handleAvatarError" />
+  <div
+    class="transition-colors duration-300"
+    :class="[
+      collapsed
+        ? 'flex flex-col items-center gap-3 rounded-xl p-2 shadow-sm'
+        : 'flex justify-between p-4 rounded-xl shadow-sm',
+      theme === 'dark' ? 'bg-slate-800' : 'bg-white',
+    ]"
+  >
+    <div
+      class="flex items-center gap-3"
+      :class="collapsed ? 'justify-center' : ''"
+    >
+      <!-- Avatar with fallback -->
+      <div class="size-10 shrink-0 rounded-full overflow-hidden" v-if="hasAvatar && !avatarError">
+        <img
+          class="size-full object-cover"
+          :src="user.avatar"
+          alt=""
+          @error="avatarError = true"
+        />
+      </div>
+      <div
+        v-else
+        class="size-10 shrink-0 rounded-full flex items-center justify-center text-sm font-semibold"
+        :class="theme === 'dark' ? 'bg-accent text-white' : 'bg-accent text-white'"
+      >
+        {{ initials }}
+      </div>
 
-      <div class="min-w-0 text-sm text-gray-800">
-        <!-- user.name / user.email — данные из authStore или профиля пользователя. -->
-        <p class="truncate">{{ user.name }}</p>
-        <p class="truncate text-gray-500">{{ user.email }}</p>
+      <div
+        v-if="!collapsed"
+        class="min-w-0 text-sm"
+        :class="theme === 'dark' ? 'text-slate-100' : 'text-gray-800'"
+      >
+        <p class="truncate">
+          {{ user.name || 'Пользователь' }}
+        </p>
+        <p
+          class="truncate"
+          :class="theme === 'dark' ? 'text-slate-400' : 'text-gray-500'"
+        >
+          {{ user.email || '' }}
+        </p>
       </div>
     </div>
 
-    <button
-      type="button"
-      class="flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-accent"
-      aria-label="Profile settings"
-      @click="emit('settings')"
+    <div
+      class="profile-setting flex text-gray-500"
+      :class="[
+        collapsed
+          ? 'flex-col items-center gap-2'
+          : 'flex-col justify-between',
+        theme === 'dark' ? 'text-slate-400' : 'text-gray-500',
+      ]"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.66.84.12.053.237.109.352.168.325.168.718.133 1.01-.085l1.057-.793a1.125 1.125 0 0 1 1.45.12l1.833 1.833c.389.389.44 1.002.12 1.45l-.793 1.057c-.218.292-.253.685-.085 1.01.06.115.115.232.168.352.154.347.466.597.84.66l1.281.213c.542.09.94.56.94 1.11v2.593c0 .55-.398 1.02-.94 1.11l-1.281.213c-.374.063-.686.313-.84.66a6.997 6.997 0 0 1-.168.352c-.168.325-.133.718.085 1.01l.793 1.057c.32.448.269 1.061-.12 1.45l-1.833 1.833a1.125 1.125 0 0 1-1.45.12l-1.057-.793c-.292-.218-.685-.253-1.01-.085a6.997 6.997 0 0 1-.352.168c-.347.154-.597.466-.66.84l-.213 1.281c-.09.542-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.66-.84a6.997 6.997 0 0 1-.352-.168c-.325-.168-.718-.133-1.01.085l-1.057.793a1.125 1.125 0 0 1-1.45-.12L3.02 18.468a1.125 1.125 0 0 1-.12-1.45l.793-1.057c.218-.292.253-.685.085-1.01a6.997 6.997 0 0 1-.168-.352c-.154-.347-.466-.597-.84-.66l-1.281-.213A1.125 1.125 0 0 1 .55 12.616v-2.593c0-.55.398-1.02.94-1.11L2.77 8.7c.374-.063.686-.313.84-.66.053-.12.109-.237.168-.352.168-.325.133-.718-.085-1.01L2.9 5.621a1.125 1.125 0 0 1 .12-1.45l1.833-1.833a1.125 1.125 0 0 1 1.45-.12l1.057.793c.292.218.685.253 1.01.085.115-.06.232-.115.352-.168.347-.154.597-.466.66-.84l.213-1.281Z" />
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-      </svg>
-    </button>
+      <button
+        type="button"
+        class="flex size-5 items-center justify-center rounded-lg transition hover:text-accent"
+        title="Настройки"
+        aria-label="Profile settings"
+        @click="emit('profile-settings')"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="size-4"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+          />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="flex size-5 items-center justify-center rounded-lg transition hover:text-accent"
+        :class="theme === 'dark' ? 'text-slate-400' : 'text-[#666666]'"
+        title="Выйти"
+        aria-label="Выйти"
+        @click="emit('profile-settings')"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <path d="M16 17l5-5-5-5"></path>
+          <path d="M21 12H9"></path>
+        </svg>
+      </button>
+    </div>
   </div>
 </template>
