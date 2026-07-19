@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, nextTick } from 'vue'
 import ChatMessage from './ChatMessage.vue'
+import AssistantUiRenderer from './AssistantUiRenderer.vue'
 
 const props = defineProps({
   messages: { type: Array, default: () => [] },
@@ -16,7 +17,7 @@ const props = defineProps({
   theme: { type: String, default: 'light' }
 })
 
-const emit = defineEmits(['approve-action', 'reject-action', 'listen', 'copy', 'like', 'dislike'])
+const emit = defineEmits(['approve-action', 'reject-action', 'listen', 'copy', 'like', 'dislike', 'resolve-card'])
 
 const scrollEl = ref(null)
 
@@ -53,21 +54,42 @@ watch(() => [props.messages.length, props.streamingContent, props.isLoading], ()
       <p v-if="startHint" class="text-sm text-gray-400 dark:text-slate-400 leading-relaxed">{{ startHint }}</p>
     </div>
 
-    <!-- Messages -->
-    <ChatMessage
-      v-for="msg in messages" :key="msg.id"
-      :message="msg"
-      :assistantAvatar="assistantAvatar"
-      :userAvatar="userAvatar"
-      :showAssistantActions="true"
-      :theme="theme"
-      @listen="(id) => emit('listen', id)"
-      @copy="(id) => emit('copy', id)"
-      @like="(id) => emit('like', id)"
-      @dislike="(id) => emit('dislike', id)"
-      @approve-action="(id) => emit('approve-action', id)"
-      @reject-action="(id) => emit('reject-action', id)"
-    />
+    <!-- Messages + inline cards -->
+    <template v-for="msg in messages" :key="msg.id">
+      <ChatMessage
+        v-if="msg.type !== 'agent-card'"
+        :message="msg"
+        :assistantAvatar="assistantAvatar"
+        :userAvatar="userAvatar"
+        :showAssistantActions="true"
+        :theme="theme"
+        @listen="(id) => emit('listen', id)"
+        @copy="(id) => emit('copy', id)"
+        @like="(id) => emit('like', id)"
+        @dislike="(id) => emit('dislike', id)"
+        @approve-action="(id) => emit('approve-action', id)"
+        @reject-action="(id) => emit('reject-action', id)"
+      />
+      <div
+        v-if="msg.card || msg.type === 'agent-card'"
+        :class="[
+          'flex items-start gap-3 animate-fade-in',
+          msg.type !== 'agent-card' ? 'mt-2' : ''
+        ]"
+      >
+        <img
+          :src="assistantAvatar"
+          alt=""
+          class="size-9 shrink-0 rounded-full object-cover"
+        />
+        <div class="max-w-[500px] w-full">
+          <AssistantUiRenderer
+            :card="msg.card"
+            @resolve="(p) => emit('resolve-card', p)"
+          />
+        </div>
+      </div>
+    </template>
 
     <!-- Streaming content -->
     <div v-if="streamingContent" class="flex items-start gap-3 animate-fade-in">

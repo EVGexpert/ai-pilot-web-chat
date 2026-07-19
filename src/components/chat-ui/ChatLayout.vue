@@ -31,7 +31,8 @@ const emit = defineEmits([
   'new-chat', 'select-chat', 'search', 'update:theme', 'profile-settings',
   'send-message', 'attach', 'emoji',
   'listen', 'copy', 'like', 'dislike',
-  'approve-action', 'reject-action'
+  'approve-action', 'reject-action',
+  'resolve-card'
 ])
 
 const sidebarOpen = ref(false)
@@ -125,6 +126,7 @@ function handleSelectChat(item) {
         @copy="(id) => emit('copy', id)"
         @like="(id) => emit('like', id)"
         @dislike="(id) => emit('dislike', id)"
+        @resolve-card="(p) => emit('resolve-card', p)"
       />
 
       <!-- Composer -->

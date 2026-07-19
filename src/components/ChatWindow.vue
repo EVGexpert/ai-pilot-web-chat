@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useSitesStore } from '../stores/sitesStore'
 import { useChatApi } from '../composables/useChatApi'
 import { useGatewayClient } from '../composables/useGatewayClient'
+import { useAgentUiStore } from '../stores/agentUi'
 import ChatLayout from './chat-ui/ChatLayout.vue'
 
 const props = defineProps({ clientMode: { type: Boolean, default: false } })
@@ -13,12 +14,60 @@ const sitesStore = useSitesStore()
 const chatApi = useChatApi(authStore, sitesStore)
 const { currentSessionId, sessionsList, messages, isLoading, error, streamingContent } = chatApi
 
+const agentUi = useAgentUiStore()
 const theme = ref(authStore.theme)
 
 // Watch authStore.theme changes
 watch(() => authStore.theme, (val) => {
   theme.value = val
 }, { immediate: true })
+
+// --- Agent UI cards ---
+const siteId = computed(() => authStore.siteUrl || sitesStore.currentSite?.url || '')
+
+watch(currentSessionId, async (sessionId) => {
+  if (sessionId && siteId.value) {
+    try {
+      await agentUi.fetchActiveCards(siteId.value, sessionId)
+    } catch (e) {
+      console.warn('Failed to fetch active cards:', e)
+    }
+  }
+}, { immediate: true })
+
+const timelineMessages = computed(() => {
+  const msgs = [...(messages.value || [])]
+  for (const card of Object.values(agentUi.cards)) {
+    if (card.status === 'active') {
+      const exists = msgs.some(
+        m => m.card?.id === card.id || m.id === `card-${card.id}`
+      )
+      if (!exists) {
+        msgs.push({ id: `card-${card.id}`, type: 'agent-card', card })
+      }
+    }
+  }
+  return msgs
+})
+
+async function handleCardResolve(payload) {
+  try {
+    if (payload.confirmed !== undefined) {
+      if (payload.confirmed) {
+        await agentUi.resolveCard(payload.id, 'confirm')
+      } else {
+        agentUi.dismissCard(payload.id)
+      }
+    } else if (payload.selectedOptionIds) {
+      const optionId = Array.isArray(payload.selectedOptionIds)
+        ? payload.selectedOptionIds[0]
+        : payload.selectedOptionIds
+      await agentUi.resolveCard(payload.id, optionId)
+    }
+  } catch (e) {
+    console.warn('Card resolve failed:', e)
+  }
+}
 
 // Real date-based history grouping
 const historyGroups = computed(() => {
@@ -108,6 +157,7 @@ ws.onMessage((data) => {
   if (data.type === 'assistant_message' && data.content) {
     const newMsg = { id: `ws-${Date.now()}`, role: 'assistant', content: data.content }
     if (data.actions) newMsg.actions = data.actions
+    if (data.card) newMsg.card = data.card
     messages.value = [...messages.value, newMsg]
   }
 })
@@ -194,7 +244,7 @@ onUnmounted(() => { ws.disconnect() })
       :activeChatId="currentSessionId"
       :user="userData"
       :logoSrc="'/img/logo-aipilot-v3.png'"
-      :messages="messages"
+      :messages="timelineMessages"
       :streamingContent="streamingContent"
       :isLoading="isLoading"
       :isConnected="true"
@@ -209,6 +259,7 @@ onUnmounted(() => { ws.disconnect() })
       @send-message="handleSend"
       @approve-action="handleApproveAction"
       @reject-action="handleRejectAction"
+      @resolve-card="handleCardResolve"
     />
   </div>
 </template>
