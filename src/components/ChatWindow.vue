@@ -25,13 +25,31 @@ watch(() => authStore.theme, (val) => {
 // --- Agent UI cards ---
 const siteId = computed(() => authStore.siteUrl || sitesStore.currentSite?.url || '')
 
+let cardsPollTimer = null
+
+async function fetchActiveCardsSafe(site, session) {
+  if (!site || !session) return
+  try {
+    await agentUi.fetchActiveCards(site, session)
+  } catch (e) {
+    console.warn('Failed to fetch active cards:', e)
+  }
+}
+
+function clearCardsPoll() {
+  if (cardsPollTimer) {
+    clearInterval(cardsPollTimer)
+    cardsPollTimer = null
+  }
+}
+
 watch(currentSessionId, async (sessionId) => {
+  clearCardsPoll()
   if (sessionId && siteId.value) {
-    try {
-      await agentUi.fetchActiveCards(siteId.value, sessionId)
-    } catch (e) {
-      console.warn('Failed to fetch active cards:', e)
-    }
+    await fetchActiveCardsSafe(siteId.value, sessionId)
+    cardsPollTimer = setInterval(() => {
+      fetchActiveCardsSafe(siteId.value, sessionId)
+    }, 5000)
   }
 }, { immediate: true })
 
@@ -234,7 +252,7 @@ if (props.clientMode) {
 }
 
 onMounted(() => { ws.connect() })
-onUnmounted(() => { ws.disconnect() })
+onUnmounted(() => { ws.disconnect(); clearCardsPoll() })
 </script>
 
 <template>

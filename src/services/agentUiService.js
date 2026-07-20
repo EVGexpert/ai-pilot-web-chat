@@ -16,7 +16,7 @@ export async function createCard(cardData) {
 }
 
 export async function getActiveCards(siteId, sessionId) {
-  const params = new URLSearchParams({ siteId, sessionId })
+  const params = new URLSearchParams({ site_id: siteId, session_id: sessionId })
   const res = await fetch(`${API_BASE}/api/chat/ui-active?${params}`, {
     headers: { ...authHeaders() }
   })

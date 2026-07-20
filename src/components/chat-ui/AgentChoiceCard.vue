@@ -14,7 +14,7 @@ const emit = defineEmits(['resolve'])
 const selectedIds = ref([])
 
 const kind = computed(() => props.card.kind || 'single_choice')
-const isMulti = computed(() => kind.value === 'multiple_choice')
+const isMulti = computed(() => kind.value === 'multi_choice' || kind.value === 'multiple_choice')
 
 function toggleOption(optionId) {
   if (isMulti.value) {
@@ -40,9 +40,9 @@ function handleSubmit() {
 </script>
 
 <template>
-  <div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm animate-fade-in">
-    <div v-if="card.title" class="text-sm font-semibold text-gray-800 mb-1">{{ card.title }}</div>
-    <div v-if="card.description" class="text-xs text-gray-500 mb-3">{{ card.description }}</div>
+  <div class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm animate-fade-in">
+    <div v-if="card.title" class="text-sm font-semibold text-gray-800 dark:text-slate-100 mb-1">{{ card.title }}</div>
+    <div v-if="card.description" class="text-xs text-gray-500 dark:text-slate-400 mb-3">{{ card.description }}</div>
 
     <div class="space-y-2">
       <label
@@ -50,8 +50,8 @@ function handleSubmit() {
         :key="opt.id"
         class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
         :class="isSelected(opt.id)
-          ? 'border-accent bg-accent/5'
-          : 'border-gray-200 hover:border-gray-300'"
+          ? 'border-accent bg-accent/5 dark:bg-accent/10'
+          : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'"
         @click.prevent="toggleOption(opt.id)"
       >
         <input
@@ -63,8 +63,8 @@ function handleSubmit() {
           @change="toggleOption(opt.id)"
         />
         <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium text-gray-800">{{ opt.label }}</div>
-          <div v-if="opt.description" class="text-xs text-gray-500 mt-0.5">{{ opt.description }}</div>
+          <div class="text-sm font-medium text-gray-800 dark:text-slate-100">{{ opt.label }}</div>
+          <div v-if="opt.description" class="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{{ opt.description }}</div>
         </div>
       </label>
     </div>

@@ -17,6 +17,7 @@ const kind = computed(() => props.card.kind)
 
 const componentMap = {
   single_choice: AgentChoiceCard,
+  multi_choice: AgentChoiceCard,
   multiple_choice: AgentChoiceCard,
   confirmation: AgentConfirmationCard
 }
