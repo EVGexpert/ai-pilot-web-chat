@@ -43,10 +43,11 @@ function clearCardsPoll() {
   }
 }
 
-watch(currentSessionId, async (sessionId) => {
+// Watch both sessionId AND siteId — either might be set later
+watch([currentSessionId, siteId], async ([sessionId, site]) => {
   clearCardsPoll()
-  if (sessionId && siteId.value) {
-    await fetchActiveCardsSafe(siteId.value, sessionId)
+  if (sessionId && site) {
+    await fetchActiveCardsSafe(site, sessionId)
     cardsPollTimer = setInterval(() => {
       fetchActiveCardsSafe(siteId.value, sessionId)
     }, 5000)
