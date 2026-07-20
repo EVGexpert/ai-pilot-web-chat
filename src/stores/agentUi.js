@@ -12,8 +12,14 @@ export const useAgentUiStore = defineStore('agentUi', () => {
   async function resolveCard(id, selectedOptionId) {
     const card = cards.value[id]
     if (!card) throw new Error(`Card ${id} not found`)
-    const updated = await apiRespond(id, { optionId: selectedOptionId })
-    cards.value[id] = { ...cards.value[id], ...updated }
+    // Immediate feedback — mark resolved before API completes
+    cards.value[id] = { ...cards.value[id], status: 'resolved', resolved_at: new Date().toISOString() }
+    try {
+      const updated = await apiRespond(id, { option_id: selectedOptionId })
+      cards.value[id] = { ...cards.value[id], ...updated }
+    } catch (e) {
+      console.warn('Resolve API failed, card kept as resolved:', e)
+    }
   }
 
   function dismissCard(id) {

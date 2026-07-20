@@ -24,11 +24,11 @@ export async function getActiveCards(siteUrl, sessionId) {
   return res.json()
 }
 
-export async function respondCard(id, { optionId }) {
+export async function respondCard(id, { option_id: optionId }) {
   const res = await fetch(`${API_BASE}/api/chat/ui-respond/${id}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ optionId })
+    body: JSON.stringify({ option_id: optionId })
   })
   if (!res.ok) throw new Error(`respondCard failed: ${res.status}`)
   return res.json()
