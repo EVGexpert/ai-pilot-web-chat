@@ -45,14 +45,14 @@ function handleSubmit() {
     <div v-if="card.description" class="text-xs text-gray-500 dark:text-slate-400 mb-3">{{ card.description }}</div>
 
     <div class="space-y-2">
-      <label
+      <div
         v-for="opt in card.options"
         :key="opt.id"
         class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
         :class="isSelected(opt.id)
           ? 'border-accent bg-accent/5 dark:bg-accent/10'
           : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600'"
-        @click.prevent="toggleOption(opt.id)"
+        @click="toggleOption(opt.id)"
       >
         <input
           :type="isMulti ? 'checkbox' : 'radio'"
@@ -60,13 +60,13 @@ function handleSubmit() {
           :value="opt.id"
           :checked="isSelected(opt.id)"
           class="mt-0.5 accent-accent"
-          @change="toggleOption(opt.id)"
+          readonly
         />
         <div class="flex-1 min-w-0">
           <div class="text-sm font-medium text-gray-800 dark:text-slate-100">{{ opt.label }}</div>
           <div v-if="opt.description" class="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{{ opt.description }}</div>
         </div>
-      </label>
+      </div>
     </div>
 
     <button
