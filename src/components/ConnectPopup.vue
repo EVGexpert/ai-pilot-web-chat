@@ -148,7 +148,7 @@ async function handleSubmit() {
           })
         })
         if (scanRes.ok) {
-          console.log('✅ Сайт отсканирован:', siteName.value)
+          // site scanned successfully
         } else {
           console.warn('Scan returned non-ok:', scanRes.status)
         }
