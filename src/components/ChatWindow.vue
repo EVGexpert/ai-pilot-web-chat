@@ -71,9 +71,10 @@ const timelineMessages = computed(() => {
 
 async function handleCardResolve(payload) {
   try {
+    let result
     if (payload.confirmed !== undefined) {
       if (payload.confirmed) {
-        await agentUi.resolveCard(payload.id, 'confirm')
+        result = await agentUi.resolveCard(payload.id, 'confirm')
       } else {
         agentUi.dismissCard(payload.id)
       }
@@ -81,7 +82,27 @@ async function handleCardResolve(payload) {
       const optionId = Array.isArray(payload.selectedOptionIds)
         ? payload.selectedOptionIds[0]
         : payload.selectedOptionIds
-      await agentUi.resolveCard(payload.id, optionId)
+      result = await agentUi.resolveCard(payload.id, optionId)
+    }
+
+    // Если сервер вернул assistantResponse — добавляем в историю
+    if (result?.assistantResponse) {
+      const newMsgs = []
+      if (result.followUpMessage) {
+        newMsgs.push({
+          id: 'choice-' + Date.now(),
+          role: 'user',
+          content: result.followUpMessage,
+          source: 'ui_card'
+        })
+      }
+      newMsgs.push({
+        id: 'card-response-' + Date.now(),
+        role: 'assistant',
+        content: result.assistantResponse,
+        actions: result.assistantActions || undefined
+      })
+      messages.value = [...messages.value, ...newMsgs]
     }
   } catch (e) {
     console.warn('Card resolve failed:', e)

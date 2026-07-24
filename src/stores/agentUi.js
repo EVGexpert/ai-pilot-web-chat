@@ -17,8 +17,11 @@ export const useAgentUiStore = defineStore('agentUi', () => {
     try {
       const updated = await apiRespond(id, { option_id: selectedOptionId })
       cards.value[id] = { ...cards.value[id], ...updated }
+      // Return full response for caller to process assistantResponse
+      return updated
     } catch (e) {
       console.warn('Resolve API failed, card kept as resolved:', e)
+      return null
     }
   }
 
