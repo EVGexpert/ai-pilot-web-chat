@@ -1,27 +1,7 @@
 /**
- * useChatApi.js
  * Composable для взаимодействия с API чата.
- * Инкапсулирует send, loadSessions, loadSessionHistory, startNewChat, approveAction, rejectAction.
- *
- * Используется в ChatWindow.vue (админ и клиент).
- *
- * @param {import('pinia').StoreGeneric} authStore — экземпляр useAuthStore
- * @param {import('pinia').StoreGeneric} sitesStore — экземпляр useSitesStore
- * @returns {{
- *   currentSessionId: import('vue').Ref<string|null>,
- *   sessionsList: import('vue').Ref<Array>,
- *   messages: import('vue').Ref<Array>,
- *   isLoading: import('vue').Ref<boolean>,
- *   error: import('vue').Ref<string|null>,
- *   streamingContent: import('vue').Ref<string>,
- *   sendMessage: (text: string) => Promise<void>,
- *   loadSessions: () => Promise<void>,
- *   loadSessionHistory: (sessionId: string) => Promise<void>,
- *   startNewChat: () => Promise<void>,
- *   approveAction: (actionId: string) => Promise<void>,
- *   rejectAction: (actionId: string) => Promise<void>,
- *   selectSession: (sessionId: string) => Promise<void>,
- * }}
+ * Сохраняет текущий production flow и возвращает сырой payload ответа,
+ * чтобы ChatWindow мог зарегистрировать Agent UI Cards.
  */
 import { ref } from 'vue'
 
@@ -33,20 +13,28 @@ export function useChatApi(authStore, sitesStore) {
   const currentSessionId = ref(null)
   const sessionsList = ref([])
 
-  /** Получить заголовок Authorization для API-запросов */
   function authHeader() {
     return { Authorization: 'Bearer ' + authStore.token }
   }
 
-  /** Получить URL сайта для запросов */
   function getSiteUrl() {
     return authStore.siteUrl || sitesStore.currentSite?.url || ''
   }
 
-  /**
-   * Отправить сообщение в чат.
-   * @param {string} text — текст сообщения
-   */
+  function normalizeAssistantMessage(data) {
+    const newMsg = {
+      id: data.messageId ? `msg-${data.messageId}` : `msg-${Date.now()}`,
+      role: 'assistant',
+      content: data.message ?? data.answer ?? data.assistantResponse ?? ''
+    }
+
+    if (Array.isArray(data.actions) && data.actions.length > 0) {
+      newMsg.actions = data.actions
+    }
+
+    return newMsg
+  }
+
   async function sendMessage(text) {
     messages.value = [...messages.value, { id: `user-${Date.now()}`, role: 'user', content: text }]
     isLoading.value = true
@@ -56,7 +44,7 @@ export function useChatApi(authStore, sitesStore) {
     if (!sendSiteUrl) {
       error.value = 'Не выбран сайт. Выберите сайт в боковой панели.'
       isLoading.value = false
-      return
+      return null
     }
 
     try {
@@ -65,28 +53,27 @@ export function useChatApi(authStore, sitesStore) {
         headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({ message: text, siteUrl: sendSiteUrl, sessionId: currentSessionId.value })
       })
-      if (res.ok) {
-        const data = await res.json()
-        currentSessionId.value = data.sessionId || currentSessionId.value
-        const newMsg = { id: `msg-${Date.now()}`, role: 'assistant', content: data.message }
-        if (data.actions && data.actions.length > 0) {
-          newMsg.actions = data.actions
-        }
-        messages.value = [...messages.value, newMsg]
-        await loadSessions()
-      } else {
+
+      if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Unknown error' }))
-        error.value = err.error || 'Ошибка отправки'
+        error.value = err.error || err.message || 'Ошибка отправки'
+        return null
       }
+
+      const data = await res.json()
+      currentSessionId.value = data.sessionId || currentSessionId.value
+      messages.value = [...messages.value, normalizeAssistantMessage(data)]
+      await loadSessions()
+      return data
     } catch (e) {
       error.value = 'Сетевая ошибка: ' + e.message
+      return null
     } finally {
       isLoading.value = false
       streamingContent.value = ''
     }
   }
 
-  /** Загрузить список сессий */
   async function loadSessions() {
     try {
       const siteUrl = getSiteUrl()
@@ -103,7 +90,6 @@ export function useChatApi(authStore, sitesStore) {
     }
   }
 
-  /** Загрузить историю конкретной сессии */
   async function loadSessionHistory(sessionId) {
     try {
       const res = await fetch('/api/chat/history?sessionId=' + encodeURIComponent(sessionId), {
@@ -115,8 +101,12 @@ export function useChatApi(authStore, sitesStore) {
           messages.value = hist.messages.map(m => ({
             id: 'msg-' + m.id,
             role: m.role,
-            content: m.content
+            content: m.content,
+            actions: m.actions || undefined,
+            card: m.card || undefined
           }))
+        } else {
+          messages.value = []
         }
       }
     } catch (e) {
@@ -124,7 +114,6 @@ export function useChatApi(authStore, sitesStore) {
     }
   }
 
-  /** Создать новый чат */
   async function startNewChat() {
     try {
       const siteUrl = getSiteUrl()
@@ -141,18 +130,26 @@ export function useChatApi(authStore, sitesStore) {
         isLoading.value = false
         error.value = null
         await loadSessions()
+        return data
       }
     } catch (e) {
       console.warn('New chat failed:', e)
     }
+    return null
   }
 
-  /** Подтвердить действие */
+  // Guard set for in-flight action IDs (prevents double-submit)
+  const processingActions = new Set()
+
   async function approveAction(actionId) {
+    if (processingActions.has(actionId)) return null
     const msg = messages.value.find(m => m.actions?.some(a => a.id === actionId))
-    if (!msg) return
+    if (!msg) return null
     const action = msg.actions.find(a => a.id === actionId)
-    if (action) action.status = 'approved'
+    if (action.status !== 'pending' && action.status !== 'failed') return null
+
+    processingActions.add(actionId)
+    action.status = 'processing'
 
     const actionPayload = action?.raw || {
       type: action?.type || 'other',
@@ -161,7 +158,7 @@ export function useChatApi(authStore, sitesStore) {
     }
 
     try {
-      await fetch('/api/chat/actions/approve', {
+      const res = await fetch('/api/chat/actions/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({
@@ -171,37 +168,75 @@ export function useChatApi(authStore, sitesStore) {
           action: actionPayload
         })
       })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.error || `Ошибка при подтверждении (${res.status})`)
+      }
+      action.status = 'completed'
+      if (data.postId) action.postId = data.postId
+      return data
     } catch (e) {
+      action.status = 'failed'
+      action.error = e.message
+      error.value = e.message
       console.warn('Approve API call failed:', e)
+      return null
+    } finally {
+      processingActions.delete(actionId)
     }
   }
 
-  /** Отклонить действие */
   async function rejectAction(actionId) {
+    if (processingActions.has(actionId)) return null
     const msg = messages.value.find(m => m.actions?.some(a => a.id === actionId))
-    if (!msg) return
+    if (!msg) return null
     const action = msg.actions.find(a => a.id === actionId)
-    if (action) action.status = 'rejected'
+    if (action.status !== 'pending' && action.status !== 'failed') return null
+
+    processingActions.add(actionId)
+    action.status = 'processing'
+
     try {
-      await fetch('/api/chat/actions/reject', {
+      const res = await fetch('/api/chat/actions/reject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({ actionId, sessionId: currentSessionId.value })
       })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.error || `Ошибка при отклонении (${res.status})`)
+      }
+      action.status = 'rejected'
+      return data
     } catch (e) {
+      action.status = 'failed'
+      action.error = e.message
+      error.value = e.message
       console.warn('Reject API call failed:', e)
+      return null
+    } finally {
+      processingActions.delete(actionId)
     }
   }
 
-  /** Выбрать сессию из списка */
   async function selectSession(sessionId) {
     currentSessionId.value = sessionId
     await loadSessionHistory(sessionId)
   }
 
   return {
-    currentSessionId, sessionsList, messages, isLoading, error, streamingContent,
-    sendMessage, loadSessions, loadSessionHistory, startNewChat,
-    approveAction, rejectAction, selectSession
+    currentSessionId,
+    sessionsList,
+    messages,
+    isLoading,
+    error,
+    streamingContent,
+    sendMessage,
+    loadSessions,
+    loadSessionHistory,
+    startNewChat,
+    approveAction,
+    rejectAction,
+    selectSession
   }
 }

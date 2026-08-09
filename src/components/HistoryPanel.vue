@@ -92,6 +92,36 @@ function formatTime(dateStr) {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 
+function formatDateSeparator(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  const now = new Date()
+  if (d.toDateString() === now.toDateString()) return 'Сегодня'
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (d.toDateString() === yesterday.toDateString()) return 'Вчера'
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function getMessagesWithSeparators(messages) {
+  if (!messages || !messages.length) return []
+  const result = []
+  let lastDate = null
+  for (const msg of messages) {
+    const ts = msg.timestamp || msg.time
+    if (ts) {
+      const d = new Date(ts)
+      const dateKey = d.toDateString()
+      if (dateKey !== lastDate) {
+        lastDate = dateKey
+        result.push({ _separator: true, _label: formatDateSeparator(ts) })
+      }
+    }
+    result.push(msg)
+  }
+  return result
+}
+
 const hasSiteSelected = computed(() => !!sitesStore.currentSiteId)
 </script>
 
@@ -166,22 +196,30 @@ const hasSiteSelected = computed(() => !!sitesStore.currentSiteId)
 
       <!-- Сообщения -->
       <div v-else class="flex flex-col gap-3">
-        <div
-          v-for="(msg, idx) in getConvMessages(selectedConversation.id)"
-          :key="idx"
-          class="max-w-[90%] flex flex-col gap-1"
-          :class="msg.role === 'client' ? 'self-end' : 'self-start'"
-        >
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] font-semibold text-gray-500">{{ msg.role === 'client' ? '👤 Клиент' : '🤖 AI Pilot' }}</span>
-            <span class="text-[10px] text-gray-400">{{ msg.time || formatTime(msg.timestamp) }}</span>
+        <template v-for="(msg, idx) in getMessagesWithSeparators(getConvMessages(selectedConversation.id))" :key="idx">
+          <!-- Разделитель дат -->
+          <div v-if="msg._separator"
+            class="flex items-center gap-3 py-1 select-none">
+            <span class="flex-1 h-px bg-gray-200"></span>
+            <span class="text-[11px] font-medium text-gray-400 shrink-0">{{ msg._label }}</span>
+            <span class="flex-1 h-px bg-gray-200"></span>
           </div>
-          <div class="px-3.5 py-2.5 rounded-xl text-sm leading-relaxed"
-            :class="msg.role === 'client'
-              ? 'bg-accent text-white rounded-br-sm'
-              : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm shadow-sm'"
-            v-html="DOMPurify.sanitize((msg.content || msg.text || '').replace(/\n/g, '<br/>'))"></div>
-        </div>
+          <!-- Сообщение -->
+          <div v-else
+            class="max-w-[90%] flex flex-col gap-1"
+            :class="msg.role === 'client' ? 'self-end' : 'self-start'"
+          >
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-semibold text-gray-500">{{ msg.role === 'client' ? '👤 Клиент' : '🤖 AI Pilot' }}</span>
+              <span class="text-[10px] text-gray-400">{{ msg.time || formatTime(msg.timestamp) }}</span>
+            </div>
+            <div class="px-3.5 py-2.5 rounded-xl text-sm leading-relaxed"
+              :class="msg.role === 'client'
+                ? 'bg-accent text-white rounded-br-sm'
+                : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm shadow-sm'"
+              v-html="DOMPurify.sanitize((msg.content || msg.text || '').replace(/\n/g, '<br/>'))"></div>
+          </div>
+        </template>
         <div v-if="getConvMessages(selectedConversation.id).length === 0"
           class="flex-1 flex flex-col items-center justify-center text-center px-6 py-10 text-gray-400">
           <p class="text-sm m-0">Нет сообщений в этом обращении</p>

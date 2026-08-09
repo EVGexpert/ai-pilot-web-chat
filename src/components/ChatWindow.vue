@@ -6,6 +6,7 @@ import { useChatApi } from '../composables/useChatApi'
 import { useGatewayClient } from '../composables/useGatewayClient'
 import { useAgentUiStore } from '../stores/agentUi'
 import ChatLayout from './chat-ui/ChatLayout.vue'
+import { extractAgentUiCards, getSelectedOptionLabels } from '../utils/agentUi.js'
 
 const props = defineProps({ clientMode: { type: Boolean, default: false } })
 
@@ -23,9 +24,15 @@ watch(() => authStore.theme, (val) => {
 }, { immediate: true })
 
 // --- Agent UI cards ---
-const siteId = computed(() => authStore.siteUrl || sitesStore.currentSite?.url || '')
+const siteUrl = computed(() => authStore.siteUrl || sitesStore.currentSite?.url || '')
 
 let cardsPollTimer = null
+
+function registerCardsFromPayload(payload) {
+  const cards = extractAgentUiCards(payload)
+  if (cards.length > 0) agentUi.createCards(cards)
+  return cards
+}
 
 async function fetchActiveCardsSafe(site, session) {
   if (!site || !session) return
@@ -44,12 +51,12 @@ function clearCardsPoll() {
 }
 
 // Watch both sessionId AND siteId — either might be set later
-watch([currentSessionId, siteId], async ([sessionId, site]) => {
+watch([currentSessionId, siteUrl], async ([sessionId, site]) => {
   clearCardsPoll()
   if (sessionId && site) {
     await fetchActiveCardsSafe(site, sessionId)
     cardsPollTimer = setInterval(() => {
-      fetchActiveCardsSafe(siteId.value, sessionId)
+      fetchActiveCardsSafe(siteUrl.value, sessionId)
     }, 5000)
   }
 }, { immediate: true })
@@ -70,41 +77,55 @@ const timelineMessages = computed(() => {
 })
 
 async function handleCardResolve(payload) {
+  const card = agentUi.getCard(payload.id)
+  if (!card) return
+
   try {
-    let result
+    let selectedOptionIds
     if (payload.confirmed !== undefined) {
-      if (payload.confirmed) {
-        result = await agentUi.resolveCard(payload.id, 'confirm')
-      } else {
-        agentUi.dismissCard(payload.id)
-      }
-    } else if (payload.selectedOptionIds) {
-      const optionId = Array.isArray(payload.selectedOptionIds)
-        ? payload.selectedOptionIds[0]
-        : payload.selectedOptionIds
-      result = await agentUi.resolveCard(payload.id, optionId)
+      selectedOptionIds = [payload.confirmed ? 'confirm' : 'cancel']
+    } else {
+      selectedOptionIds = Array.isArray(payload.selectedOptionIds)
+        ? payload.selectedOptionIds
+        : [payload.selectedOptionIds]
     }
 
-    // Если сервер вернул assistantResponse — добавляем в историю
-    if (result?.assistantResponse) {
-      const newMsgs = []
-      if (result.followUpMessage) {
-        newMsgs.push({
+    const selectedLabels = getSelectedOptionLabels(card, selectedOptionIds)
+    const result = await agentUi.resolveCard(payload.id, selectedOptionIds)
+    registerCardsFromPayload(result)
+
+    const assistantResponse = result?.assistantResponse || result?.assistant_response
+    const assistantActions = result?.assistantActions || result?.assistant_actions
+    const followUpMessage = result?.followUpMessage || result?.follow_up_message || selectedLabels.join(', ')
+
+    // Новый backend может сразу вернуть продолжение диалога.
+    if (assistantResponse) {
+      if (followUpMessage) {
+        messages.value = [...messages.value, {
           id: 'choice-' + Date.now(),
           role: 'user',
-          content: result.followUpMessage,
+          content: followUpMessage,
           source: 'ui_card'
-        })
+        }]
       }
-      newMsgs.push({
+
+      messages.value = [...messages.value, {
         id: 'card-response-' + Date.now(),
         role: 'assistant',
-        content: result.assistantResponse,
-        actions: result.assistantActions || undefined
-      })
-      messages.value = [...messages.value, ...newMsgs]
+        content: assistantResponse,
+        actions: assistantActions || undefined
+      }]
+      return
+    }
+
+    // Backward-compatible flow: resolve card first, then send only its safe
+    // display label as a normal chat message to continue the conversation.
+    if (followUpMessage) {
+      const chatResult = await chatApi.sendMessage(followUpMessage)
+      registerCardsFromPayload(chatResult)
     }
   } catch (e) {
+    error.value = e.message || 'Не удалось обработать выбранный вариант'
     console.warn('Card resolve failed:', e)
   }
 }
@@ -197,25 +218,30 @@ ws.onMessage((data) => {
   if (data.type === 'assistant_message' && data.content) {
     const newMsg = { id: `ws-${Date.now()}`, role: 'assistant', content: data.content }
     if (data.actions) newMsg.actions = data.actions
-    if (data.card) newMsg.card = data.card
     messages.value = [...messages.value, newMsg]
+    registerCardsFromPayload(data)
   }
 })
 
 // --- Handlers ---
-function handleSend(text) {
+async function handleSend(text) {
   const hasSite = !!(authStore.siteUrl || sitesStore.currentSite?.url)
   if (!hasSite) {
     error.value = 'Выберите сайт в боковой панели'
     return
   }
-  chatApi.sendMessage(text)
+  const result = await chatApi.sendMessage(text)
+  registerCardsFromPayload(result)
 }
 
-function handleNewChat() { chatApi.startNewChat() }
+async function handleNewChat() {
+  agentUi.clearCards()
+  await chatApi.startNewChat()
+}
 
-function handleSelectChat(event) {
-  chatApi.selectSession(event.id || event)
+async function handleSelectChat(event) {
+  agentUi.clearCards()
+  await chatApi.selectSession(event.id || event)
 }
 
 function handleApproveAction(id) { chatApi.approveAction(id) }
@@ -266,6 +292,7 @@ if (props.clientMode) {
           const data = await res.json()
           currentSessionId.value = data.sessionId
           messages.value = [{ id: 'greeting', role: 'assistant', content: data.message }]
+          registerCardsFromPayload(data)
           await chatApi.loadSessions()
         }
       }

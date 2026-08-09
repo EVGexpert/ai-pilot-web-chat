@@ -36,6 +36,22 @@ const siteStatusDot = (status) => {
   }
 }
 
+function formatSidebarDate(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr.slice(0, 10) + 'T00:00:00')
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const diff = (today - target) / 86400000
+  if (diff === 0) return 'Сегодня'
+  if (diff === 1) return 'Вчера'
+  if (diff < 7) {
+    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
+    return days[d.getDay()]
+  }
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+}
+
 function handleLogout() {
   sitesStore.clientConversations = []
   authStore.logout()
@@ -120,11 +136,12 @@ function handleLogout() {
         <!-- Recent conversations -->
         <div v-if="sitesStore.currentSiteConversations.length > 0">
           <p class="text-gray-400 text-sm mb-3">Недавние диалоги</p>
-          <ul class="text-gray-700 space-y-2">
+          <ul class="text-gray-700 space-y-1.5">
             <li v-for="conv in sitesStore.currentSiteConversations" :key="conv.id">
-              <a href="#" class="hover:text-accent transition-colors text-sm truncate block"
+              <a href="#" class="flex flex-col gap-0.5 hover:text-accent transition-colors text-sm truncate block px-1 py-1.5 rounded-md hover:bg-gray-200/50"
                  @click.prevent="sitesStore.selectSite(sitesStore.currentSite?.id)">
-                {{ conv.title || conv.preview || 'Диалог' }}
+                <span class="text-gray-800 font-medium truncate">{{ conv.preview || 'Диалог' }}</span>
+                <span class="text-[11px] text-gray-400">{{ formatSidebarDate(conv.title) }}</span>
               </a>
             </li>
           </ul>

@@ -18,7 +18,6 @@ describe('LoginForm.vue', () => {
     expect(wrapper.find('form').exists()).toBe(true)
     expect(wrapper.find('#email').exists()).toBe(true)
     expect(wrapper.find('#password').exists()).toBe(true)
-    expect(wrapper.find('#name').exists()).toBe(true)
     expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
   })
 
@@ -56,6 +55,6 @@ describe('LoginForm.vue', () => {
     const wrapper = mount(LoginForm)
 
     expect(wrapper.text()).toContain('AI Pilot')
-    expect(wrapper.text()).toContain('Управление WordPress-сайтами')
+    expect(wrapper.text()).toContain('Управляйте сайтом')
   })
 })

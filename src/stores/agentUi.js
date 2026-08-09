@@ -1,27 +1,59 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { createCard as apiCreate, getActiveCards as apiActive, respondCard as apiRespond } from '../services/agentUiService.js'
+import { getActiveCards as apiActive, respondCard as apiRespond } from '../services/agentUiService.js'
+import { normalizeAgentUiCard } from '../utils/agentUi.js'
 
 export const useAgentUiStore = defineStore('agentUi', () => {
   const cards = ref({})
 
   function createCard(card) {
-    cards.value[card.id] = normalizeCard(card)
+    const normalized = normalizeAgentUiCard(card)
+    if (!normalized.id || !normalized.kind) return null
+    cards.value[normalized.id] = normalized
+    return normalized
   }
 
-  async function resolveCard(id, selectedOptionId) {
+  function createCards(cardList = []) {
+    return cardList.map(createCard).filter(Boolean)
+  }
+
+  function getCard(id) {
+    return cards.value[id] || null
+  }
+
+  async function resolveCard(id, selectedOptionIds) {
     const card = cards.value[id]
     if (!card) throw new Error(`Card ${id} not found`)
-    // Immediate feedback — mark resolved before API completes
-    cards.value[id] = { ...cards.value[id], status: 'resolved', resolved_at: new Date().toISOString() }
+
+    const previous = { ...card }
+    const ids = Array.isArray(selectedOptionIds)
+      ? selectedOptionIds.filter(Boolean)
+      : [selectedOptionIds].filter(Boolean)
+
+    cards.value[id] = {
+      ...card,
+      status: 'resolving',
+      selected_option_ids: ids
+    }
+
     try {
-      const updated = await apiRespond(id, { option_id: selectedOptionId })
-      cards.value[id] = { ...cards.value[id], ...updated }
-      // Return full response for caller to process assistantResponse
-      return updated
+      const response = await apiRespond(id, ids)
+      const responseCard = response?.card || response
+      const normalized = normalizeAgentUiCard({
+        ...card,
+        ...(responseCard && typeof responseCard === 'object' ? responseCard : {}),
+        status: responseCard?.status || 'resolved'
+      })
+
+      cards.value[id] = normalized
+
+      return {
+        ...(response && typeof response === 'object' ? response : {}),
+        card: normalized
+      }
     } catch (e) {
-      console.warn('Resolve API failed, card kept as resolved:', e)
-      return null
+      cards.value[id] = previous
+      throw e
     }
   }
 
@@ -29,25 +61,45 @@ export const useAgentUiStore = defineStore('agentUi', () => {
     delete cards.value[id]
   }
 
-  function normalizeCard(card) {
-    const c = { ...card, status: card.status || 'active' }
-    // options comes as JSON string from backend — parse to array
-    if (typeof c.options === 'string') {
-      try { c.options = JSON.parse(c.options) } catch { c.options = [] }
-    }
-    if (!Array.isArray(c.options)) c.options = []
-    return c
+  function clearCards() {
+    cards.value = {}
   }
 
-  async function fetchActiveCards(siteId, sessionId) {
-    const data = await apiActive(siteId, sessionId)
-    const list = data.cards || data
+  async function fetchActiveCards(siteUrl, sessionId) {
+    const data = await apiActive(siteUrl, sessionId)
+    const list = data?.cards || data
+    const activeIds = new Set()
+
     if (Array.isArray(list)) {
       for (const card of list) {
-        cards.value[card.id] = normalizeCard(card)
+        const normalized = createCard(card)
+        if (normalized?.status === 'active') activeIds.add(normalized.id)
       }
     }
+
+    // Remove stale active cards for the same session; keep resolving/resolved cards
+    // until their current UI interaction finishes.
+    for (const [id, card] of Object.entries(cards.value)) {
+      if (
+        card.status === 'active' &&
+        (!card.session_id || card.session_id === sessionId) &&
+        !activeIds.has(id)
+      ) {
+        delete cards.value[id]
+      }
+    }
+
+    return Array.from(activeIds)
   }
 
-  return { cards, createCard, resolveCard, dismissCard, fetchActiveCards }
+  return {
+    cards,
+    createCard,
+    createCards,
+    getCard,
+    resolveCard,
+    dismissCard,
+    clearCards,
+    fetchActiveCards
+  }
 })

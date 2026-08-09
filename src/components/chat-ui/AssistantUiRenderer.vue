@@ -16,9 +16,13 @@ const emit = defineEmits(['resolve'])
 const kind = computed(() => props.card.kind)
 
 const componentMap = {
+  choice: AgentChoiceCard,
+  select: AgentChoiceCard,
   single_choice: AgentChoiceCard,
   multi_choice: AgentChoiceCard,
   multiple_choice: AgentChoiceCard,
+  confirm: AgentConfirmationCard,
+  yes_no: AgentConfirmationCard,
   confirmation: AgentConfirmationCard
 }
 
