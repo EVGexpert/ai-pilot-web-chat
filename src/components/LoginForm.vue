@@ -105,18 +105,6 @@ async function handleLogin() {
 
           <form class="login-form" @submit.prevent="handleLogin">
             <div class="field-group">
-              <label for="name">Имя</label>
-              <input
-                id="name"
-                v-model="name"
-                type="text"
-                placeholder="Как к вам обращаться?"
-                autocomplete="name"
-                :disabled="isLoading"
-              />
-            </div>
-
-            <div class="field-group">
               <label for="email">Email</label>
               <input
                 id="email"
@@ -230,7 +218,7 @@ async function handleLogin() {
   display: grid;
   grid-template-columns: minmax(0, 1.06fr) minmax(390px, 0.94fr);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 0;
   border-radius: 30px;
   background: rgba(255, 255, 255, 0.5);
   box-shadow:
@@ -288,7 +276,7 @@ async function handleLogin() {
 .brand-copy h1 {
   margin: 19px 0 22px;
   max-width: 560px;
-  font-size: clamp(43px, 5.1vw, 66px);
+  font-size: clamp(34px, 4.2vw, 52px);
   line-height: 0.99;
   letter-spacing: -0.061em;
   font-weight: 650;
@@ -539,7 +527,7 @@ async function handleLogin() {
   .brand-copy h1 {
     max-width: 480px;
     margin-top: 14px;
-    font-size: clamp(37px, 10vw, 52px);
+    font-size: clamp(30px, 8.5vw, 42px);
   }
 
   .brand-description {
@@ -585,7 +573,7 @@ async function handleLogin() {
 
   .brand-copy h1 {
     margin-bottom: 14px;
-    font-size: 39px;
+    font-size: 32px;
   }
 
   .brand-description {
