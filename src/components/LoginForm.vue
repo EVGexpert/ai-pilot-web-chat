@@ -64,85 +64,554 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="bg-chat-bg min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-[400px] shadow-xl flex flex-col gap-8"
-         :class="{'border-red-400 ring-1 ring-red-200': error}">
-      <!-- Brand -->
-      <div class="text-center flex flex-col items-center gap-2">
-        <div class="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-1">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-accent">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
+  <main class="login-page">
+    <div class="login-orb login-orb--one" aria-hidden="true"></div>
+    <div class="login-orb login-orb--two" aria-hidden="true"></div>
+
+    <section class="login-shell" aria-label="Авторизация AI Pilot">
+      <div class="login-brand">
+        <div class="brand-topline">
+          <img
+            class="brand-logo"
+            src="/img/logo-aipilot-v3.png"
+            alt="AI Pilot"
+            width="72"
+            height="72"
+          />
+          <span class="brand-name">AI Pilot</span>
         </div>
-        <h1 class="text-2xl font-bold text-gray-800 m-0">AI Pilot</h1>
-        <p class="text-sm text-gray-500 m-0 leading-relaxed">Управление WordPress-сайтами через ИИ</p>
+
+        <div class="brand-copy">
+          <p class="brand-kicker">WordPress × AI</p>
+          <h1>Управляйте сайтом<br />обычным языком.</h1>
+          <p class="brand-description">
+            Один интерфейс для контента, страниц и ежедневных задач WordPress.
+          </p>
+        </div>
+
+        <div class="brand-note">
+          <span class="brand-note__dot" aria-hidden="true"></span>
+          Безопасные действия с подтверждением
+        </div>
       </div>
 
-      <form class="flex flex-col gap-5" @submit.prevent="handleLogin">
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-gray-500" for="name">Имя</label>
-          <input
-            id="name"
-            v-model="name"
-            type="text"
-            class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/20"
-            placeholder="Как к вам обращаться?"
-            autocomplete="name"
-            :disabled="isLoading"
-          />
+      <div class="login-panel">
+        <div class="login-card" :class="{ 'login-card--error': error }">
+          <div class="login-heading">
+            <p class="login-eyebrow">Личный кабинет</p>
+            <h2>Войти в AI Pilot</h2>
+            <p>Продолжите работу с подключёнными WordPress-сайтами.</p>
+          </div>
+
+          <form class="login-form" @submit.prevent="handleLogin">
+            <div class="field-group">
+              <label for="name">Имя</label>
+              <input
+                id="name"
+                v-model="name"
+                type="text"
+                placeholder="Как к вам обращаться?"
+                autocomplete="name"
+                :disabled="isLoading"
+              />
+            </div>
+
+            <div class="field-group">
+              <label for="email">Email</label>
+              <input
+                id="email"
+                v-model="email"
+                type="email"
+                placeholder="your@email.com"
+                autocomplete="email"
+                :disabled="isLoading"
+              />
+            </div>
+
+            <div class="field-group">
+              <label for="password">Пароль</label>
+              <input
+                id="password"
+                v-model="password"
+                type="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                :disabled="isLoading"
+              />
+            </div>
+
+            <div v-if="error" class="login-error" role="alert" aria-live="polite">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7.75v5.1" />
+                <path d="M12 16.5h.01" />
+              </svg>
+              <span>{{ error }}</span>
+            </div>
+
+            <button class="login-submit" type="submit" :disabled="isLoading">
+              <span v-if="isLoading" class="login-submit__loading">
+                <svg class="login-spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M21 12a9 9 0 0 0-9-9" />
+                </svg>
+                Вход...
+              </span>
+              <span v-else class="login-submit__label">
+                Войти
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h13" />
+                  <path d="m14 8 4 4-4 4" />
+                </svg>
+              </span>
+            </button>
+          </form>
+
+          <div class="login-footer">
+            <span>Нет подключённого сайта?</span>
+            <span>Установите AI Pilot Plugin в WordPress.</span>
+          </div>
         </div>
-
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-gray-500" for="email">Email</label>
-          <input
-            id="email"
-            v-model="email"
-            type="email"
-            class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/20"
-            placeholder="your@email.com"
-            autocomplete="email"
-            :disabled="isLoading"
-          />
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-medium text-gray-500" for="password">Пароль</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            class="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent/20"
-            placeholder="••••••••"
-            autocomplete="current-password"
-            :disabled="isLoading"
-          />
-        </div>
-
-        <!-- Error -->
-        <div v-if="error"
-          class="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-2.5 flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          {{ error }}
-        </div>
-
-        <button
-          type="submit"
-          :disabled="isLoading"
-          class="w-full py-2.5 rounded-xl bg-accent hover:bg-accent/90 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span v-if="isLoading" class="flex items-center justify-center gap-2">
-            <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-            Вход...
-          </span>
-          <span v-else>Войти</span>
-        </button>
-      </form>
-
-      <!-- Footer -->
-      <p class="text-center text-xs text-gray-400 leading-relaxed m-0">
-        Установите плагин AI Pilot на ваш WordPress-сайт,<br />
-        чтобы он появился в панели управления.
-      </p>
-    </div>
-  </div>
+      </div>
+    </section>
+  </main>
 </template>
+
+<style scoped>
+.login-page {
+  --login-bg: var(--color-chat-bg, #eae9ec);
+  --login-accent: var(--color-accent, #7e4ce0);
+  --login-ink: #18151f;
+  --login-muted: #77717f;
+  --login-border: rgba(24, 21, 31, 0.09);
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: clamp(20px, 4vw, 56px);
+  background:
+    radial-gradient(circle at 12% 10%, rgba(126, 76, 224, 0.13), transparent 31%),
+    radial-gradient(circle at 92% 88%, rgba(126, 76, 224, 0.08), transparent 28%),
+    var(--login-bg);
+  color: var(--login-ink);
+  font-family: var(--font-chat, "Inter", system-ui, -apple-system, sans-serif);
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(2px);
+}
+
+.login-orb--one {
+  top: -150px;
+  right: 12%;
+  width: 330px;
+  height: 330px;
+  border: 1px solid rgba(126, 76, 224, 0.12);
+}
+
+.login-orb--two {
+  bottom: -210px;
+  left: 7%;
+  width: 430px;
+  height: 430px;
+  border: 1px solid rgba(24, 21, 31, 0.06);
+}
+
+.login-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1080px, 100%);
+  min-height: min(680px, calc(100dvh - 80px));
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(390px, 0.94fr);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 30px 80px rgba(43, 32, 62, 0.10),
+    0 4px 16px rgba(43, 32, 62, 0.04);
+  backdrop-filter: blur(18px);
+}
+
+.login-brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100%;
+  padding: clamp(34px, 5vw, 64px);
+  background:
+    linear-gradient(145deg, rgba(126, 76, 224, 0.09), rgba(255, 255, 255, 0.28) 52%, rgba(255, 255, 255, 0.08));
+  border-right: 1px solid rgba(24, 21, 31, 0.06);
+}
+
+.brand-topline {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.brand-logo {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 20px rgba(126, 76, 224, 0.16));
+}
+
+.brand-name {
+  font-size: 19px;
+  font-weight: 680;
+  letter-spacing: -0.035em;
+}
+
+.brand-copy {
+  max-width: 530px;
+  padding: 80px 0 70px;
+}
+
+.brand-kicker,
+.login-eyebrow {
+  margin: 0;
+  color: var(--login-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.brand-copy h1 {
+  margin: 19px 0 22px;
+  max-width: 560px;
+  font-size: clamp(43px, 5.1vw, 66px);
+  line-height: 0.99;
+  letter-spacing: -0.061em;
+  font-weight: 650;
+}
+
+.brand-description {
+  max-width: 470px;
+  margin: 0;
+  color: #696270;
+  font-size: clamp(15px, 1.6vw, 18px);
+  line-height: 1.65;
+}
+
+.brand-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  color: #625c68;
+  font-size: 12px;
+  font-weight: 520;
+}
+
+.brand-note__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--login-accent);
+  box-shadow: 0 0 0 5px rgba(126, 76, 224, 0.10);
+}
+
+.login-panel {
+  display: grid;
+  place-items: center;
+  padding: clamp(24px, 4vw, 54px);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.login-card {
+  width: min(390px, 100%);
+}
+
+.login-heading {
+  margin-bottom: 34px;
+}
+
+.login-heading h2 {
+  margin: 11px 0 9px;
+  color: var(--login-ink);
+  font-size: clamp(29px, 3vw, 36px);
+  line-height: 1.1;
+  letter-spacing: -0.045em;
+  font-weight: 650;
+}
+
+.login-heading > p:last-child {
+  margin: 0;
+  color: var(--login-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-group label {
+  color: #625c68;
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.field-group input {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 15px;
+  border: 1px solid var(--login-border);
+  border-radius: 13px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--login-ink);
+  font: inherit;
+  font-size: 14px;
+  box-shadow: 0 1px 1px rgba(24, 21, 31, 0.02);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.field-group input::placeholder {
+  color: #aaa5af;
+}
+
+.field-group input:hover:not(:disabled) {
+  border-color: rgba(126, 76, 224, 0.28);
+}
+
+.field-group input:focus {
+  border-color: rgba(126, 76, 224, 0.68);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(126, 76, 224, 0.09);
+}
+
+.field-group input:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.login-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 12px;
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 12px;
+  background: rgba(254, 242, 242, 0.92);
+  color: #c43d3d;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.login-error svg {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.login-submit {
+  width: 100%;
+  min-height: 51px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 13px;
+  cursor: pointer;
+  background: var(--login-accent);
+  color: white;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  box-shadow: 0 12px 28px rgba(126, 76, 224, 0.22);
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.login-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 15px 32px rgba(126, 76, 224, 0.27);
+}
+
+.login-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-submit:focus-visible {
+  outline: 3px solid rgba(126, 76, 224, 0.24);
+  outline-offset: 3px;
+}
+
+.login-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.login-submit__label,
+.login-submit__loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.login-submit__label svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.login-spinner {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  animation: login-spin 0.75s linear infinite;
+}
+
+.login-spinner circle {
+  opacity: 0.25;
+}
+
+.login-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 26px;
+  padding-top: 19px;
+  border-top: 1px solid rgba(24, 21, 31, 0.07);
+  color: #99939e;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.login-card--error .field-group input:not(:focus) {
+  border-color: rgba(239, 68, 68, 0.12);
+}
+
+@keyframes login-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 820px) {
+  .login-page {
+    align-items: start;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .login-shell {
+    min-height: 0;
+    grid-template-columns: 1fr;
+    border-radius: 24px;
+  }
+
+  .login-brand {
+    min-height: 260px;
+    padding: 28px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(24, 21, 31, 0.06);
+  }
+
+  .brand-copy {
+    padding: 48px 0 38px;
+  }
+
+  .brand-copy h1 {
+    max-width: 480px;
+    margin-top: 14px;
+    font-size: clamp(37px, 10vw, 52px);
+  }
+
+  .brand-description {
+    max-width: 480px;
+  }
+
+  .login-panel {
+    padding: 34px 24px 30px;
+  }
+}
+
+@media (max-width: 520px) {
+  .login-page {
+    padding: 0;
+    background: #fff;
+  }
+
+  .login-shell {
+    width: 100%;
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .login-brand {
+    min-height: 230px;
+    padding: 24px 22px;
+  }
+
+  .brand-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .brand-name {
+    font-size: 17px;
+  }
+
+  .brand-copy {
+    padding: 34px 0 24px;
+  }
+
+  .brand-copy h1 {
+    margin-bottom: 14px;
+    font-size: 39px;
+  }
+
+  .brand-description {
+    font-size: 14px;
+  }
+
+  .brand-note {
+    display: none;
+  }
+
+  .login-panel {
+    align-items: start;
+    padding: 32px 22px 34px;
+  }
+
+  .login-heading {
+    margin-bottom: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-submit,
+  .field-group input,
+  .login-spinner {
+    transition: none;
+    animation-duration: 0.001ms;
+  }
+}
+</style>
