@@ -1,0 +1,28 @@
+# Reproducibility: keep the Docker build context clean.
+# Stale local artifacts (node_modules, dist, .git, .env) leaking into the
+# image via `COPY . .` was the root cause of non-deterministic builds
+# (production CSS/JS differed from clean `git` + lockfile builds).
+
+node_modules
+dist
+.git
+.gitignore
+
+.env
+.env.*
+*.local
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+.DS_Store
+
+# Legacy copy of the backend — not part of the web-chat runtime
+auth-api
+
+# Tooling / docs not needed for the runtime image
+deploy
+docs
+design
