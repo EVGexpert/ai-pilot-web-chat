@@ -1,12 +1,18 @@
-name: Auto Deploy
+name: Deploy WebChat (manual)
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'WebChat image version to deploy (e.g. 0.1.3). Must already exist on the server as ai-pilot-chat:<version>.'
+        required: true
+        type: string
 
 jobs:
   deploy:
+    name: Safe deploy ai-pilot-chat:${{ inputs.version }}
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
@@ -19,27 +25,124 @@ jobs:
       - name: Add host to known_hosts
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Test SSH
-        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "echo 'SSH works!'"
-
-      - name: Git Pull
-        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && git fetch origin && git reset --hard origin/main"
-
-      - name: Docker Build
-        run: ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cd ~/ai-pilot-web-chat && docker build -t ai-pilot-chat ."
-
-      - name: Docker Deploy
+      - name: Version guard (no empty / no latest)
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
-            docker network create aipilot 2>/dev/null || true
-            docker rm -f ai-pilot-chat 2>/dev/null || true
+          if [ -z "$VERSION" ]; then
+            echo "::error::version input is required"; exit 1
+          fi
+          if [ "$VERSION" = "latest" ] || [ "$VERSION" = "stable" ]; then
+            echo "::error::deploying '$VERSION' is not allowed — pin an explicit version like 0.1.3"; exit 1
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::invalid version format: $VERSION"; exit 1
+          fi
+          echo "deploying ai-pilot-chat:${VERSION}"
+
+      - name: Verify image exists on server
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "docker image inspect ai-pilot-chat:${VERSION} >/dev/null 2>&1 || { echo 'image ai-pilot-chat:${VERSION} not found on server'; exit 1; }; echo 'image found:'; docker image inspect ai-pilot-chat:${VERSION} --format '{{.Id}}'"
+
+      - name: Pre-deploy snapshot + safe switch
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} VERSION="$VERSION" bash -s << 'EOF'
+            set -euo pipefail
+            ROLLBACK_NAME="ai-pilot-chat-rollback-${VERSION}-$(date -u +%Y%m%d-%H%M%S)"
+
+            # 1. Snapshot current production (if any)
+            if docker ps -a --format '{{.Names}}' | grep -qx ai-pilot-chat; then
+              OLD_CONTAINER_ID=$(docker inspect ai-pilot-chat --format '{{.Id}}')
+              OLD_IMAGE_ID=$(docker inspect ai-pilot-chat --format '{{.Image}}')
+              OLD_STARTED_AT=$(docker inspect ai-pilot-chat --format '{{.State.StartedAt}}')
+              echo "OLD_CONTAINER_ID=${OLD_CONTAINER_ID:0:12}"
+              echo "OLD_IMAGE_ID=${OLD_IMAGE_ID:0:19}"
+              echo "OLD_STARTED_AT=${OLD_STARTED_AT}"
+            else
+              echo "no existing ai-pilot-chat container"
+              OLD_CONTAINER_ID=""
+              OLD_IMAGE_ID=""
+              OLD_STARTED_AT=""
+            fi
+
+            # 2. Stop old container (graceful)
+            if [ -n "$OLD_CONTAINER_ID" ]; then
+              docker stop -t 30 ai-pilot-chat
+              docker rename ai-pilot-chat "$ROLLBACK_NAME"
+              echo "rollback container: $ROLLBACK_NAME"
+            fi
+
+            # 3. Start new container — runtime contract:
+            #    name=ai-pilot-chat, 127.0.0.1:3000:80, network=ai-pilot-internal,
+            #    restart=unless-stopped, upstream=ai-pilot-auth:3001,
+            #    host.docker.internal:host-gateway
             docker run -d \
               --name ai-pilot-chat \
               --restart unless-stopped \
-              --network aipilot \
+              --network ai-pilot-internal \
               --add-host host.docker.internal:host-gateway \
               -p 127.0.0.1:3000:80 \
-              ai-pilot-chat
-            docker image prune -f
-            echo "✅ Deployed!"
+              "ai-pilot-chat:${VERSION}"
+
+            # 4. Health guard — wait up to 30s
+            HEALTHY=0
+            for i in $(seq 1 15); do
+              sleep 2
+              RUNNING=$(docker inspect ai-pilot-chat --format '{{.State.Running}}' 2>/dev/null || echo false)
+              RESTARTS=$(docker inspect ai-pilot-chat --format '{{.RestartCount}}' 2>/dev/null || echo 99)
+              HTTP=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:3000/ || echo 000)
+              NGINX_EMERG=$(docker logs ai-pilot-chat 2>&1 | grep -c "host not found in upstream" || true)
+              echo "check[$i] running=$RUNNING restarts=$RESTARTS http=$HTTP nginx_emerg=$NGINX_EMERG"
+              if [ "$RUNNING" = "true" ] && [ "$RESTARTS" = "0" ] && [ "$HTTP" = "200" ] && [ "$NGINX_EMERG" = "0" ]; then
+                HEALTHY=1; break
+              fi
+            done
+
+            # 5. Network guard — container MUST be on ai-pilot-internal
+            NETWORKS=$(docker inspect ai-pilot-chat --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' 2>/dev/null || echo "")
+            echo "networks: $NETWORKS"
+            if ! echo "$NETWORKS" | grep -q ai-pilot-internal; then
+              echo "::error::container is NOT on ai-pilot-internal — refusing to keep it"
+              HEALTHY=0
+            fi
+
+            # 6. API upstream check via nginx proxy
+            API_HTTP=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:3000/api/health || echo 000)
+            echo "api/health via proxy: $API_HTTP"
+            if [ "$API_HTTP" != "200" ]; then
+              echo "::error::auth upstream (ai-pilot-auth:3001) not reachable through nginx"
+              HEALTHY=0
+            fi
+
+            if [ "$HEALTHY" = "1" ]; then
+              echo "✅ DEPLOY PASS: ai-pilot-chat:${VERSION} is healthy (image $(docker inspect ai-pilot-chat --format '{{.Image}}' | cut -c1-19))"
+              echo "rollback kept: $ROLLBACK_NAME (do not delete automatically)"
+              exit 0
+            fi
+
+            # 7. FAIL — remove failed container, restore rollback
+            echo "::error::deployment FAILED — rolling back"
+            docker rm -f ai-pilot-chat || true
+            if [ -n "$OLD_CONTAINER_ID" ]; then
+              docker start "$ROLLBACK_NAME"
+              docker rename "$ROLLBACK_NAME" ai-pilot-chat
+              echo "rollback restored: $ROLLBACK_NAME -> ai-pilot-chat"
+            else
+              echo "no previous container to restore"
+            fi
+            exit 1
           EOF
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ Deploy complete. ai-pilot-chat:${{ inputs.version }}"
+          echo "NOTE: tags stable/latest are NOT updated automatically."
+          echo "Update them only after a successful manual production smoke:"
+          echo "  docker tag ai-pilot-chat:${{ inputs.version }} ai-pilot-chat:stable"
+          echo "  docker tag ai-pilot-chat:${{ inputs.version }} ai-pilot-chat:latest"

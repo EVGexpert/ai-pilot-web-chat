@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-build:
+    name: npm ci + test + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies (lockfile)
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Verify dist artifacts
+        run: |
+          test -f dist/index.html
+          test -n "$(ls dist/assets/*.js 2>/dev/null | head -1)"
+          test -n "$(ls dist/assets/*.css 2>/dev/null | head -1)"
+          echo "dist artifacts OK"

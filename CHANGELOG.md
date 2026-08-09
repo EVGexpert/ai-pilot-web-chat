@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.4 — unreleased
+
+### Changed
+- CI and deploy separated: `ci.yml` runs on push/PR to `main` (npm ci, npm test, npm run build);
+  `deploy.yml` is manual only (`workflow_dispatch` + GitHub Environment `production`).
+- Deploy requires an explicit `version` input (never `latest`), verifies the image
+  exists, snapshots the old container, switches with rollback, and health-checks
+  (RestartCount, HTTP 200, no `host not found in upstream`, `ai-pilot-internal` network).
+- Incident 2026-08-09 documented in `docs/deployment.md`.
+
+---
+
 ## 0.1.3 — 2026-08-09 (REPRODUCIBLE BUILD)
 
 - reproducible Docker build
