@@ -167,18 +167,23 @@ async function handleLogin() {
 
 <style scoped>
 .login-page {
-  --login-bg: var(--color-chat-bg, #eae9ec);
-  --login-accent: var(--color-accent, #7e4ce0);
+  --login-bg: #f5f3f7;
+  --login-accent: #7e4ce0;
   --login-ink: #18151f;
   --login-muted: #77717f;
   --login-border: rgba(24, 21, 31, 0.09);
-  position: relative;
+  position: fixed;
+ inset: 0;
+  z-index: 9999;
   min-height: 100vh;
   min-height: 100dvh;
-  overflow: hidden;
+  overflow: auto;
   display: grid;
   place-items: center;
   padding: clamp(20px, 4vw, 56px);
+  margin: 0;
+  border: 0;
+  box-shadow: none;
   background:
     radial-gradient(circle at 12% 10%, rgba(126, 76, 224, 0.13), transparent 31%),
     radial-gradient(circle at 92% 88%, rgba(126, 76, 224, 0.08), transparent 28%),
