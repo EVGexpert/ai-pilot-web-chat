@@ -1,12 +1,13 @@
 # ANSS-CORE: ai-pilot-auth-api
 ## AI-Native System Specification — Backend Auth & Orchestration API
 
-**Версия:** 1.0
+**Версия:** 1.1
 **Статус:** Active
-**Дата:** 2026-06-23
+**Дата:** 2026-08-31
 **Проект:** AI Pilot Auth API
 **Репозиторий:** github.com/EVGexpert/ai-pilot-auth-api
 **Уровень:** CORE
+**Продакшен:** 0.6.0 (schema v23, node:sqlite, brain introspection)
 
 ---
 
@@ -43,12 +44,16 @@
 
 ## 1.2 Ключевые возможности
 
-- Email + password аутентификация (JWT)
+- Email + password аутентификация (JWT, refresh rotation)
 - RBAC: admin / client
-- Регистрация сайтов по connect-code
+- Регистрация сайтов по connect-code (+ metadata из verify-code для onboarding)
 - Кэширование контекста сайтов (TTL 1 час)
 - Идемпотентность запросов (action_requests table)
 - Прокси к Gateway для AI-запросов
+- Agent UI Cards (backend: таблица + роуты + respond)
+- Brain-интеграция: trusted memory router, outbox (brain_memory_outbox) + worker
+- Динамическое provisioning Brain tenant'ов (customers, brain_tenants, ik_ ключи, AES-256-GCM)
+- Brain introspection endpoint: POST /api/v1/oauth/introspect (RFC 7662)
 - Аудит безопасности
 
 ---
@@ -87,6 +92,18 @@
 Определение: Shared secret между auth-api и OpenClaw Gateway. Не JWT, не user-токен.
 НЕ путать с: JWT Token
 
+**[A] Brain Tenant / ik_ ключ**
+Определение: Изолированный tenant памяти в INITE Brain (companyId `cust_<id>` / `ai-pilot-core`). Доступ по ключу `ik_...`, который auth-api выдаёт динамически (brain_tenant_keys, шифрование AES-256-GCM master-ключом).
+В коде: `brain_tenants`, `brain_tenant_keys`, `TenantProvisioner`
+
+**[A] Brain Introspection**
+Определение: Brain авторизует ключи через RFC 7662 introspection у auth-api (`POST /api/v1/oauth/introspect`). Ответ: {active, org: companyId, scope: "brain:read brain:write", aud: "brain"}. Динамические ключи, без рестарта Brain при добавлении клиента.
+В коде: env `BRAIN_INTROSPECTION_CLIENT_ID/SECRET`, `AUTH_SERVICE_INTROSPECTION_URL`
+
+**[A] Memory Outbox**
+Определение: Таблица `brain_memory_outbox` (payload_hash UNIQUE). Запись в Brain асинхронная: chat/log/approve не блокируются при недоступности Brain; worker drain'ит очередь с retry.
+В коде: `src/memory/outbox.js`, `src/memory/worker.js`
+
 ## 2.2 Пользователи
 
 **[A] Роль: Admin**
@@ -120,12 +137,13 @@
 | Слой | Технология | Версия |
 |---|---|---|
 | Backend | Node.js + Express.js | 24.x |
-| База данных | SQLite (node:sqlite) | experimental |
-| Аутентификация | JWT (access + refresh) | — |
+| База данных | SQLite (node:sqlite, DatabaseSync, WAL) | experimental |
+| Аутентификация | JWT (access + refresh, rotation) | — |
 | Прокси Gateway | HTTP fetch | — |
 | Деплой | Docker + GitHub Actions | — |
 | WebSocket | ws | — |
 | Кэш | in-memory (Map) | — |
+| Brain memory | REST /v1/* + introspection (RFC 7662) | — |
 
 **Внешние зависимости:**
 
@@ -172,6 +190,26 @@ INV-007: Refresh Token Rotation
 Нельзя: использовать refresh token дважды
 Причина: защита от token theft
 Проверка: SHA256 hash refresh, DELETE при использовании
+
+INV-008: Секреты не пишутся в Brain
+Нельзя: записывать в Brain (и outbox) пароли, ik_/API ключи, токены, коды
+Причина: Brain — семантическая память, не secret store
+Проверка: sanitizer перед любой записью (src/memory/sanitizer.js)
+
+INV-009: Brain недоступен → система работает
+Нельзя: блокировать chat/login/approve при недоступности Brain
+Причина: Brain не синхронная точка отказа
+Проверка: enqueue пишет только в SQLite outbox; getContext fail-open (таймаут 2s)
+
+INV-010: Модель не выбирает tenant
+Нельзя: принимать companyId от LLM/клиента произвольно
+Причина: cross-tenant утечка
+Проверка: trusted resolver user → customer → brain_tenant (только server-side)
+
+INV-011: Kлючи ik_ не логируются и не возвращаются в API
+Нельзя: выводить raw ik_ в логах, сообщениях, ответах API
+Причина: компрометация = доступ к tenant-памяти
+Проверка: в БД только key_enc + key_hash; ключ возвращается один раз при provisioning
 ```
 
 ## [A] 2.6 АРХИТЕКТУРНЫЕ ПРИНЦИПЫ ✅
@@ -433,6 +471,55 @@ CREATE TABLE action_requests (
 );
 ```
 
+**Схема 0.6.0 (schema v23) — добавленные сущности:**
+
+```sql
+-- Клиентские workspace (0.6.0, v21)
+CREATE TABLE customers (
+  id           TEXT PRIMARY KEY,   -- cus_<uid>
+  owner_user_id TEXT NOT NULL,
+  status       TEXT DEFAULT 'active',
+  created_at   TEXT
+);
+CREATE TABLE customer_members (
+  customer_id TEXT NOT NULL,
+  user_id     TEXT NOT NULL,
+  role        TEXT DEFAULT 'owner',
+  PRIMARY KEY (customer_id, user_id)
+);
+
+-- Brain tenant mapping (0.6.0, v21)
+CREATE TABLE brain_tenants (
+  customer_id TEXT PRIMARY KEY,
+  company_id  TEXT NOT NULL,        -- cust_<id> / ai-pilot-core
+  status      TEXT DEFAULT 'pending',  -- pending|provisioned
+  created_at  TEXT,
+  updated_at  TEXT
+);
+CREATE TABLE brain_tenant_keys (
+  customer_id TEXT PRIMARY KEY,
+  key_enc     TEXT NOT NULL,        -- AES-256-GCM, master BRAIN_KEYS_MASTER_KEY
+  key_hash    TEXT NOT NULL,        -- sha256(raw ik_)
+  key_prefix  TEXT,
+  status      TEXT DEFAULT 'active',
+  created_at  TEXT,
+  revoked_at  TEXT,
+  last_used_at TEXT
+);
+
+-- Brain memory outbox (0.6.0)
+CREATE TABLE brain_memory_outbox (
+  id TEXT PRIMARY KEY,
+  customer_id TEXT, site_id TEXT, session_id TEXT, message_id TEXT,
+  event_type TEXT NOT NULL, entity_ref TEXT NOT NULL,
+  predicate TEXT NOT NULL, object TEXT NOT NULL,
+  payload_hash TEXT NOT NULL UNIQUE,   -- идемпотентность
+  status TEXT DEFAULT 'pending',       -- pending|processing|completed|failed
+  attempts INTEGER DEFAULT 0, max_attempts INTEGER DEFAULT 8,
+  last_error TEXT, created_at TEXT, processed_at TEXT
+);
+```
+
 ## 5.4 ADR
 
 ```
@@ -454,6 +541,25 @@ ADR-003: Gateway Token как shared secret
 Решение: Env-переменная GATEWAY_TOKEN, передаётся в заголовке
 Причина: Проще чем mTLS, достаточно для одного сервиса
 Для агентов: Gateway token никогда не идёт клиенту
+
+ADR-004: Brain-память через outbox (async write)
+Контекст: INITE Brain — долговременная память, но может быть недоступен
+Решение: синхронная запись только в SQLite outbox; Brain-вызов асинхронный (worker, retry, payload_hash UNIQUE)
+Причина: Brain не синхронная точка отказа (INV-009)
+Для агентов: enqueue никогда не блокирует; дубли исключены payload_hash
+
+ADR-005: Динамическое provisioning tenant'ов вместо статических ключей
+Контекст: Раньше tenant = ручной шаг (DEFINE DATABASE + env BRAIN_API_KEYS + рестарт)
+Решение: 0.6.0 — Brain в режиме INTROSPECTION (RFC 7662): TenantProvisioner сам выпускает ik_ ключ, шифрует и probe'ит; новый клиент = полностью автоматический onboarding
+Причина: масштабирование без ops-шагов; ключи ротируемы
+Trade-offs: auth-api становится SPOF для Brain-авторизации
+Для агентов: не возвращать raw ik_ клиенту; в БД только key_enc + key_hash
+
+ADR-006: DB-слой на node:sqlite вместо sql.js (WASM)
+Контекст: sql.js деградировал после ~2 суток работы (disk I/O error в prepare)
+Решение: нативный node:sqlite (DatabaseSync, WAL, busy_timeout=5000, FK=1); shim'ы db.run/getRowsModified сохранены
+Причина: стабильность прода; WASM-экспорт-цикл убран
+Для агентов: stmt.finalize() НЕТ в Node 24; db.exec() возвращает undefined; undefined-параметр бросает исключение (sanitize)
 ```
 
 ---
@@ -475,6 +581,8 @@ ADR-003: Gateway Token как shared secret
 | GET /api/sites | ✓ | только свои |
 | POST /api/chat/send | ✓ | ✓ |
 | POST /api/sites/connect | ✓ | ✓ |
+| POST /api/v1/oauth/introspect | M2M (client_id+secret) | ✗ |
+| Brain ik_ ключ | выдача при provisioning | только серверно |
 
 ## 6.2 Защита данных
 
@@ -503,8 +611,9 @@ ADR-003: Gateway Token как shared secret
 
 - Провайдер: VPS (193.176.78.35, Калининград)
 - Стратегия: GitHub Actions → SSH → docker compose
-- Rollback: git revert + redeploy; pre-backup БД перед деплоем
+- Rollback: git revert + redeploy; pre-backup БД перед деплоем; rollback-контейнеры сохраняются
 - Healthcheck: POST /api/health/db с X-Deploy-Token
+- 0.6.0 (prod-конфиг): volume `aipilot-auth-data` → /app/data; сети ai-pilot-internal + openclaw_default (brain резолвится); env: VITE_GATEWAY_TOKEN, DEPLOY_HEALTH_TOKEN, JWT_SECRET, DATABASE_PATH=/app/data/aipilot.db, GATEWAY_URL, BRAIN_BASE_URL=http://brain:3000, BRAIN_MEMORY_ENABLED=true, BRAIN_TENANT_KEYS, BRAIN_KEYS_MASTER_KEY (обязателен в production), BRAIN_INTROSPECTION_*; add-host host.docker.internal
 
 ## 7.3 Мержи и CI
 
@@ -545,6 +654,10 @@ TOOLS.md — инфраструктурные константы
 НЕ убирать idempotency keys
 НЕ инлайнить секреты в код
 НЕ менять миграции БД без Change Spec
+НЕ писать секреты/ik_ в Brain или outbox
+НЕ блокировать chat при недоступности Brain
+НЕ принимать companyId от модели (только trusted resolver)
+НЕ возвращать raw ik_ клиенту в API
 ```
 
 ## 11.2 Fail-Fast условия

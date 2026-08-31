@@ -2,9 +2,9 @@
 
 ## AI-Native System Specification
 
-**Версия:** 2.0.0
+**Версия:** 2.1.0
 **Статус:** Active
-**Дата:** 2026-07-24
+**Дата:** 2026-08-31
 **Проект:** AI Pilot — AI-ассистент для управления WordPress-сайтами
 **Автор:** Евгений (EVGexpert)
 **Оркестратор:** Zero (OpenClaw)
@@ -159,7 +159,7 @@
 | `/src/chat/` | prompt builder, context fetcher, mode router |
 | `/src/utils/` | fetchWithTimeout, action parsers, background jobs |
 
-**Схема БД (v12):**
+**Схема БД (v23):**
 
 | Таблица | Назначение |
 |---------|------------|
@@ -171,7 +171,12 @@
 | `messages` | Сообщения диалогов |
 | `action_requests` | Proposals с idempotency (SHA256 dedup) |
 | `agent_ui_cards` | UI карточки для агента |
-| `schema_version` | Миграции (v12) |
+| `customers` | Клиентские workspace (cus_<uid>, owner) |
+| `customer_members` | Членство user→customer |
+| `brain_tenants` | Маппинг customer → brain companyId (pending/provisioned) |
+| `brain_tenant_keys` | ik_ ключи (key_enc AES-256-GCM, key_hash) |
+| `brain_memory_outbox` | Асинхронные записи в Brain (payload_hash UNIQUE) |
+| `schema_version` | Миграции (v23) |
 
 ## 3.2 Web Chat (frontend)
 
@@ -522,16 +527,19 @@ WP Plugin: ручная установка (через WP Admin / ZIP upload)
 
 | Компонент | Версия | Статус |
 |-----------|--------|--------|
-| Auth API | v12 schema | ✅ Live |
-| Web Chat | v2.0 (Tailwind v4) | ✅ Live |
-| WP Plugin | v2.1.1+ | ✅ Live |
+| Auth API | 0.6.0 (schema v23, node:sqlite) | ✅ Live |
+| Web Chat | 0.1.4 (Tailwind v4, onboarding UX) | ✅ Live |
+| WP Plugin | 2.3.0 (job.yousite.agency) / 2.2.2 (obelisk) | ✅ Live |
+| Brain (память) | 0.8.1-aipilot1, introspection + dynamic ik_ keys | ✅ Live |
 | Gateway (OpenClaw) | — | ✅ Live |
 | JWT auth + refresh | — | ✅ |
-| Site connect (codes) | — | ✅ |
+| Site connect (codes + metadata) | 0.6.0 contract | ✅ |
 | Capability detection | v1.1 | ✅ |
 | Mode Router | — | ✅ |
 | Agent UI Cards | v1.3 | ✅ |
-| Action Proposals | — | ✅ |
+| Action Proposals (+ реальное выполнение, идемпотентный replay) | — | ✅ |
+| Brain memory outbox | 30 completed / 0 failed | ✅ |
+| Динамическое provisioning tenant'ов | 0.6.0 | ✅ |
 | CI/CD (GitHub Actions) | auth-api + web-chat | ✅ |
 | Caddy TLS | — | ✅ |
 
@@ -539,10 +547,10 @@ WP Plugin: ручная установка (через WP Admin / ZIP upload)
 
 | Задача | Приоритет | Статус |
 |--------|-----------|--------|
-| Action Proposal UI (diff preview в чате) | Medium | ⏳ |
+| PHASE 3 (Brain primary; MEMORY.md fallback only) | — | ⏳ ждёт решения |
+| PHASE 2 memory (массовая миграция chats, cross-site поиск) | — | ⏳ не запускать без решения |
 | Email верификация (SMTP) | Low | ⏳ |
-| Connect-code UI в WP Admin | Medium | ⏳ Баг |
-| WP Plugin обновление до 2.0.0 на obelisk | Medium | ⏳ |
+| Connect-code UI в WP Admin | Medium | ⏳ баг (код не генерируется) |
 | AI Pilot Blocks integration (Stage 5) | Future | 📋 |
 | Builder adapters (Elementor/Bricks) | Future | 📋 |
 | Telegram-канал | Low | ❌ Отложен |
@@ -611,6 +619,9 @@ INV-012: No write without capabilities check
 | Auth API | [`ai-pilot-auth-api.anss.md`](./ai-pilot-auth-api.anss.md) |
 | Web Chat | [`ai-pilot-web-chat.anss.md`](./ai-pilot-web-chat.anss.md) |
 | WP Plugin | [`ai-pilot-wp-plugin.anss.md`](./ai-pilot-wp-plugin.anss.md) |
+| Brain-First Hybrid Memory | [`brain-first-hybrid-memory.anss.md`](./brain-first-hybrid-memory.anss.md) |
+| Проект и бизнес-модель | [`ai-pilot-project-spec-and-business.md`](./ai-pilot-project-spec-and-business.md) |
+| Change Spec: Onboarding 0.6.0 | [`onboarding-0.6.0-change-spec.md`](./onboarding-0.6.0-change-spec.md) |
 
 ## Документация
 
@@ -632,4 +643,4 @@ INV-012: No write without capabilities check
 ---
 
 _Спецификация обновляется при изменении системы (ANSS §10 Change Specification)._
-_Последнее обновление: 2026-07-24_
+_Последнее обновление: 2026-08-31_

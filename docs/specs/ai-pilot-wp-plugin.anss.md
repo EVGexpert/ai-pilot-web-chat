@@ -1,12 +1,13 @@
 # ANSS-CORE: ai-pilot-wp-plugin
 ## AI-Native System Specification — WordPress Plugin
 
-**Версия:** 1.0
+**Версия:** 1.1
 **Статус:** Active
-**Дата:** 2026-06-23
+**Дата:** 2026-08-31
 **Проект:** AI Pilot WordPress Plugin
 **Репозиторий:** github.com/EVGexpert/ai-pilot-wp-plugin
 **Уровень:** CORE
+**Продакшен:** 2.3.0 (job.yousite.agency), 2.2.2 (obelisk, legacy)
 
 ---
 
@@ -39,12 +40,15 @@
 
 ## 1.2 Ключевые возможности
 
-- REST API эндпоинты под префиксом `/agent/`
-- Connect Code генерация (одноразовый, 8 символов)
+- REST API эндпоинты под префиксом `/aipilot/v1/agent/`
+- Connect Code генерация (одноразовый, 8 символов, TTL 5 мин) + one-click connect в админке
+- verify-code отдаёт site metadata (url, name, версии) для onboarding 0.6.0
 - Возврат структуры сайта (посты, страницы, плагины, тема, меню)
 - Чтение/запись Agent Memory (через post meta / options API)
-- Action Proposal механика (diff + approve/reject)
+- Action Proposal механика (diff + approve/reject) — approve РЕАЛЬНО выполняет сохранённое действие
+- Idempotent replay: повторный approve → тот же post_id, без дублей
 - Выполнение типовых действий (update_post, create_post, update_option)
+- Авторизация: заголовок `X-AI-Pilot-Token` (НЕ Bearer)
 
 ---
 
@@ -59,6 +63,13 @@
 **Agent Context**
 Определение: GET /agent/context — возвращает site (title, URL) + soul + memory + structure + last_access.
 
+**X-AI-Pilot-Token**
+Определение: Единственный принимаемый заголовок авторизации (v2.3.0+). `Authorization: Bearer` → 403 auth_invalid.
+В коде: `X-AI-Pilot-Token`
+
+**Connect Code (расширенный контракт, v2.3.0)**
+Определение: verify-code возвращает site metadata (url, name, wp_version, plugin_version) — используется auth-api для onboarding 0.6.0 (создание site до первого health).
+
 **Agent Scan**
 Определение: GET /agent/scan — сканирование: посты (последние 20), страницы, плагины, тема, меню, медиа, пользователи.
 
@@ -67,7 +78,7 @@
 В коде: `aipilot_agent_*` опции
 
 **Action Proposal**
-Определение: POST /agent/propose → создаёт запись с diff. POST /agent/approve/{id} → применяет.
+Определение: POST /agent/propose → создаёт запись с diff и СОХРАНЯЕТ параметры действия. POST /agent/approve/{id} → применяет сохранённое действие на реальном WP (create_post/update_post/update_option). Повторный approve идемпотентен (тот же результат, SAME_ID=true).
 
 **Allowlist опций**
 Определение: Только 17 опций доступны AI-агенту для чтения/записи. Остальные — запрещены.
@@ -80,7 +91,7 @@
 - Ожидаемое количество: 1 на сайт
 
 **Роль: AI Agent (системная)**
-- Авторизация: Bearer token из connect-code
+- Авторизация: `X-AI-Pilot-Token` (из connect-code)
 - Может: читать контекст, сканировать, предлагать действия
 - Не может: менять пароли, удалять плагины, редактировать users
 
@@ -207,22 +218,22 @@ Acceptance Criteria:
 ## 5.2 Ключевые эндпоинты
 
 ```
-GET    /wp-json/agent/context
-Auth: Bearer token
+GET    /wp-json/aipilot/v1/agent/context
+Auth: X-AI-Pilot-Token
 Response: { site: {name, url}, soul, memory, structure }
 
-GET    /wp-json/agent/scan
-Auth: Bearer token
+GET    /wp-json/aipilot/v1/agent/scan
+Auth: X-AI-Pilot-Token
 Response: { posts, pages, plugins, theme, menus }
 
-POST   /wp-json/agent/propose
-Auth: Bearer token
+POST   /wp-json/aipilot/v1/agent/propose
+Auth: X-AI-Pilot-Token
 Body: { action: string, description: string, params: {}, diff?: string }
 Response: { id, status: "pending" }
 
-POST   /wp-json/agent/approve/{id}
-Auth: Bearer token
-Response: { status: "approved", result: {} }
+POST   /wp-json/aipilot/v1/agent/approve/{id}
+Auth: X-AI-Pilot-Token
+Response: { status: "approved", result: {}, post_id?, same_id? }
 ```
 
 ## 5.3 Что НЕ доступно AI
@@ -241,11 +252,14 @@ Response: { status: "approved", result: {} }
 ## 8.1 Smoke-тесты
 
 ```
-□ GET /wp-json/agent/context → 200
+□ GET /wp-json/aipilot/v1/agent/context → 200 (X-AI-Pilot-Token)
 □ POST /agent/propose → 201 + id
-□ POST /agent/approve/{id} → 200
-□ Connect code генерируется
+□ POST /agent/approve/{id} → 200 + post_id (создан draft)
+□ Повторный approve → тот же post_id, SAME_ID=true (идемпотентность)
+□ Draft: Gutenberg-блоки, категории, теги применяются
+□ Connect code генерируется (8 символов, TTL 5 мин)
 □ Verification code не в логах
+□ Bearer-заголовок → 403 auth_invalid (только X-AI-Pilot-Token)
 ```
 
 ---
@@ -259,6 +273,7 @@ Response: { status: "approved", result: {} }
 НЕ возвращать admin_email в контексте
 НЕ выполнять действия без approve
 НЕ трогать safe опции (не в allowlist)
+НЕ принимать Bearer-авторизацию (только X-AI-Pilot-Token)
 ```
 
 ## 11.2 Fail-Fast
