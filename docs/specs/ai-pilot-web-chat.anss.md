@@ -1,12 +1,13 @@
 # ANSS-CORE: ai-pilot-web-chat
 ## AI-Native System Specification — Web Chat Frontend
 
-**Версия:** 1.0
+**Версия:** 1.1
 **Статус:** Active
-**Дата:** 2026-06-23
+**Дата:** 2026-08-31
 **Проект:** AI Pilot Web Chat
 **Репозиторий:** github.com/EVGexpert/ai-pilot-web-chat
 **Уровень:** CORE
+**Продакшен:** 0.1.4 (chat.pilotsite.ru)
 
 ---
 
@@ -39,13 +40,15 @@
 
 ## 1.2 Ключевые возможности
 
-- JWT-аутентификация через auth-api
+- JWT-аутентификация через auth-api (токен только в памяти, Pinia)
 - Двухпанельный layout (sidebar + чат)
 - Сайдбар со списком диалогов + выбор сайта
-- Тёмная тема (по умолчанию)
-- Action Preview: карточки с approve/reject для human-in-the-loop
-- WebSocket через Gateway для реального времени
-- Connect popup для привязки WP-сайта
+- Тёмная и светлая темы (Tailwind v4, dark по умолчанию)
+- Action Preview: карточки с approve/reject для human-in-the-loop (Agent UI Cards)
+- Onboarding UX: safe connect result, degraded/pending состояния при привязке сайта
+- Все AI-запросы через auth-api прокси (никаких прямых вызовов Gateway из фронта)
+- GatewayClient: WebSocket reconnect + очередь сообщений + ack
+- Connect popup для привязки WP-сайта (форма входа + код)
 
 ---
 
@@ -82,11 +85,11 @@
 | Слой | Технология | Версия |
 |---|---|---|
 | Frontend | Vue 3 + Vite | 3.x |
-| UI | PrimeVUI | latest |
+| UI | Tailwind CSS v4 (full redesign, dark/light theming) | 4.x |
 | State | Pinia | latest |
-| WS | нативный WebSocket | — |
-| Docker | multi-stage build | — |
-| Proxy | Caddy → nginx → localhost:3000 | — |
+| WS | GatewayClient (reconnect + queue + ack) | — |
+| Docker | multi-stage build (Node 24 → Nginx Alpine) | — |
+| Proxy | Caddy → nginx → localhost:3000; /api/* → auth-api:3001 | — |
 
 **Внешние зависимости:**
 
@@ -127,6 +130,16 @@ INV-006: Тёмная тема — default
 Нельзя: показывать светлую тему новому пользователю без выбора
 Причина: дизайн-решение
 Проверка: theme = dark при первом рендере
+
+INV-007: Нет прямых вызовов Gateway из фронтенда
+Нельзя: слать запросы к wss://pilotsite.ru / v1/chat/completions напрямую
+Причина: Gateway token не должен попадать в браузер
+Проверка: все AI-запросы через POST /api/chat/send (auth-api proxy)
+
+INV-008: WS очередь и ack
+Нельзя: терять сообщение при обрыве WebSocket
+Причина: надёжность доставки
+Проверка: GatewayClient ставит в очередь, повторяет после reconnect, ждёт ack
 ```
 
 ## [A] 2.6 АРХИТЕКТУРНЫЕ ПРИНЦИПЫ
@@ -205,8 +218,9 @@ Acceptance Criteria:
                 ↓
           [Docker: Nginx → /usr/share/nginx/html]
                 ↓
-     API: /v1/* → Caddy → auth-api:3001
-     WS:  wss:// → Caddy → Gateway:18789
+     API: /api/* → nginx upstream ai-pilot-auth:3001 (внутренняя сеть)
+     AI:  POST /api/chat/send → auth-api → Gateway (server-side)
+     WS:  GatewayClient → auth-api (reconnect + queue + ack)
 ```
 
 **Компоненты Vue:**
@@ -229,16 +243,18 @@ App.vue
 POST /api/auth/login — вход
 POST /api/auth/refresh — обновление токена
 GET  /api/sites — список сайтов
-POST /api/chat/send — отправка сообщения AI
+POST /api/chat/send — отправка сообщения AI (единственный путь к AI)
 GET  /api/chat/history — история диалога
+POST /api/sites/connect — привязка WP-сайта по коду (onboarding)
+GET  /api/agent-ui/cards — Agent UI Cards (approve/reject)
 ```
 
-## 5.3 WebSocket
+## 5.3 Соединение и надёжность
 
-- URL: wss://pilotsite.ru/
-- Протокол: OpenAI compatible (Gateway)
-- Токен: передаётся в теле сообщения HTTP API
-- Reconnect: exponential backoff, не более 5 попыток
+- GatewayClient (src/services/gateway): WebSocket к auth-api/Gateway
+- Reconnect: exponential backoff + очередь неотправленных сообщений
+- Ack: подтверждение доставки от сервера; при обрыве — retry из очереди
+- Все AI-запросы идут через auth-api (Gateway token не в браузере)
 - TypingIndicator: true при ожидании AI
 
 ---
@@ -251,7 +267,9 @@ GET  /api/chat/history — история диалога
 □ GET https://chat.pilotsite.ru → HTTP 200
 □ Форма логина отображается
 □ После логина — сайдбар + чат
-□ Тёмная тема включена
+□ Тёмная тема включена (светлая переключается)
+□ login через /api/auth/login (nginx upstream) → 200
+□ connect: ввод кода → safe result (connected / degraded / pending)
 □ no JS errors в console
 ```
 
@@ -275,6 +293,8 @@ specs/ai-pilot-web-chat.anss.md — эта спецификация
 НЕ хранить JWT в localStorage
 НЕ использовать v-html без DOMPurify
 НЕ ломать тёмную тему
+НЕ ходить напрямую к Gateway (только через auth-api)
+НЕ хардкодить токены/секреты в коде (только GitHub Secrets / env)
 ```
 
 ## 11.2 Fail-Fast
